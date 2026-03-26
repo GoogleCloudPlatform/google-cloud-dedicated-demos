@@ -1,0 +1,110 @@
+#
+# Copyright 2026 Google LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: vllm-gemma-deployment
+  namespace: tax-office-ns
+spec:
+  progressDeadlineSeconds: 600
+  replicas: 1
+  revisionHistoryLimit: 10
+  selector:
+    matchLabels:
+      app: gemma-server
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        ai.gke.io/inference-server: vllm
+        ai.gke.io/model: gemma-3-27b-it
+        app: gemma-server
+        skaffold.dev/run-id: static
+    spec:
+      containers:
+      - args:
+        - --model=$(MODEL_ID)
+        - --tensor-parallel-size=8
+        - --host=0.0.0.0
+        - --port=8000
+        - --swap-space=16
+        - --gpu-memory-utilization=0.95
+        - --max-model-len=32768
+        - --max-num-seqs=4
+        command:
+        - python3
+        - -m
+        - vllm.entrypoints.openai.api_server
+        env:
+        - name: LD_LIBRARY_PATH
+          value: ${LD_LIBRARY_PATH}:/usr/local/nvidia/lib64
+        - name: MODEL_ID
+          value: google/gemma-3-27b-it
+        - name: HUGGING_FACE_HUB_TOKEN
+          valueFrom:
+            secretKeyRef:
+              key: hugging-face-token.yaml
+              name: hugging-face-mffmt5tg6b
+        image: docker.io/vllm/vllm-openai:v0.10.0
+        imagePullPolicy: IfNotPresent
+        name: inference-server
+        readinessProbe:
+          failureThreshold: 5
+          httpGet:
+            path: /health
+            port: 8000
+            scheme: HTTP
+          initialDelaySeconds: 180
+          periodSeconds: 10
+          successThreshold: 1
+          timeoutSeconds: 5
+        resources:
+          limits:
+            nvidia.com/gpu: '8'
+          requests:
+            cpu: '10'
+            ephemeral-storage: 10Gi
+            memory: 100Gi
+            nvidia.com/gpu: '8'
+        securityContext:
+          capabilities:
+            drop:
+            - NET_RAW
+        terminationMessagePath: /dev/termination-log
+        terminationMessagePolicy: File
+        volumeMounts:
+        - mountPath: /dev/shm
+          name: dshm
+        - mountPath: /root/.cache/huggingface
+          name: cache-volume
+      dnsPolicy: ClusterFirst
+      nodeSelector:
+        cloud.google.com/compute-class: a3-edgegpu-8g-nolssd
+      restartPolicy: Always
+      schedulerName: default-scheduler
+      securityContext:
+        seccompProfile:
+          type: RuntimeDefault
+      terminationGracePeriodSeconds: 30
+      volumes:
+      - emptyDir:
+          medium: Memory
+        name: dshm
+      - name: cache-volume
+        persistentVolumeClaim:
+          claimName: model-cache

@@ -1,0 +1,182 @@
+/*
+ * Copyright 2026 Google LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     https://www.apache.org/licenses/LICENSE-2.0
+ *
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+/* Login page specific styles */
+
+body {
+  height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.login-container {
+  background: white;
+  padding: 48px 40px;
+  border-radius: 12px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+  width: 100%;
+  max-width: 400px;
+  border: 1px solid #e8eaed;
+}
+
+.login-header {
+  text-align: center;
+  margin-bottom: 32px;
+}
+
+.google-cloud-logo {
+  width: 48px;
+  height: 48px;
+  margin: 0 auto 16px;
+  background: #4285f4;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-size: 24px;
+}
+
+.login-header h1 {
+  color: #202124;
+  margin-bottom: 8px;
+  font-size: 24px;
+  font-weight: 400;
+}
+
+.login-header p {
+  color: #5f6368;
+  font-size: 14px;
+  line-height: 1.4;
+}
+
+.form-group {
+  margin-bottom: 24px;
+}
+
+.form-group label {
+  display: block;
+  margin-bottom: 8px;
+  color: #202124;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.input-wrapper {
+  position: relative;
+}
+
+.form-group input {
+  width: 100%;
+  padding: 12px 16px;
+  border: 1px solid #dadce0;
+  border-radius: 8px;
+  font-size: 16px;
+  transition: all 0.2s ease;
+  background: #fff;
+  font-family: inherit;
+}
+
+.form-group input:focus {
+  outline: none;
+  border-color: #4285f4;
+  box-shadow: 0 0 0 2px rgba(66, 133, 244, 0.1);
+}
+
+.form-group input:hover:not(:focus) {
+  border-color: #5f6368;
+}
+
+.login-btn {
+  width: 100%;
+  padding: 12px 24px;
+  background: #4285f4;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-family: inherit;
+  text-transform: none;
+  letter-spacing: 0.25px;
+}
+
+.login-btn:hover {
+  background: #3367d6;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.login-btn:active {
+  background: #2d5aa0;
+}
+
+.error-message {
+  background: #fce8e6;
+  color: #d93025;
+  padding: 12px 16px;
+  border-radius: 8px;
+  margin-bottom: 24px;
+  font-size: 14px;
+  border: 1px solid #fad2cf;
+}
+
+.demo-info {
+  margin-top: 24px;
+  padding: 16px;
+  background: #e8f0fe;
+  border-radius: 8px;
+  border: 1px solid #d2e3fc;
+}
+
+.demo-info h3 {
+  color: #1a73e8;
+  margin-bottom: 12px;
+  font-size: 14px;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.demo-info p {
+  color: #5f6368;
+  font-size: 13px;
+  margin: 6px 0;
+  line-height: 1.4;
+}
+
+.demo-info code {
+  background: #f1f3f4;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-family: "Roboto Mono", monospace;
+  font-size: 12px;
+  color: #202124;
+}
+
+.material-icons {
+  font-size: 18px;
+}
+
+@media (max-width: 480px) {
+  .login-container {
+    margin: 16px;
+    padding: 32px 24px;
+  }
+}

@@ -1,0 +1,77 @@
+#
+# Copyright 2026 Google LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+TAX FILING DEADLINE POLICY
+
+Section 1: Standard Filing Deadlines
+
+All taxpayers must file their annual tax declarations by July 31st of the following year. For example, tax year 2024 declarations must be filed by July 31st, 2025.
+
+Section 2: Extended Deadlines for Tax Advisors
+
+Taxpayers who engage certified tax advisors receive automatic extensions:
+- February 28th of the second following year for standard cases
+- Additional extensions may be granted upon request with valid justification
+
+Section 3: Late Filing Penalties
+
+Late filing penalties are calculated as follows:
+- 0.25% of the assessed tax per month of delay
+- Minimum penalty of €25 per month
+- Maximum total penalty of 25% of the assessed tax
+- Penalties apply even if no tax is owed
+
+Section 4: Severe Delay Violations
+
+Filing delays exceeding 90 days are considered severe violations and may trigger:
+- Increased scrutiny of current and future tax declarations
+- Mandatory audits for the late filing year
+- Potential criminal investigation for tax evasion
+- Suspension of business licenses for commercial taxpayers
+
+Section 5: Repeat Offender Status
+
+Taxpayers with consistent late filing patterns (3 or more late filings in 5 years) face:
+- Automatic classification as high-risk taxpayers
+- Annual mandatory audit requirements
+- Loss of eligibility for simplified filing procedures
+- Increased penalty rates (up to 50% higher)
+
+Section 6: Valid Extensions
+
+Extensions may be granted for legitimate reasons including:
+- Serious illness with medical documentation
+- Natural disasters or force majeure events
+- Delayed receipt of essential tax documents from third parties
+- Death in the immediate family
+
+Extension requests must be submitted before the original deadline with supporting documentation.
+
+Section 7: Electronic Filing Incentives
+
+Taxpayers who consistently file electronically and on time for 5 consecutive years may qualify for:
+- Reduced audit probability
+- Simplified filing procedures
+- Faster processing of tax refunds
+- Waiver of late penalties for first-time violations within the 5-year period
+
+Section 8: Business Taxpayer Requirements
+
+Business taxpayers have additional obligations:
+- Quarterly advance tax payments
+- Monthly VAT declarations for businesses with turnover exceeding €600,000
+- Annual business tax declarations separate from income tax
+- Late filing of business declarations may result in business license suspension

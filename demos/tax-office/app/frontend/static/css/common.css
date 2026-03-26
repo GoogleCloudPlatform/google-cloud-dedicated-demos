@@ -1,0 +1,277 @@
+/*
+ * Copyright 2026 Google LLC
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     https://www.apache.org/licenses/LICENSE-2.0
+ *
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+/* Common styles shared across all pages */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family:
+    "Google Sans",
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    Roboto,
+    sans-serif;
+  background: #f8f9fa;
+  line-height: 1.5;
+  color: #202124;
+}
+
+/* Header styles */
+.header {
+  background: white;
+  border-bottom: 1px solid #e8eaed;
+  box-shadow: 0 1px 2px rgba(60, 64, 67, 0.1);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+.header-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 16px 24px;
+}
+
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.header-logo {
+  width: 40px;
+  height: 40px;
+  background: #4285f4;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  text-decoration: none;
+  transition:
+    background 0.2s ease,
+    transform 0.2s ease;
+  cursor: pointer;
+}
+
+.header-logo:hover {
+  background: #1a73e8;
+  transform: scale(1.05);
+}
+
+.header h1 {
+  font-size: 22px;
+  font-weight: 400;
+  color: #202124;
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.user-info {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #5f6368;
+  font-size: 14px;
+}
+
+.policies-btn {
+  background: transparent;
+  color: #1a73e8;
+  border: 1px solid #dadce0;
+  padding: 8px 16px;
+  border-radius: 20px;
+  text-decoration: none;
+  font-size: 14px;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.policies-btn:hover {
+  background: #f8f9fa;
+  border-color: #5f6368;
+}
+
+.logout-btn {
+  background: transparent;
+  color: #1a73e8;
+  border: 1px solid #dadce0;
+  padding: 8px 16px;
+  border-radius: 20px;
+  text-decoration: none;
+  font-size: 14px;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.logout-btn:hover {
+  background: #f8f9fa;
+  border-color: #5f6368;
+}
+
+/* Container */
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 24px;
+}
+
+/* Button styles */
+.back-btn {
+  background: transparent;
+  border: 1px solid #dadce0;
+  color: #1a73e8;
+  padding: 8px 16px;
+  border-radius: 20px;
+  text-decoration: none;
+  font-size: 14px;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.back-btn:hover {
+  background: #f8f9fa;
+  border-color: #5f6368;
+}
+
+/* Error and loading styles */
+.loading {
+  text-align: center;
+  padding: 48px;
+  color: #5f6368;
+  font-size: 14px;
+}
+
+.error {
+  background: #fce8e6;
+  color: #d93025;
+  padding: 16px 24px;
+  border-radius: 8px;
+  margin: 16px 0;
+  font-size: 14px;
+  border: 1px solid #fad2cf;
+}
+
+/* Badge styles */
+.badge {
+  padding: 4px 12px;
+  border-radius: 16px;
+  font-size: 12px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.badge-true {
+  background: #fce8e6;
+  color: #d93025;
+}
+
+.badge-false {
+  background: #e6f4ea;
+  color: #137333;
+}
+
+.badge-individual {
+  background: #e3f2fd;
+  color: #1565c0;
+}
+
+.badge-business {
+  background: #f3e5f5;
+  color: #7b1fa2;
+}
+
+/* Header location badge */
+.header-location {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  color: #5f6368;
+  background: #e8f0fe;
+  padding: 4px 10px;
+  border-radius: 12px;
+  border: 1px solid #d2e3fc;
+}
+
+.header-location .material-icons {
+  font-size: 14px;
+  color: #ea4335;
+}
+
+/* Legal Disclaimer Text */
+.disclaimer-text {
+  color: #5f6368;
+  font-size: 12px;
+  line-height: 1.4;
+  margin: 8px 0 0 0;
+  font-style: italic;
+  opacity: 0.9;
+}
+
+/* Page Bottom Disclaimer */
+.page-disclaimer {
+  text-align: center;
+  padding: 24px 16px;
+  margin-top: 40px;
+  border-top: 1px solid #e8eaed;
+  background: #fafafa;
+}
+
+.page-disclaimer .disclaimer-text {
+  margin: 0;
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+/* Mobile responsiveness */
+@media (max-width: 768px) {
+  .header-content {
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .disclaimer-text {
+    font-size: 10px;
+  }
+
+  .page-disclaimer {
+    padding: 16px 12px;
+    margin-top: 24px;
+  }
+}

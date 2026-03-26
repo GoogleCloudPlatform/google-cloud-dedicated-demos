@@ -1,0 +1,108 @@
+<!--
+  ~ Copyright 2026 Google LLC
+  ~
+  ~ Licensed under the Apache License, Version 2.0 (the "License");
+  ~ you may not use this file except in compliance with the License.
+  ~ You may obtain a copy of the License at
+  ~
+  ~     https://www.apache.org/licenses/LICENSE-2.0
+  ~
+  ~
+  ~ Unless required by applicable law or agreed to in writing, software
+  ~ distributed under the License is distributed on an "AS IS" BASIS,
+  ~ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  ~ See the License for the specific language governing permissions and
+  ~ limitations under the License.
+  -->
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Tax Office - AI-Powered Anomaly Detection</title>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Google+Sans:wght@400;500;700&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      href="https://fonts.googleapis.com/icon?family=Material+Icons"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='css/common.css') }}"
+    />
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='css/index.css') }}"
+    />
+  </head>
+  <body>
+    <div class="hero-container">
+      <div class="logo-section">
+        <div class="cloud-icon-wrapper">
+          <span class="material-icons cloud-icon">cloud</span>
+        </div>
+        <h1>Tax Anomaly Detection Application</h1>
+      </div>
+
+      <p class="description">
+        Leveraging cutting-edge Google Cloud solutions to identify and prevent
+        tax anomalies with precision and speed.
+      </p>
+
+      <div class="features">
+        <div class="feature">
+          <div class="feature-icon">
+            <span class="material-icons">smart_toy</span>
+          </div>
+          <h3>AI-Powered</h3>
+          <p>Advanced artificial intelligence for accurate predictions</p>
+        </div>
+        <div class="feature">
+          <div class="feature-icon">
+            <span class="material-icons">psychology</span>
+          </div>
+          <h3>Smart Detection</h3>
+          <p>Advanced ML models identify anomalies in real-time</p>
+        </div>
+
+        <div class="feature">
+          <div class="feature-icon">
+            <span class="material-icons">storage</span>
+          </div>
+          <h3>BigQuery Power</h3>
+          <p>Lightning-fast analytics on massive datasets</p>
+        </div>
+
+        <div class="feature">
+          <div class="feature-icon">
+            <span class="material-icons">search</span>
+          </div>
+          <h3>Vector Search</h3>
+          <p>Semantic policy matching using embeddings</p>
+        </div>
+      </div>
+
+      {% if is_authenticated %}
+      <a href="/connecting" class="cta-button">Go to Dashboard</a>
+      {% else %}
+      <a href="/login" class="cta-button">Get Started</a>
+      {% endif %}
+
+      <div class="powered-by">
+        <p class="powered-by-title">Powered by Google Cloud Dedicated</p>
+        <div class="tech-badges">
+          <span class="badge">BigQuery</span>
+          <span class="badge">Vector Search</span>
+          <span class="badge">Cloud ML</span>
+        </div>
+        <p class="disclaimer-text">
+          <strong>Disclaimer:</strong> This content is for demonstration
+          purposes only and does not represent an endorsement or partnership
+          with any specific tax authority
+        </p>
+      </div>
+    </div>
+  </body>
+</html>

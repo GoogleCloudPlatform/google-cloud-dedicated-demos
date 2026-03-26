@@ -1,0 +1,62 @@
+#
+# Copyright 2026 Google LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+CRYPTOCURRENCY INCOME DECLARATION POLICY
+
+Section 1: Cryptocurrency Income Reporting Requirements
+
+All taxpayers who hold cryptocurrency accounts on exchanges such as Binance, Coinbase, Kraken, Bitpanda, or any other digital asset platform are required to report any income generated from cryptocurrency transactions.
+
+Section 2: Definition of Cryptocurrency Income
+
+Cryptocurrency income includes but is not limited to:
+- Capital gains from selling, trading, or exchanging cryptocurrencies
+- Mining rewards and staking rewards
+- Airdrops and forks
+- Interest earned from lending or yield farming
+- Payment received in cryptocurrency for goods or services
+
+Section 3: Zero Declaration Violations
+
+Taxpayers who maintain verified cryptocurrency exchange accounts but declare zero cryptocurrency income are considered high-risk for tax evasion. This is especially true if:
+- The exchange account shows transaction activity during the tax year
+- The account has been verified for trading (KYC completed)
+- The taxpayer has a history of cryptocurrency transactions in previous years
+
+Section 4: Penalties for Non-Compliance
+
+Failure to accurately report cryptocurrency income may result in:
+- Tax assessments with penalties of up to 25% of the undeclared amount
+- Interest charges on unpaid taxes
+- Criminal prosecution in cases of willful tax evasion
+- Fines ranging from €5,000 to €50,000 depending on the severity
+
+Section 5: Record Keeping Requirements
+
+Taxpayers must maintain detailed records of all cryptocurrency transactions for at least 10 years, including:
+- Transaction dates and times
+- Purchase and sale prices in local currency
+- Exchange fees and transaction costs
+- Wallet addresses and exchange account statements
+- Records of private key transfers
+
+Section 6: Exchange Data Sharing
+
+Tax authorities have agreements with major cryptocurrency exchanges to share taxpayer data. Non-compliance will be detected through automated systems that cross-reference exchange data with tax declarations.
+
+Section 7: Voluntary Disclosure
+
+Taxpayers who have failed to report cryptocurrency income in previous years are encouraged to make voluntary disclosures. Reduced penalties may apply for voluntary compliance before detection.
