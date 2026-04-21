@@ -29,6 +29,16 @@ resource "google_compute_subnetwork" "tax_office_node_subnet" {
   ip_cidr_range = var.gke_node_cidr
 }
 
+resource "google_compute_subnetwork" "proxy_only_subnet" {
+  project       = var.project_id
+  region        = var.region
+  network       = google_compute_network.tax_office_network.self_link
+  name          = "${local.resource_prefix}-proxy-subnet"
+  ip_cidr_range = var.proxy_only_cidr
+  purpose       = "REGIONAL_MANAGED_PROXY"
+  role          = "ACTIVE"
+}
+
 resource "google_compute_router" "tax_office_router" {
   project = var.project_id
   name    = local.router_name

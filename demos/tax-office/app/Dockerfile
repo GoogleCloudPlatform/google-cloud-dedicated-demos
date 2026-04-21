@@ -27,26 +27,24 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
     FLASK_ENV=production
 
 # Install system dependencies
-RUN apt-get update && apt-get install -y \
+RUN apt-get update && apt-get install -y --no-install-recommends \
     gcc \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy requirements first for better caching
 COPY requirements.txt .
 
-# Install Python dependencies
-RUN pip install --no-cache-dir --require-hashes -r requirements.txt
-
-# Pre-download FastEmbed model during build
+# Install Python dependencies and pre-download FastEmbed model
 # This avoids runtime downloads and permission issues
-RUN python -c "from fastembed import TextEmbedding; TextEmbedding('sentence-transformers/all-MiniLM-L6-v2')"
+RUN pip install --no-cache-dir --require-hashes -r requirements.txt \
+    && python -c "from fastembed import TextEmbedding; TextEmbedding('sentence-transformers/all-MiniLM-L6-v2')"
 
 # Copy application code
 COPY . .
 
 # Create non-root user
-RUN groupadd -r appuser && useradd -r -g appuser appuser
-RUN chown -R appuser:appuser /app
+RUN groupadd -r appuser && useradd -r -g appuser appuser \
+    && chown -R appuser:appuser /app
 USER appuser
 
 # Expose port

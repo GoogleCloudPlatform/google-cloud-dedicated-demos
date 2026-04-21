@@ -14,10 +14,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
+---
 apiVersion: kustomize.config.k8s.io/v1alpha1
 kind: Component
-
 resources:
-    - tax-app-sa.yaml
-    - tax-app-deployment.yaml
-    - tax-app-service.yaml
+  - tax-app-deployment.yaml
+  - tax-app-ingress.yaml
+  - tax-app-sa.yaml
+  - tax-app-service.yaml

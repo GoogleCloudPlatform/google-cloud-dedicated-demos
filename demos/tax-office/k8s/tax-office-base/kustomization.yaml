@@ -14,19 +14,20 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
+---
 apiVersion: kustomize.config.k8s.io/v1beta1
 kind: Kustomization
 
 resources:
-- namespace.yaml
+  - namespace.yaml
 
 components:
-- vllm
-- jupyter
-- tax-app
+  - vllm
+  - jupyter
+  - tax-app
 
 secretGenerator:
-- name: hugging-face
-  namespace: tax-office-ns
-  files:
-  - hugging-face-token.yaml
+  - name: hugging-face
+    namespace: tax-office-ns
+    files:
+      - hugging-face-token.yaml

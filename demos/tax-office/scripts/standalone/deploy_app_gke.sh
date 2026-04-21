@@ -61,34 +61,34 @@ fi
 
 echo "=========================================="
 echo "GKE application deployment initiated."
-echo "Waiting for LoadBalancer IP address..."
+echo "Waiting for Ingress IP addresses..."
 echo "=========================================="
 
-# Wait for LoadBalancer IP address (check up to 5 minutes)
-APP_EXTERNAL_IP=""
-JUPYTER_EXTERNAL_IP=""
+# Wait for Ingress IP addresses (check up to 20 minutes)
+APP_INGRESS_IP=""
+JUPYTER_INGRESS_IP=""
 
-for i in {1..30}; do
+for i in {1..120}; do
     # Use -n tax-office-ns to ensure we look in the correct namespace
-    APP_EXTERNAL_IP=$(kubectl get service tax-office-app-service -n tax-office-ns -o=jsonpath='{.status.loadBalancer.ingress[0].ip}' 2>/dev/null)
-    JUPYTER_EXTERNAL_IP=$(kubectl get service jupyter-notebook-service -n tax-office-ns -o=jsonpath='{.status.loadBalancer.ingress[0].ip}' 2>/dev/null)
+    APP_INGRESS_IP=$(kubectl get ingress tax-app-ingress -n tax-office-ns -o=jsonpath='{.status.loadBalancer.ingress[0].ip}' 2>/dev/null)
+    JUPYTER_INGRESS_IP=$(kubectl get ingress jupyter-ingress -n tax-office-ns -o=jsonpath='{.status.loadBalancer.ingress[0].ip}' 2>/dev/null)
 
-    if [ -n "${APP_EXTERNAL_IP}" ] && [ -n "${JUPYTER_EXTERNAL_IP}" ]; then
-        echo "✅ External IPs assigned after $((i * 10)) seconds!"
+    if [ -n "${APP_INGRESS_IP}" ] && [ -n "${JUPYTER_INGRESS_IP}" ]; then
+        echo "✅ Ingress IPs assigned after $((i * 10)) seconds!"
         break
     fi
-    echo "Still waiting for LoadBalancer IPs... (Check ${i}/30)"
+    echo "Still waiting for Ingress IPs... (Check ${i}/120)"
     sleep 10
 done
 
-if [ -z "${APP_EXTERNAL_IP}" ] || [ -z "${JUPYTER_EXTERNAL_IP}" ]; then
-    echo "Timed out waiting for LoadBalancer IPs. Check your GKE services."
+if [ -z "${APP_INGRESS_IP}" ] || [ -z "${JUPYTER_INGRESS_IP}" ]; then
+    echo "Timed out waiting for Ingress IPs. Check your GKE ingresses."
     exit 1
 fi
 
 echo "=========================================="
 echo "Deployment Endpoints"
 echo "=========================================="
-echo "Tax Office Dashboard: http://${APP_EXTERNAL_IP}"
-echo "Jupyter Notebook:    http://${JUPYTER_EXTERNAL_IP}"
+echo "Tax Office Dashboard: http://${APP_INGRESS_IP}"
+echo "Jupyter Notebook:    http://${JUPYTER_INGRESS_IP}"
 echo "Dashboard Login: demo / demobq"

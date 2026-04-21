@@ -14,6 +14,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
+---
 # Deployment for the Jupyter Notebook application
 apiVersion: apps/v1
 kind: Deployment
@@ -33,60 +34,77 @@ spec:
         app: jupyter
     spec:
       serviceAccountName: jupyter-notebook-ksa
-      # Set fsGroup: 1000 to match the 'jovyan' user in the official Jupyter image
+      # Set fsGroup: 1000 to match the 'jovyan' user in the official Jupyter
+      # image
       securityContext:
         fsGroup: 1000
 
-      # --- Init Container to copy the default notebook(anomaly_detector.ipynb) from ConfigMap to PVC ---
+      # --- Init Container to copy the default notebook(anomaly_detector.ipynb)
+      # from ConfigMap to PVC ---
       initContainers:
-      - name: copy-welcome-notebook
-        image: busybox:1.36
-        resources:
-          requests:
-            cpu: "50m"
-            memory: "64Mi"
-        command: ['sh', '-c', 'cp /tmp/configmap-notebooks/anomaly_detector.ipynb /home/jovyan/anomaly_detector.ipynb && chown 1000:100 /home/jovyan/anomaly_detector.ipynb']
-        volumeMounts:
-        # Mount the writable PVC where the final file needs to live
-        - name: notebook-volume
-          mountPath: /home/jovyan
-        # Mount the read-only ConfigMap to a temporary location
-        - name: configmap-notebooks-volume
-          mountPath: /tmp/configmap-notebooks
+        - name: copy-welcome-notebook
+          image: busybox:1.36
+          resources:
+            requests:
+              cpu: "50m"
+              memory: "64Mi"
+          command:
+            - sh
+            - -c
+            - >-
+              cp /tmp/configmap-notebooks/anomaly_detector.ipynb
+              /home/jovyan/anomaly_detector.ipynb &&
+              chown 1000:100 /home/jovyan/anomaly_detector.ipynb
+          volumeMounts:
+            # Mount the writable PVC where the final file needs to live
+            - name: notebook-volume
+              mountPath: /home/jovyan
+            # Mount the read-only ConfigMap to a temporary location
+            - name: configmap-notebooks-volume
+              mountPath: /tmp/configmap-notebooks
 
       # --- Main Container ---
       containers:
-      - name: jupyter-container
-        image: docker.io/jupyter/base-notebook:x86_64-ubuntu-22.04
-        ports:
-        - containerPort: 8888
-        resources:
-          requests:
-            cpu: "500m"
-            memory: "1Gi"
-          limits:
-            cpu: "1"
-            memory: "2Gi"
-        env:
-        - name: JUPYTER_ENABLE_LAB
-          value: "yes"
-        - name: JUPYTER_Token # demobq
-          value: "argon2:$argon2id$v=19$m=10240,t=10,p=8$p490MJeztEo3GFH9VouZUg$3ryOxE77Gm4F8YpJ+eXglECdg1+4csvdDZyOjQz+m9A"
-        volumeMounts:
-        - name: notebook-volume
-          mountPath: /home/jovyan # The home directory for the 'jovyan' user
-        command: ["start-notebook.sh"]
-        args:
-        - "--NotebookApp.password=$(JUPYTER_Token)"
-        - "--NotebookApp.token=''"
+        - name: jupyter-container
+          image: docker.io/jupyter/base-notebook:x86_64-ubuntu-22.04
+          ports:
+            - containerPort: 8888
+          readinessProbe:
+            httpGet:
+              path: /login
+              port: 8888
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          resources:
+            requests:
+              cpu: "500m"
+              memory: "1Gi"
+            limits:
+              cpu: "1"
+              memory: "2Gi"
+          env:
+            - name: JUPYTER_ENABLE_LAB
+              value: "yes"
+            - name: JUPYTER_Token  # demobq
+              value: >-
+                argon2:$argon2id$v=19$m=10240,t=10,p=8$p490MJeztEo3GFH9VouZUg$3r
+                yOxE77Gm4F8YpJ+eXglECdg1+4csvdDZyOjQz+m9A
+          volumeMounts:
+            - name: notebook-volume
+              mountPath: /home/jovyan  # The home directory for 'jovyan' user
+          command: ["start-notebook.sh"]
+          args:
+            - "--NotebookApp.password=$(JUPYTER_Token)"
+            - "--NotebookApp.token=''"
+            - "--NotebookApp.trust_xheaders=True"
 
       volumes:
-      - name: notebook-volume
-        persistentVolumeClaim:
-          claimName: jupyter-notebook-pvc
-      - name: configmap-notebooks-volume
-        configMap:
-          name: jupyter-notebooks
-          items:
-          - key: anomaly_detector.ipynb
-            path: anomaly_detector.ipynb
+        - name: notebook-volume
+          persistentVolumeClaim:
+            claimName: jupyter-notebook-pvc
+        - name: configmap-notebooks-volume
+          configMap:
+            name: jupyter-notebooks
+            items:
+              - key: anomaly_detector.ipynb
+                path: anomaly_detector.ipynb

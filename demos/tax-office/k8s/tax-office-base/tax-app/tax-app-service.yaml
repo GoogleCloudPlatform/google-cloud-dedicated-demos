@@ -14,16 +14,19 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
+---
 apiVersion: v1
 kind: Service
 metadata:
   name: tax-office-app-service
   namespace: tax-office-ns
+  annotations:
+    cloud.google.com/neg: '{"ingress": true}'
 spec:
-  type: LoadBalancer
+  type: ClusterIP
   selector:
     app: tax-office-app
   ports:
-  - protocol: TCP
-    port: 80
-    targetPort: 5001
+    - protocol: TCP
+      port: 80
+      targetPort: 5001

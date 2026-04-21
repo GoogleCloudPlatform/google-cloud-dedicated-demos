@@ -14,6 +14,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
+---
 apiVersion: cloud.google.com/v1
 kind: ComputeClass
 metadata:
@@ -21,9 +22,9 @@ metadata:
   namespace: tax-office-ns
 spec:
   priorities:
-  - machineType: a3-edgegpu-8g-nolssd
-    gpu:
-      count: 8
-      type: nvidia-h100-80gb
+    - machineType: a3-edgegpu-8g-nolssd
+      gpu:
+        count: 8
+        type: nvidia-h100-80gb
   nodePoolAutoCreation:
     enabled: true

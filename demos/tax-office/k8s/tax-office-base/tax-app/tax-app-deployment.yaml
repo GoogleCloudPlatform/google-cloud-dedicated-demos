@@ -14,6 +14,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
+---
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -33,16 +34,23 @@ spec:
     spec:
       serviceAccountName: app-ksa
       containers:
-      - name: tax-office-container
-        # TODO: change it as parameter which should be potentially injected.
-        image: docker.pkg-berlin-build0.goog/eu0/svr-bigquery-demo/tax-office-app-registry/tax-office-app:latest
-        imagePullPolicy: Always
-        ports:
-        - containerPort: 5001
-        resources:
-          limits:
-            cpu: "500m"
-            memory: "512Mi"
-          requests:
-            cpu: "250m"
-            memory: "256Mi"
+        - name: tax-office-container
+          # TODO: change it as parameter which should be potentially injected.
+          image: >-
+            docker.pkg-berlin-build0.goog/eu0/svr-bigquery-demo/tax-office-app-registry/tax-office-app:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 5001
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 5001
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          resources:
+            limits:
+              cpu: "500m"
+              memory: "512Mi"
+            requests:
+              cpu: "250m"
+              memory: "256Mi"

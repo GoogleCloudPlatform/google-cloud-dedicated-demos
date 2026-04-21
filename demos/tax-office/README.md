@@ -11,32 +11,33 @@ database.
 
 ## **🚀 Core Components**
 
-| Component          | Technology             | Purpose                                                                                                  |
-|:-------------------|:-----------------------|:---------------------------------------------------------------------------------------------------------|
-| **Data**           | Python / Pandas        | Synthetic generation of tax declaration data (TRAINING and NEW\_FILING).                                 |
-| **Infrastructure** | **Terraform**          | Provisioning of VPC, GKE Autopilot, BigQuery, GCS, and Artifact Registry.                                |
-| **ML Model**       | **BigQuery ML**        | Logistic Regression model trained on historical tax data for anomaly prediction.                         |
-| **LLM Model**      | **Gemma**              | Gemma LLM model leveraged for enhancing Tax policy information.                                          |
-| **RAG database**   | **BigQuery Vector DB** | BigQuery's Vector database feature through vector search.                                                |
-| **APP**            | **Flask, GKE**         | Python web application providing a real-time view of anomaly predictions sourced directly from BigQuery. |
-| **Analysis**       | **Jupyter, GKE**       | Notebook environment pre-loaded with a Python notebook for deeper ML analysis and validation.            |
+| Component | Tech | Purpose |
+| :--- | :--- | :--- |
+| **Data** | Python | Generate tax data (TRAINING/NEW\_FILING). |
+| **Infra** | Terraform | Provision VPC, GKE, BQ, GCS, Registry. |
+| **Model** | BQ ML | Logistic Regression for anomaly detection. |
+| **LLM** | Gemma | Gemma for enhancing Tax policy info. |
+| **RAG** | Vector DB | BigQuery Vector Search feature. |
+| **APP** | Flask | Web app for prediction visualization. |
+| **Analysis** | Jupyter | Notebook for ML analysis/validation. |
 
 ## 📂 **Project Structure Overview**
 
-This table outlines the main directories within the project repository and their primary responsibilities.
+This table outlines the main directories within the project repository and
+their primary responsibilities.
 
-| Folder                       | Description                                                                                                                                                |
-|:-----------------------------|:-----------------------------------------------------------------------------------------------------------------------------------------------------------|
-| **scripts**                  | Contains all scripts necessary for **deploying** and **destroying** the infrastructure and applications.                                                   |
-| **app**                      | This is where all application-specific codes are saved, including **frontend**, **backend**, and the **data generator** for synthetic data.                |
-| **app/data/sample_policies** | This where we have some policy documents which you can use for creating embeddings.                                                                        |
-| **k8s**                      | Manages all **Kubernetes manifest files** using Kustomize. It also contains the first default **Jupyter notebook**, which can be used for training models. |
-| **terraform**                | All infrastructure-related **Terraform code** is saved here.                                                                                               |
-| **docs**                     | Readme specific files.                                                                                                                                     |
+| Folder | Description |
+| :--- | :--- |
+| **scripts** | Scripts for deployment and destruction. |
+| **app** | **Frontend**, **backend**, and **generator**. |
+| **policies** | Policy docs for creating embeddings. |
+| **k8s** | **Kubernetes manifest files** (Kustomize). |
+| **terraform** | Infrastructure-related **Terraform code**. |
+| **docs** | Readme specific files. |
 
 ## **👷‍♀️ Architecture diagram**
 
-![Tax Office](docs/tax%20office.png)
+![Tax Office](docs/tax_office.png)
 
 ## **🛠️ Prerequisites**
 
@@ -62,7 +63,7 @@ within your Google Cloud Project.
 
 1. Log in to GCP.
 
-   ```
+   ```bash
    gcloud auth login --login-config=/your_path/wif-login-config.json
    gcloud auth application-default login
    ```
@@ -71,33 +72,29 @@ within your Google Cloud Project.
    explicitly enabled within your GCP Project's console. This is necessary for
    managing project resources.
 
-   ```bash
-   gcloud services enable cloudresourcemanager.googleapis.com
-   ```
-
 3. Update Docker Image Registry Path in Kubernetes Deployment
 
-    ```
-     * File: 04-Taxoffice/k8s/tax-office-base/tax-app/tax-app-deployment.yaml
+    ```none
+     * File: k8s/tax-office-base/tax-app/tax-app-deployment.yaml
      * Change the image line to follow this pattern:
-       image: "docker.pkg-berlin-build0.goog/eu0/<just_your_prj_name_without_prefix>/tax-office-app-registry/tax-office-app:latest"
+       image: "docker.pkg-berlin-build0.goog/eu0/<prj_name>/tax-office-app-registry/tax-office-app:latest"
    ```
 
 4. Update Project ID in Jupyter Notebook
 
-    ```
-     * File: 04-Taxoffice/k8s/tax-office-base/jupyter/notebooks/default/anomaly_detector.ipynb
+    ```none
+     * File: k8s/tax-office-base/jupyter/notebooks/default/anomaly_detector.ipynb
      * Search for and update: PROJECT_ID = 'eu0:svr-bigquery-demo'
    ```
 
 5. Update Project ID in BigQuery Python Client
 
-    ```
-     * File: 04-Taxoffice/app/backend/bigquery_client.py
+    ```none
+     * File: app/backend/bigquery_client.py
      * Search for and update:** PROJECT_ID = 'eu0:svr-bigquery-demo'
     ```
 
-6. Before deployment, navigate to 04-Taxoffice/terraform and ensure the
+6. Before deployment, navigate to terraform and ensure the
    terraform.tfvars file contains the necessary cloud-specific variables
    (project_id, region, universe_domain, bucket_name, etc.). See
    default.auto.tfvars.example for reference. Pay special attention to the

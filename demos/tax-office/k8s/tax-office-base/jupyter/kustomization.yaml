@@ -14,23 +14,25 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
+---
 apiVersion: kustomize.config.k8s.io/v1alpha1
 kind: Component
 
 configMapGenerator:
-- name: jupyter-notebooks
-  namespace: tax-office-ns
-  files:
-  - notebooks/default/anomaly_detector.ipynb
-  options:
-    labels:
-      app: jupyter
+  - name: jupyter-notebooks
+    namespace: tax-office-ns
+    files:
+      - notebooks/default/anomaly_detector.ipynb
+    options:
+      labels:
+        app: jupyter
 
 generatorOptions:
   disableNameSuffixHash: true
 
 resources:
-    - jupyter-pvc.yaml
-    - jupyter-sa.yaml
-    - jupyter-deployment.yaml
-    - jupyter-service.yaml
+  - jupyter-deployment.yaml
+  - jupyter-ingress.yaml
+  - jupyter-pvc.yaml
+  - jupyter-sa.yaml
+  - jupyter-service.yaml

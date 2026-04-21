@@ -15,19 +15,21 @@
 # limitations under the License.
 #
 ---
-# Service to expose the Deployment
-apiVersion: v1
-kind: Service
+apiVersion: networking.k8s.io/v1
+kind: Ingress
 metadata:
-  name: jupyter-notebook-service
+  name: jupyter-ingress
   namespace: tax-office-ns
   annotations:
-    cloud.google.com/neg: '{"ingress": true}'
+    kubernetes.io/ingress.class: "gce-regional-external"
 spec:
-  selector:
-    app: jupyter
-  ports:
-    - protocol: TCP
-      port: 80
-      targetPort: 8888
-  type: ClusterIP
+  rules:
+    - http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: jupyter-notebook-service
+                port:
+                  number: 80

@@ -46,12 +46,14 @@ variable "project_services" {
   description = "Service APIs to enable on the project."
   type        = list(string)
   default = [
+    "artifactregistry.googleapis.com",
+    "bigquery.googleapis.com",
+    "cloudresourcemanager.googleapis.com",
     "compute.googleapis.com",
     "container.googleapis.com",
     "dns.googleapis.com",
-    "bigquery.googleapis.com",
-    "storage.googleapis.com",
-    "artifactregistry.googleapis.com"
+    "secretmanager.googleapis.com",
+    "storage.googleapis.com"
   ]
 }
 
@@ -87,6 +89,12 @@ variable "gke_node_cidr" {
   description = "CIDR range for the GKE node subnetwork."
   type        = string
   default     = "10.128.0.0/20"
+}
+
+variable "proxy_only_cidr" {
+  description = "CIDR range for the proxy-only subnetwork."
+  type        = string
+  default     = "10.129.0.0/20"
 }
 
 # --- 4. Data & Storage Configuration ---

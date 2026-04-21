@@ -14,6 +14,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
+---
 apiVersion: v1
 kind: Service
 metadata:
@@ -24,6 +25,6 @@ spec:
     app: gemma-server
   type: ClusterIP
   ports:
-  - protocol: TCP
-    port: 8000
-    targetPort: 8000
+    - protocol: TCP
+      port: 8000
+      targetPort: 8000
