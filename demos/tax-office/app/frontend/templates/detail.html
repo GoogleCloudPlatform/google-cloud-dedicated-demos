@@ -1,0 +1,477 @@
+<!--
+  ~ Copyright 2026 Google LLC
+  ~
+  ~ Licensed under the Apache License, Version 2.0 (the "License");
+  ~ you may not use this file except in compliance with the License.
+  ~ You may obtain a copy of the License at
+  ~
+  ~     https://www.apache.org/licenses/LICENSE-2.0
+  ~
+  ~
+  ~ Unless required by applicable law or agreed to in writing, software
+  ~ distributed under the License is distributed on an "AS IS" BASIS,
+  ~ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  ~ See the License for the specific language governing permissions and
+  ~ limitations under the License.
+  -->
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Tax Office - Taxpayer Detail</title>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Google+Sans:wght@400;500;700&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      href="https://fonts.googleapis.com/icon?family=Material+Icons"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='css/common.css') }}"
+    />
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='css/detail.css') }}"
+    />
+  </head>
+  <body>
+    <header class="header">
+      <div class="header-content">
+        <div class="header-left">
+          <a href="/dashboard" class="back-btn">
+            <span class="material-icons">arrow_back</span>
+            Back to Dashboard
+          </a>
+          <a href="/home" class="header-logo">
+            <span class="material-icons">cloud</span>
+          </a>
+          <div>
+            <h1>Taxpayer Details</h1>
+            <div class="header-location">
+              <span class="material-icons">place</span>
+              <span>Google Cloud Dedicated - Trusted Local Partner</span>
+            </div>
+          </div>
+        </div>
+        <div class="header-actions">
+          <a href="/policies" class="policies-btn">
+            <span class="material-icons">policy</span>
+            Policies
+          </a>
+          <div class="user-info">
+            <span class="material-icons">account_circle</span>
+            <span>{{ username }}</span>
+          </div>
+          <a href="/logout" class="logout-btn">
+            <span class="material-icons">logout</span>
+            Logout
+          </a>
+        </div>
+      </div>
+    </header>
+
+    <div class="container">
+      <div class="detail-header">
+        <h2>Taxpayer ID: <span id="taxpayer-id">{{ taxpayer_id }}</span></h2>
+        <p>
+          Declaration ID: <span id="declaration-id">{{ declaration_id }}</span>
+        </p>
+      </div>
+
+      <div id="loading" class="loading">Loading detailed information...</div>
+      <div id="error" class="error" style="display: none"></div>
+
+      <!-- Policy Violation Check Card (Only shows for anomalies) -->
+      <div id="policy-violation-section" style="display: none">
+        <div class="policy-violation-card">
+          <h3>
+            <span class="material-icons">gavel</span>
+            Policy Violation Analysis
+          </h3>
+          <div id="policy-violation-loading" class="policy-loading">
+            <div class="loading-spinner">
+              <span class="material-icons rotating">autorenew</span>
+            </div>
+            <div class="loading-text">
+              <strong>Analyzing transaction against policy database...</strong>
+              <p>Performing vector similarity search on uploaded policies</p>
+            </div>
+          </div>
+          <div id="policy-violation-content" style="display: none">
+            <div class="violation-header">
+              <div class="similarity-score">
+                <span class="similarity-label">Similarity Score:</span>
+                <span class="similarity-value" id="similarity-score"></span>
+              </div>
+            </div>
+            <div class="violation-description">
+              <h4>Violation Description:</h4>
+              <p id="query-description"></p>
+            </div>
+            <div class="violated-policy">
+              <div class="violated-policy-header">
+                <h4>Policy Document:</h4>
+                <div class="policy-metadata">
+                  <span class="policy-meta-item">
+                    <span class="material-icons">insert_drive_file</span>
+                    <span id="policy-filename">policy.txt</span>
+                  </span>
+                </div>
+              </div>
+              <button id="toggle-policy-btn" class="toggle-policy-btn">
+                <span class="material-icons">visibility</span>
+                <span>View Full Policy</span>
+              </button>
+              <div
+                id="policy-text-container"
+                class="policy-text-container"
+                style="display: none"
+              >
+                <pre id="violated-policy-text" class="policy-text"></pre>
+              </div>
+            </div>
+          </div>
+          <div
+            id="policy-violation-message"
+            class="policy-message"
+            style="display: none"
+          ></div>
+        </div>
+      </div>
+
+      <div id="detail-content" style="display: none">
+        <div class="detail-grid">
+          <!-- Basic Information Card -->
+          <div class="detail-card">
+            <h3>
+              <span class="material-icons detail-card-icon">person</span>
+              Basic Information
+            </h3>
+            <div class="detail-item">
+              <span class="detail-label">Taxpayer Type</span>
+              <span class="detail-value" id="taxpayer-type"></span>
+            </div>
+            <div class="detail-item">
+              <span class="detail-label">Tax Year</span>
+              <span class="detail-value" id="tax-year"></span>
+            </div>
+            <div class="detail-item">
+              <span class="detail-label">Industry Code</span>
+              <span class="detail-value" id="industry-code"></span>
+            </div>
+            <div class="detail-item">
+              <span class="detail-label">Address State</span>
+              <span class="detail-value" id="address-state"></span>
+            </div>
+            <div class="detail-item" id="individual-info" style="display: none">
+              <span class="detail-label">Name</span>
+              <span class="detail-value" id="full-name"></span>
+            </div>
+            <div class="detail-item" id="business-info" style="display: none">
+              <span class="detail-label">Company Name</span>
+              <span class="detail-value" id="company-name"></span>
+            </div>
+            <div class="detail-item" id="birth-date-info" style="display: none">
+              <span class="detail-label">Date of Birth</span>
+              <span class="detail-value" id="date-of-birth"></span>
+            </div>
+          </div>
+
+          <!-- Financial Information Card -->
+          <div class="detail-card">
+            <h3>
+              <span class="material-icons detail-card-icon"
+                >account_balance</span
+              >
+              Financial Information
+            </h3>
+            <div class="detail-item">
+              <span class="detail-label">Gross Income</span>
+              <span class="detail-value currency" id="gross-income"></span>
+            </div>
+            <div class="detail-item">
+              <span class="detail-label">Taxable Income</span>
+              <span class="detail-value currency" id="taxable-income"></span>
+            </div>
+            <div class="detail-item">
+              <span class="detail-label">Total Deductions</span>
+              <span class="detail-value currency" id="total-deductions"></span>
+            </div>
+            <div class="detail-item">
+              <span class="detail-label">Calculated Tax</span>
+              <span class="detail-value currency" id="calculated-tax"></span>
+            </div>
+            <div class="detail-item">
+              <span class="detail-label">Deduction Ratio</span>
+              <span class="detail-value" id="deduction-ratio"></span>
+              <div class="progress-bar">
+                <div class="progress-fill" id="deduction-ratio-bar"></div>
+              </div>
+            </div>
+            <div class="detail-item">
+              <span class="detail-label">Tax Ratio</span>
+              <span class="detail-value" id="tax-ratio"></span>
+              <div class="progress-bar">
+                <div class="progress-fill" id="tax-ratio-bar"></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Cryptocurrency Information Card -->
+          <div class="detail-card">
+            <h3>
+              <span class="material-icons detail-card-icon"
+                >currency_bitcoin</span
+              >
+              Cryptocurrency Information
+            </h3>
+            <div class="detail-item">
+              <span class="detail-label">Has Crypto Account</span>
+              <span class="detail-value" id="has-crypto-account"></span>
+            </div>
+            <div
+              class="detail-item"
+              id="crypto-exchange-info"
+              style="display: none"
+            >
+              <span class="detail-label">Exchange Name</span>
+              <span class="detail-value" id="crypto-exchange-name"></span>
+            </div>
+            <div
+              class="detail-item"
+              id="crypto-verified-info"
+              style="display: none"
+            >
+              <span class="detail-label">Account Verified Date</span>
+              <span
+                class="detail-value"
+                id="crypto-account-verified-date"
+              ></span>
+            </div>
+            <div class="detail-item">
+              <span class="detail-label">Declared Crypto Income</span>
+              <span
+                class="detail-value currency"
+                id="declared-crypto-income"
+              ></span>
+            </div>
+            <div class="detail-item">
+              <span class="detail-label">Transaction Count</span>
+              <span class="detail-value" id="crypto-transaction-count"></span>
+            </div>
+            <div class="detail-item">
+              <span class="detail-label">Previously Declared Crypto</span>
+              <span
+                class="detail-value"
+                id="has-declared-crypto-previously"
+              ></span>
+            </div>
+            <div class="detail-item">
+              <span class="detail-label">Crypto Non-Declarant</span>
+              <span class="detail-value" id="is-crypto-non-declarant"></span>
+            </div>
+            <div class="detail-item">
+              <span class="detail-label">Crypto Risk Score</span>
+              <span class="detail-value" id="crypto-risk-score"></span>
+              <div class="progress-bar">
+                <div class="progress-fill" id="crypto-risk-bar"></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Filing & Payment Behavior Card -->
+          <div class="detail-card">
+            <h3>
+              <span class="material-icons detail-card-icon">description</span>
+              Filing & Payment Behavior
+            </h3>
+            <div class="detail-item">
+              <span class="detail-label">Filing Date</span>
+              <span class="detail-value" id="filing-date"></span>
+            </div>
+            <div class="detail-item">
+              <span class="detail-label">Late Filing</span>
+              <span class="detail-value" id="is-late-filing"></span>
+            </div>
+            <div class="detail-item">
+              <span class="detail-label">Days Filing Delay</span>
+              <span class="detail-value" id="days-filing-delay"></span>
+            </div>
+            <div class="detail-item">
+              <span class="detail-label">Has Amendments</span>
+              <span class="detail-value" id="has-amendments"></span>
+            </div>
+            <div class="detail-item">
+              <span class="detail-label">Payment Date</span>
+              <span class="detail-value" id="payment-date"></span>
+            </div>
+            <div class="detail-item">
+              <span class="detail-label">Late Payment</span>
+              <span class="detail-value" id="is-late-payment"></span>
+            </div>
+            <div class="detail-item">
+              <span class="detail-label">Days Payment Delay</span>
+              <span class="detail-value" id="days-payment-delay"></span>
+            </div>
+          </div>
+
+          <!-- Historical Patterns Card -->
+          <div class="detail-card">
+            <h3>
+              <span class="material-icons detail-card-icon">timeline</span>
+              Historical Patterns
+            </h3>
+            <div class="detail-item">
+              <span class="detail-label">Late Filing Rate</span>
+              <span
+                class="detail-value percentage"
+                id="late-filing-rate"
+              ></span>
+              <div class="progress-bar">
+                <div class="progress-fill" id="late-filing-rate-bar"></div>
+              </div>
+            </div>
+            <div class="detail-item">
+              <span class="detail-label">Late Payment Rate</span>
+              <span
+                class="detail-value percentage"
+                id="late-payment-rate"
+              ></span>
+              <div class="progress-bar">
+                <div class="progress-fill" id="late-payment-rate-bar"></div>
+              </div>
+            </div>
+            <div class="detail-item">
+              <span class="detail-label">Amendment Rate</span>
+              <span class="detail-value percentage" id="amendment-rate"></span>
+              <div class="progress-bar">
+                <div class="progress-fill" id="amendment-rate-bar"></div>
+              </div>
+            </div>
+            <div class="detail-item">
+              <span class="detail-label">Income Volatility</span>
+              <span class="detail-value" id="income-volatility"></span>
+            </div>
+            <div class="detail-item">
+              <span class="detail-label">Avg Deduction Ratio</span>
+              <span class="detail-value" id="avg-deduction-ratio"></span>
+            </div>
+          </div>
+
+          <!-- Anomaly Detection Results Card -->
+          <div class="detail-card">
+            <h3>
+              <span class="material-icons detail-card-icon">warning</span>
+              Anomaly Detection Results
+            </h3>
+            <div class="detail-item">
+              <span class="detail-label">Is Anomaly</span>
+              <span class="detail-value" id="is-anomaly"></span>
+            </div>
+            <div
+              class="detail-item"
+              id="anomaly-type-info"
+              style="display: none"
+            >
+              <span class="detail-label">Anomaly Type</span>
+              <span class="detail-value" id="anomaly-type"></span>
+            </div>
+            <div class="detail-item">
+              <span class="detail-label">Anomaly Confidence</span>
+              <span
+                class="detail-value percentage"
+                id="anomaly-confidence"
+              ></span>
+              <div class="progress-bar">
+                <div class="progress-fill" id="anomaly-confidence-bar"></div>
+              </div>
+            </div>
+            <div class="detail-item">
+              <span class="detail-label">Data Source</span>
+              <span class="detail-value" id="data-source"></span>
+            </div>
+            <div class="detail-item">
+              <span class="detail-label">Created At</span>
+              <span class="detail-value" id="created-at"></span>
+            </div>
+            <div class="detail-item">
+              <span class="detail-label">Updated At</span>
+              <span class="detail-value" id="updated-at"></span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Chat Widget -->
+    <div id="chat-widget" class="chat-widget">
+      <div id="chat-toggle" class="chat-toggle">
+        <span class="material-icons">chat</span>
+      </div>
+      <div id="chat-container" class="chat-container" style="display: none">
+        <div class="chat-header">
+          <div class="chat-header-content">
+            <span class="material-icons">smart_toy</span>
+            <span>AI Assistant</span>
+          </div>
+          <button id="chat-close" class="chat-close-btn">
+            <span class="material-icons">close</span>
+          </button>
+        </div>
+        <div id="chat-messages" class="chat-messages">
+          <div class="chat-message bot-message">
+            <div class="message-content">
+              <p>
+                Hi! I'm your tax policy assistant. Ask me questions about tax
+                regulations, filing requirements, deductions, penalties, or any
+                tax-related topic. I'll use the policy documents and my
+                knowledge to help you understand.
+              </p>
+            </div>
+          </div>
+          <div class="quick-questions">
+            <button
+              class="quick-question-btn"
+              data-question="Summarize current violated policy"
+            >
+              <span class="material-icons">description</span>
+              Summarize current violated policy
+            </button>
+            <button
+              class="quick-question-btn"
+              data-question="What are the consequences of current violated policy?"
+            >
+              <span class="material-icons">warning</span>
+              What are the consequences of current violated policy?
+            </button>
+          </div>
+        </div>
+        <div class="chat-input-container">
+          <textarea
+            id="chat-input"
+            class="chat-input"
+            placeholder="Ask about this taxpayer..."
+            rows="1"
+          ></textarea>
+          <button id="chat-send" class="chat-send-btn">
+            <span class="material-icons">send</span>
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div class="page-disclaimer">
+      <p class="disclaimer-text">
+        This content is for demonstration purposes only and does not represent
+        an endorsement or partnership with any specific tax authority
+      </p>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/marked@11.1.1/marked.min.js"></script>
+    <script src="{{ url_for('static', filename='js/detail.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/chat.js') }}"></script>
+  </body>
+</html>

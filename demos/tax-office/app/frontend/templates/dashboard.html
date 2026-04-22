@@ -1,0 +1,161 @@
+<!--
+  ~ Copyright 2026 Google LLC
+  ~
+  ~ Licensed under the Apache License, Version 2.0 (the "License");
+  ~ you may not use this file except in compliance with the License.
+  ~ You may obtain a copy of the License at
+  ~
+  ~     https://www.apache.org/licenses/LICENSE-2.0
+  ~
+  ~
+  ~ Unless required by applicable law or agreed to in writing, software
+  ~ distributed under the License is distributed on an "AS IS" BASIS,
+  ~ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  ~ See the License for the specific language governing permissions and
+  ~ limitations under the License.
+  -->
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Tax Office - Predictions Dashboard</title>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Google+Sans:wght@400;500;700&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      href="https://fonts.googleapis.com/icon?family=Material+Icons"
+      rel="stylesheet"
+    />
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='css/common.css') }}"
+    />
+    <link
+      rel="stylesheet"
+      href="{{ url_for('static', filename='css/dashboard.css') }}"
+    />
+  </head>
+  <body>
+    <header class="header">
+      <div class="header-content">
+        <div class="header-left">
+          <a href="/home" class="header-logo">
+            <span class="material-icons">cloud</span>
+          </a>
+          <div>
+            <h1>Tax Office - Anomaly Predictions</h1>
+            <div class="header-location">
+              <span class="material-icons">place</span>
+              <span>Google Cloud Dedicated - Trusted Local Partner</span>
+            </div>
+          </div>
+        </div>
+        <div class="header-actions">
+          <a href="/policies" class="policies-btn">
+            <span class="material-icons">policy</span>
+            Policies
+          </a>
+          <div class="user-info">
+            <span class="material-icons">account_circle</span>
+            <span>{{ username }}</span>
+          </div>
+          <a href="/logout" class="logout-btn">
+            <span class="material-icons">logout</span>
+            Logout
+          </a>
+        </div>
+      </div>
+    </header>
+
+    <div class="container">
+      <!-- Statistics Cards -->
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-card-header">
+            <span class="material-icons stat-card-icon">assessment</span>
+            <h3>Total Predictions</h3>
+          </div>
+          <div class="stat-value" id="total-predictions">-</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-card-header">
+            <span class="material-icons stat-card-icon">warning</span>
+            <h3>Predicted Anomalies</h3>
+          </div>
+          <div class="stat-value" id="predicted-anomalies">-</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-card-header">
+            <span class="material-icons stat-card-icon">trending_up</span>
+            <h3>Average Probability</h3>
+          </div>
+          <div class="stat-value" id="avg-probability">-</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-card-header">
+            <span class="material-icons stat-card-icon">speed</span>
+            <h3>Max Probability</h3>
+          </div>
+          <div class="stat-value" id="max-probability">-</div>
+        </div>
+      </div>
+
+      <!-- Controls -->
+      <div class="controls">
+        <div class="controls-left">
+          <button id="refresh-btn" class="refresh-btn" onclick="refreshData()">
+            <span class="material-icons">refresh</span>
+            Refresh Now
+          </button>
+          <div class="auto-refresh">
+            <input type="checkbox" id="auto-refresh" checked />
+            <label for="auto-refresh">Auto-refresh (30s)</label>
+          </div>
+        </div>
+        <div class="controls-right">
+          <div class="last-updated">
+            Last updated: <span id="last-updated">Never</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Predictions Table -->
+      <div class="table-container">
+        <div class="table-header">
+          <h2>Anomaly Predictions</h2>
+          <p>
+            Real-time predictions from the ML model, sorted by anomaly
+            probability
+          </p>
+        </div>
+        <div class="table-wrapper">
+          <div id="loading" class="loading">Loading predictions...</div>
+          <div id="error" class="error" style="display: none"></div>
+          <table id="predictions-table" style="display: none">
+            <thead>
+              <tr>
+                <th>Taxpayer ID</th>
+                <th>Declaration ID</th>
+                <th>Predicted Anomaly</th>
+                <th>Probability</th>
+                <th>Last Updated</th>
+              </tr>
+            </thead>
+            <tbody id="predictions-tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <div class="page-disclaimer">
+      <p class="disclaimer-text">
+        This content is for demonstration purposes only and does not represent
+        an endorsement or partnership with any specific tax authority
+      </p>
+    </div>
+
+    <script src="{{ url_for('static', filename='js/dashboard.js') }}"></script>
+  </body>
+</html>

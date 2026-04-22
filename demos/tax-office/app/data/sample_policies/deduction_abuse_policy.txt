@@ -1,0 +1,114 @@
+#
+# Copyright 2026 Google LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+DEDUCTION ABUSE AND HIGH DEDUCTION RATIO POLICY
+
+Section 1: Normal Deduction Ranges
+
+Statistical analysis shows that legitimate deduction ratios typically fall within these ranges:
+- Individual taxpayers: 15-35% of gross income
+- Small businesses: 25-45% of gross income
+- Large corporations: 30-50% of gross income
+
+Deduction ratios exceeding 50% of gross income trigger automatic review procedures.
+
+Section 2: Common Deduction Abuse Patterns
+
+High-risk deduction patterns include:
+- Home office expenses exceeding 20% of rent/mortgage
+- Vehicle expenses without supporting business use documentation
+- Business meal deductions exceeding €50 per person per meal
+- Education expenses unrelated to current employment
+- Excessive charitable donations (over 20% of income)
+- Medical expenses without proper receipts and prescriptions
+- Work equipment purchases inconsistent with profession
+
+Section 3: Business Expense Documentation Requirements
+
+All business expense deductions require:
+- Original receipts or electronic records
+- Clear business purpose documentation
+- Proof of payment (bank statements, credit card statements)
+- Separation of private and business use for mixed-use items
+- Logbooks for vehicle and home office deductions
+- Contracts or invoices for service providers
+
+Section 4: Penalties for False Deductions
+
+Claiming false or exaggerated deductions results in:
+- Disallowance of the improper deduction
+- Reassessment of tax owed plus interest
+- Penalty of 10-40% of the underpaid tax amount
+- Potential criminal prosecution for fraud
+- Mandatory audits for the next 5 years
+
+Section 5: High Deduction Ratio Review Process
+
+When deduction ratios exceed normal ranges, taxpayers must provide:
+- Detailed explanation of each major deduction category
+- Complete documentation for all deductions over €1,000
+- Business records proving income and expense correlation
+- Third-party verification for large deductions
+- Comparative analysis with industry standards
+
+Failure to provide adequate documentation results in automatic disallowance of excessive deductions.
+
+Section 6: Industry-Specific Deduction Limits
+
+Certain industries have specific deduction guidelines:
+- IT consultants: Maximum 40% home office deduction
+- Sales professionals: Vehicle expenses capped at €0.30 per km
+- Healthcare professionals: Medical equipment depreciation over 5-10 years
+- Artists and freelancers: Project-specific expense correlation required
+- Real estate agents: Entertainment expenses limited to 70% deductibility
+
+Section 7: Red Flag Indicators
+
+The following patterns indicate potential deduction abuse:
+- Sudden increase in deductions year-over-year (>30%)
+- Deductions claimed in round numbers (suggesting estimates)
+- Missing receipts for deductions over €250
+- Deductions inconsistent with reported income level
+- Business losses claimed for 3+ consecutive years
+- Home office deduction for full-time office employees
+
+Section 8: Voluntary Correction Program
+
+Taxpayers who identify errors in claimed deductions may voluntarily correct their declarations within 4 years. Benefits include:
+- Reduced penalties (50% reduction)
+- No criminal prosecution
+- Avoidance of mandatory future audits
+- Installment payment options for amounts owed
+
+Section 9: Professional Tax Advisor Responsibility
+
+Tax advisors who consistently prepare declarations with excessive deductions face:
+- Professional license review
+- Liability for client penalties
+- Mandatory quality audits
+- Potential license suspension or revocation
+
+Section 10: Legitimate High Deduction Scenarios
+
+Certain circumstances justify high deduction ratios:
+- Start-up business expenses in first 3 years
+- Major business equipment purchases or renovations
+- Relocation expenses for job-related moves
+- Significant medical expenses with chronic illness documentation
+- Casualty losses from disasters
+- Alimony and child support payments
+
+These scenarios require comprehensive documentation and may still trigger review procedures.

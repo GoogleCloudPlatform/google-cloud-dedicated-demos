@@ -1,0 +1,137 @@
+#
+# Copyright 2026 Google LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+TAX PAYMENT DEADLINE AND LATE PAYMENT POLICY
+
+Section 1: Standard Payment Deadlines
+
+Tax payments are due according to the following schedule:
+- Income tax: Due within 4 weeks of tax assessment notice
+- Quarterly advance payments: Due on March 10, June 10, September 10, and December 10
+- VAT payments: Monthly or quarterly depending on business size
+- Business tax: Due in quarterly installments based on previous year assessment
+
+Section 2: Late Payment Interest
+
+Interest on late payments is calculated as follows:
+- 0.5% per month (6% per annum) on unpaid amounts
+- Interest begins accruing the day after the payment deadline
+- Interest is compounded monthly
+- No minimum interest threshold - interest applies to any unpaid amount
+- Interest charges are non-negotiable and non-waivable
+
+Section 3: Late Payment Penalties
+
+In addition to interest, late payments may incur:
+- Administrative penalty of 1% of unpaid tax for each month of delay
+- Collection fees and enforcement costs
+- Bank levy fees if direct seizure is required
+- Legal fees if court proceedings are initiated
+- Travel costs for in-person collection visits
+
+Section 4: Severe Late Payment Violations
+
+Payment delays exceeding 60 days are considered severe and trigger:
+- Automatic enforcement proceedings
+- Asset seizure authorization
+- Bank account garnishment
+- Wage garnishment for employed taxpayers
+- Property liens and forced sales
+- Travel restrictions for amounts over €10,000
+
+Section 5: Payment Plans and Installments
+
+Taxpayers experiencing genuine financial hardship may request payment plans:
+- Maximum duration of 36 months for amounts under €50,000
+- Extended plans up to 72 months for larger amounts with security
+- Interest continues to accrue during payment plan period
+- Monthly payments must be at least €100 or 10% of total, whichever is greater
+- Missed installment payments result in immediate plan cancellation
+- Collateral may be required for plans exceeding €25,000
+
+Section 6: Eligibility for Payment Plans
+
+Payment plan requests require:
+- Detailed financial disclosure (income, assets, liabilities)
+- Bank statements for previous 6 months
+- Proof of inability to pay full amount
+- Commitment to remain current on future tax obligations
+- Agreement to automatic bank debit for installments
+
+Payment plans are denied for taxpayers who:
+- Have defaulted on previous payment plans
+- Are under criminal tax investigation
+- Have undisclosed assets or income
+- Refuse to provide required financial documentation
+
+Section 7: Business Taxpayer Payment Requirements
+
+Business taxpayers face stricter payment enforcement:
+- Late payment may result in business license suspension
+- Directors become personally liable for unpaid corporate taxes
+- Insolvency proceedings may be initiated for chronic non-payment
+- Business bank accounts are priority targets for seizure
+- VAT late payment affects cross-border trading privileges
+
+Section 8: Repeat Late Payment Offenders
+
+Chronic late payers (3+ late payments in 24 months) face:
+- Mandatory security deposits for future tax obligations
+- Required quarterly advance payments increased by 25%
+- Loss of payment plan eligibility
+- Automatic asset lien registration
+- Enhanced audit scrutiny
+- Reporting to credit bureaus
+
+Section 9: Valid Reasons for Payment Delay
+
+Extensions may be granted for legitimate reasons:
+- Sudden unemployment with proof of job loss
+- Serious illness or hospitalization with medical documentation
+- Natural disaster or force majeure affecting assets
+- Bank errors with documentation
+- Identity theft or fraud affecting accounts
+
+Extension requests must be submitted before payment deadline with supporting evidence.
+
+Section 10: Voluntary Payment Incentives
+
+Taxpayers who consistently pay on time or early receive:
+- Reduced audit probability
+- Favorable consideration for future payment plan requests
+- Waiver of penalties for first-time late payment
+- Simplified procedures for future tax matters
+- Priority processing of tax refunds
+
+Section 11: Enforcement Hierarchy
+
+Tax authorities follow this enforcement progression:
+1. Payment reminder notice (5 days after deadline)
+2. Final demand letter (15 days after deadline)
+3. Notice of enforcement action (30 days after deadline)
+4. Bank account inquiry and garnishment (45 days)
+5. Asset seizure and property liens (60 days)
+6. Forced sale of assets and public auction (90 days)
+7. Criminal proceedings for willful evasion (120+ days)
+
+Section 12: International Taxpayers
+
+Non-resident taxpayers with tax obligations:
+- Must maintain local bank account for tax payments
+- Face immediate enforcement without reminder notices
+- May have travel restrictions imposed for unpaid taxes over €5,000
+- Subject to international tax collection agreements
+- Risk visa revocation and entry bans for chronic non-payment
