@@ -1,4 +1,3 @@
-#!/usr/bin/env bash
 #
 # Copyright 2026 Google LLC
 #
@@ -15,20 +14,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-set -eu
-
-BASE_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
-TF_DIR="$BASE_DIR/terraform"
-
-cd "$TF_DIR"
-
-terraform init -input=false
-terraform apply -auto-approve -input=false
-
-export GCP_PROJECT_ID=$(terraform output -raw project_id)
-export GKE_REGION=$(terraform output -raw region)
-export GKE_CLUSTER_NAME=$(terraform output -raw tax_office_cluster_name)
-export AR_REPO_NAME=$(terraform output -raw app_repository_id)
-export GCS_BUCKET_NAME=$(terraform output -raw tax_office_bucket_name)
-
-cd - >/dev/null
+project_id      = "REPLACE_ME"
+region          = "REPLACE_ME"
+universe_api_domain = "REPLACE_ME"

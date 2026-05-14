@@ -14,45 +14,55 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-"""
-Embedding Service for Policy Documents
+"""Embedding Service for Policy Documents.
+
 Uses fastembed for ultra-fast embedding generation with ONNX runtime
 """
 
-import numpy as np
-from fastembed import TextEmbedding
-from typing import List, Tuple
 import logging
+import os
+from typing import List, Tuple
+import fastembed
+import numpy as np
 
+TextEmbedding = fastembed.TextEmbedding
 logger = logging.getLogger(__name__)
+
+DEFAULT_MODEL = os.environ.get(
+  'EMBEDDING_MODEL_NAME', 'sentence-transformers/all-MiniLM-L6-v2'
+)
 
 
 class EmbeddingService:
-  """Service for generating embeddings using fastembed"""
+  """Service for generating embeddings using fastembed."""
 
-  def __init__(self, model_name: str = 'sentence-transformers/all-MiniLM-L6-v2'):
-    """
-    Initialize the embedding service
+  def __init__(self, model_name: str = DEFAULT_MODEL):
+    """Initialize the embedding service.
 
     Args:
         model_name: Name of the fastembed model
-                   'sentence-transformers/all-MiniLM-L6-v2' is fast and efficient (384 dimensions)
+          'sentence-transformers/all-MiniLM-L6-v2' is fast and efficient (384
+          dimensions)
     """
-    logger.info(f"Loading embedding model: {model_name}")
+    logger.info('Loading embedding model: %s', model_name)
 
     try:
       # Model is pre-downloaded during Docker build
       # No need for custom cache directory handling
       self.model = TextEmbedding(model_name=model_name)
       self.embedding_dim = 384  # Standard dimension for these models
-      logger.info(f"Model loaded successfully. Embedding dimension: {self.embedding_dim}")
+      logger.info(
+        'Model loaded successfully. Embedding dimension: %s',
+        self.embedding_dim,
+      )
     except Exception as e:
-      logger.error(f"Failed to load model: {e}")
-      raise RuntimeError(f"Failed to initialize embedding model: {e}")
+      logger.error('Failed to load model: %s', e)
+      raise RuntimeError(f'Failed to initialize embedding model: {e}') from e
 
-  def chunk_text(self, text: str, chunk_size: int = 500, overlap: int = 50) -> List[str]:
-    """
-    Split text into overlapping chunks
+  def chunk_text(
+    self, text: str, chunk_size: int = 500, overlap: int = 50
+  ) -> List[str]:
+    """Split text into overlapping chunks.
 
     Args:
         text: Input text to chunk
@@ -73,13 +83,12 @@ class EmbeddingService:
       if chunk:
         chunks.append(chunk)
 
-      start += (chunk_size - overlap)
+      start += chunk_size - overlap
 
     return chunks
 
   def generate_embeddings(self, texts: List[str]) -> np.ndarray:
-    """
-    Generate embeddings for a list of texts
+    """Generate embeddings for a list of texts.
 
     Args:
         texts: List of text strings
@@ -93,9 +102,8 @@ class EmbeddingService:
     embeddings = np.array(embeddings_list)
     return embeddings
 
-  def process_document(self, text: str) -> Tuple[List[str], List[np.ndarray]]:
-    """
-    Process a document by chunking and generating embeddings
+  def process_document(self, text: str) -> Tuple[List[str], np.ndarray]:
+    """Process a document by chunking and generating embeddings.
 
     Args:
         text: Document text
@@ -113,7 +121,7 @@ _embedding_service = None
 
 
 def get_embedding_service() -> EmbeddingService:
-  """Get or create the global embedding service instance"""
+  """Get or create the global embedding service instance."""
   global _embedding_service
   if _embedding_service is None:
     _embedding_service = EmbeddingService()

@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 #
 # Copyright 2026 Google LLC
 #
@@ -15,27 +15,11 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
+set -eu
 
-echo "Starting full Tax Office deployment..."
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-# --- 0. Data Generation ---
-echo "--- STEP 0: Generating Tax Data ---"
-source ./standalone/generate_data.sh
-if [ $? -ne 0 ]; then exit 1; fi
-
-# --- 1. Infrastructure Deployment ---
-echo "--- STEP 1: Deploying Infrastructure (Terraform) ---"
-source ./standalone/deploy_infra.sh
-if [ $? -ne 0 ]; then exit 1; fi
-
-# --- 2. Application Packaging & Push ---
-echo "--- STEP 2: Building and Pushing Docker Image ---"
-source ./standalone/deploy_app_image.sh
-if [ $? -ne 0 ]; then exit 1; fi
-
-# --- 3. GKE Application Deployment ---
-echo "--- STEP 3: Deploying Applications to GKE ---"
-source ./standalone/deploy_app_gke.sh
-if [ $? -ne 0 ]; then exit 1; fi
-
-echo "🎉 Full deployment finished successfully!"
+"$SCRIPT_DIR/standalone/generate_data.sh"
+"$SCRIPT_DIR/standalone/deploy_infra.sh"
+"$SCRIPT_DIR/standalone/deploy_app_image.sh"
+"$SCRIPT_DIR/standalone/deploy_app_gke.sh"

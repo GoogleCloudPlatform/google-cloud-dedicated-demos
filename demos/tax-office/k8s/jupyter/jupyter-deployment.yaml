@@ -86,9 +86,8 @@ spec:
             - name: JUPYTER_ENABLE_LAB
               value: "yes"
             - name: JUPYTER_Token  # demobq
-              value: >-
-                argon2:$argon2id$v=19$m=10240,t=10,p=8$p490MJeztEo3GFH9VouZUg$3r
-                yOxE77Gm4F8YpJ+eXglECdg1+4csvdDZyOjQz+m9A
+              value: "argon2:$argon2id$v=19$m=10240,t=10,p=8$p490MJeztEo3GFH9\
+                VouZUg$3ryOxE77Gm4F8YpJ+eXglECdg1+4csvdDZyOjQz+m9A"
           volumeMounts:
             - name: notebook-volume
               mountPath: /home/jovyan  # The home directory for 'jovyan' user

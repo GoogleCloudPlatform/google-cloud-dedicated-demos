@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 #
 # Copyright 2026 Google LLC
 #
@@ -15,73 +15,54 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
+set -eu
 
-# --- Configuration ---
-PYTHON_SCRIPT="../app/data_generator/generate_tax_data.py"
-OUTPUT_CSV="../terraform/assets/tax_office_data.csv"
-VENV_DIR=".venv"
-REQUIREMENTS_FILE="../app/requirements.txt"
+BASE_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 
-echo "=========================================="
-echo "1. Initializing Python Virtual Environment"
-echo "=========================================="
+# 1. Determine the data file path (Source of Truth: terraform/terraform.tfvars)
+TFVARS_FILE="$BASE_DIR/terraform/terraform.tfvars"
+DEFAULT_FILE_PATH="$BASE_DIR/app/data_generator/tax_office_data.csv"
+DATA_FILE_PATH=""
 
-# Check if python3 and venv module are available
-if ! command -v python3 &>/dev/null || ! python3 -m venv --help &>/dev/null; then
-    echo "❌ Error: 'python3' or 'python3-venv' is not installed or available on PATH."
-    echo "Please install Python 3 and the 'venv' module (e.g., sudo apt install python3-venv)."
-    exit 1
-fi
+if [ -f "$TFVARS_FILE" ]; then
+    # Extract value from tfvars, removing quotes and whitespace
+    EXTRACTED_PATH=$(grep -E '^\s*data_file_location\s*=' "$TFVARS_FILE" | cut -d'"' -f2 | xargs)
 
-# Create and activate a virtual environment
-if [ ! -d "${VENV_DIR}" ]; then
-    echo "Creating virtual environment at ${VENV_DIR}..."
-    python3 -m venv "${VENV_DIR}"
-fi
-source "${VENV_DIR}/bin/activate"
-echo "Virtual environment activated."
-
-echo "=========================================="
-echo "2. Installing Python Dependencies"
-echo "=========================================="
-
-# Check if the requirements file exists
-if [ ! -f "${REQUIREMENTS_FILE}" ]; then
-    echo "❌ Error: Requirements file not found at ${REQUIREMENTS_FILE}"
-    deactivate
-    exit 1
-fi
-
-# Install required packages using the -r flag for a requirements file
-echo "Checking and installing required packages from: ${REQUIREMENTS_FILE}..."
-
-if ! pip install --no-cache-dir --require-hashes -r "${REQUIREMENTS_FILE}"; then
-    echo "❌ Error: Failed to install Python dependencies. Check network connection or permissions."
-    deactivate
-    exit 1
-fi
-echo "Dependencies installed successfully."
-
-echo "=========================================="
-echo "3. Data Generation"
-echo "=========================================="
-
-if [ -f "${OUTPUT_CSV}" ]; then
-    echo "⚠️ Skipping data generation: Output file already exists at ${OUTPUT_CSV}"
-else
-    # Run the data generation script only if the file is NOT present
-    echo "Running data generation script..."
-    if ! python3 "${PYTHON_SCRIPT}" --output "${OUTPUT_CSV}"; then
-        echo "❌ Error: Failed to run the Python data generation script."
-        deactivate
-        exit 1
+    if [[ -n $EXTRACTED_PATH && $EXTRACTED_PATH != "REPLACE_ME" ]]; then
+        # If path is relative (e.g. starting with ../ or ./), resolve it relative to the terraform directory
+        if [[ $EXTRACTED_PATH == .* ]]; then
+            DATA_FILE_PATH=$(cd "$BASE_DIR/terraform" && realpath -m "$EXTRACTED_PATH")
+        else
+            DATA_FILE_PATH="$EXTRACTED_PATH"
+        fi
     fi
-
-    echo "✅ Data generation successful. File created at: ${OUTPUT_CSV}"
 fi
 
-echo "=========================================="
-echo "4. Cleanup"
-echo "=========================================="
-deactivate
-echo "Virtual environment deactivated."
+# Fallback to default if not found or still REPLACE_ME
+DATA_FILE_PATH="${DATA_FILE_PATH:-$DEFAULT_FILE_PATH}"
+
+# 2. Check if file exists (Task 6)
+if [ -f "$DATA_FILE_PATH" ]; then
+    echo "Data file already exists at: $DATA_FILE_PATH"
+    echo "Skipping generation."
+    exit 0
+fi
+
+echo "Data file not found. Starting generation process..."
+
+# 3. Environment setup
+VENV_DIR="$BASE_DIR/scripts/.venv"
+if [ ! -d "$VENV_DIR" ]; then
+    echo "Creating virtual environment..."
+    python3 -m venv "$VENV_DIR"
+fi
+
+source "$VENV_DIR/bin/activate"
+
+echo "Installing requirements..."
+pip install --no-cache-dir -r "$BASE_DIR/app/requirements.txt"
+
+# 4. Generate data
+echo "Generating data to: $DATA_FILE_PATH"
+mkdir -p "$(dirname "$DATA_FILE_PATH")"
+python3 "$BASE_DIR/app/data_generator/generate_tax_data.py" --output "$DATA_FILE_PATH"

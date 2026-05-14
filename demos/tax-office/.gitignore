@@ -1,2 +1,2 @@
-k8s/tax-office-base/hugging-face-token.yaml
-terraform/assets
+k8s/hugging-face-token.yaml
+*.csv

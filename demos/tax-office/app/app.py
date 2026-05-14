@@ -15,30 +15,37 @@
 # limitations under the License.
 #
 #!/usr/bin/env python3
-"""
-Tax Office Predictions Dashboard
+"""Tax Office Predictions Dashboard.
+
 Flask web application for monitoring tax anomaly predictions
 """
 
-from flask import Flask, render_template, request, redirect, url_for, session, jsonify
-from datetime import datetime
+import datetime
 import logging
 import os
-import requests
 from backend.bigquery_client import BigQueryClient
-from werkzeug.utils import secure_filename
 from backend.embedding_service import get_embedding_service
+from flask import Flask, jsonify, redirect, render_template, request, session, url_for
+import requests
+from werkzeug import utils
 
-app = Flask(__name__, template_folder='frontend/templates', static_folder='frontend/static')
-app.secret_key = 'tax_office_demo_secret_key_2024'
+secure_filename = utils.secure_filename
+Datetime = datetime.datetime
+
+app = Flask(
+  __name__,
+  template_folder='frontend/templates',
+  static_folder='frontend/static',
+)
+app.secret_key = os.environ.get('FLASK_SECRET_KEY', 'tax_office_demo_secret_key_2024')
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# Static credentials
-DEMO_USERNAME = 'demo'
-DEMO_PASSWORD = 'demobq'
+# Static credentials from env or defaults
+DEMO_USERNAME = os.environ.get('APP_USERNAME', 'demo')
+DEMO_PASSWORD = os.environ.get('APP_PASSWORD', 'demobq')  # pragma: allowlist secret
 
 LLM_SERVICE_URL = os.getenv('LLM_SERVICE_URL', 'http://llm-service:8000')
 # LLM_SERVICE_URL = os.getenv('LLM_SERVICE_URL', 'http://localhost:8000')
@@ -49,29 +56,33 @@ LLM_MODEL_NAME = os.getenv('LLM_MODEL_NAME', 'google/gemma-3-27b-it')
 bq_client = BigQueryClient()
 embedding_service = None  # Lazy load on first use
 
+
 def get_embedding_service_instance():
-  """Lazy load the embedding service"""
+  """Lazy load the embedding service."""
   global embedding_service
   if embedding_service is None:
     embedding_service = get_embedding_service()
   return embedding_service
 
+
 @app.route('/')
 def index():
-  """Landing page"""
+  """Landing page."""
   if 'authenticated' in session and session['authenticated']:
     return redirect(url_for('dashboard'))
   return render_template('index.html')
 
+
 @app.route('/home')
 def home():
-  """Home page - accessible by authenticated users"""
+  """Home page - accessible by authenticated users."""
   is_authenticated = 'authenticated' in session and session['authenticated']
   return render_template('index.html', is_authenticated=is_authenticated)
 
+
 @app.route('/login', methods=['GET', 'POST'])
 def login():
-  """Login page with static credentials"""
+  """Login page with static credentials."""
   if request.method == 'POST':
     username = request.form.get('username')
     password = request.form.get('password')
@@ -79,40 +90,44 @@ def login():
     if username == DEMO_USERNAME and password == DEMO_PASSWORD:
       session['authenticated'] = True
       session['username'] = username
-      logger.info(f"User {username} logged in successfully")
+      logger.info('User %s logged in successfully', username)
       return redirect(url_for('connecting'))
     else:
-      logger.warning(f"Failed login attempt for username: {username}")
+      logger.warning('Failed login attempt for username: %s', username)
       return render_template('login.html', error='Invalid credentials')
 
   return render_template('login.html')
 
+
 @app.route('/connecting')
 def connecting():
-  """Connection animation page"""
+  """Connection animation page."""
   if 'authenticated' not in session or not session['authenticated']:
     return redirect(url_for('login'))
 
   return render_template('connecting.html', username=session.get('username'))
 
+
 @app.route('/logout')
 def logout():
-  """Logout and clear session"""
+  """Logout and clear session."""
   session.clear()
-  logger.info("User logged out")
+  logger.info('User logged out')
   return redirect(url_for('index'))
+
 
 @app.route('/dashboard')
 def dashboard():
-  """Main dashboard showing predictions"""
+  """Main dashboard showing predictions."""
   if 'authenticated' not in session or not session['authenticated']:
     return redirect(url_for('login'))
 
   return render_template('dashboard.html', username=session.get('username'))
 
+
 @app.route('/api/predictions')
 def api_predictions():
-  """API endpoint to fetch predictions data"""
+  """API endpoint to fetch predictions data."""
   if 'authenticated' not in session or not session['authenticated']:
     return jsonify({'error': 'Not authenticated'}), 401
 
@@ -120,15 +135,18 @@ def api_predictions():
   predictions = bq_client.get_predictions(limit)
   stats = bq_client.get_stats()
 
-  return jsonify({
+  return jsonify(
+    {
       'predictions': predictions,
       'stats': stats,
-      'timestamp': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-  })
+      'timestamp': Datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+    }
+  )
+
 
 @app.route('/api/detail/<taxpayer_id>/<declaration_id>')
 def api_detailed_data(taxpayer_id, declaration_id):
-  """API endpoint to fetch detailed data for a specific record"""
+  """API endpoint to fetch detailed data for a specific record."""
   if 'authenticated' not in session or not session['authenticated']:
     return jsonify({'error': 'Not authenticated'}), 401
 
@@ -137,42 +155,50 @@ def api_detailed_data(taxpayer_id, declaration_id):
   if detailed_data is None:
     return jsonify({'error': 'Record not found'}), 404
 
-  return jsonify({
+  return jsonify(
+    {
       'data': detailed_data,
-      'timestamp': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-  })
+      'timestamp': Datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+    }
+  )
+
 
 @app.route('/detail/<taxpayer_id>/<declaration_id>')
 def detail_page(taxpayer_id, declaration_id):
-  """Detailed view page for a specific taxpayer and declaration"""
+  """Detailed view page for a specific taxpayer and declaration."""
   if 'authenticated' not in session or not session['authenticated']:
     return redirect(url_for('login'))
 
-  return render_template('detail.html',
-                         username=session.get('username'),
-                         taxpayer_id=taxpayer_id,
-                         declaration_id=declaration_id)
+  return render_template(
+    'detail.html',
+    username=session.get('username'),
+    taxpayer_id=taxpayer_id,
+    declaration_id=declaration_id,
+  )
+
 
 @app.route('/policies')
 def policies_page():
-  """Policy management page"""
+  """Policy management page."""
   if 'authenticated' not in session or not session['authenticated']:
     return redirect(url_for('login'))
 
   return render_template('policies.html', username=session.get('username'))
 
+
 @app.route('/api/policies', methods=['GET'])
 def api_get_policies():
-  """Get all uploaded policies"""
+  """Get all uploaded policies."""
   if 'authenticated' not in session or not session['authenticated']:
     return jsonify({'error': 'Not authenticated'}), 401
 
   policies = bq_client.get_policies()
   return jsonify(policies)
 
+
 @app.route('/api/policies/upload', methods=['POST'])
 def api_upload_policy():
-  """Upload a policy file and generate embeddings"""
+  """Upload a policy file and generate embeddings."""
   if 'authenticated' not in session or not session['authenticated']:
     return jsonify({'error': 'Not authenticated'}), 401
 
@@ -208,40 +234,39 @@ def api_upload_policy():
     # Save embeddings
     bq_client.save_policy_embeddings(policy_id, chunks, embeddings_list)
 
-    logger.info(f"Successfully uploaded policy {filename} with {len(chunks)} chunks")
+    logger.info('Successfully uploaded policy %s with %d chunks', filename, len(chunks))
 
-    return jsonify({
-      'success': True,
-      'filename': filename,
-      'policy_id': policy_id,
-      'chunks': len(chunks)
-    })
+    return jsonify(
+      {
+        'success': True,
+        'filename': filename,
+        'policy_id': policy_id,
+        'chunks': len(chunks),
+      }
+    )
 
   except Exception as e:
-    logger.error(f"Error uploading policy: {e}")
+    logger.error('Error uploading policy: %s', e)
     return jsonify({'error': str(e)}), 500
 
-@app.route('/api/policies/<policy_id>', methods=['DELETE'])
+
+@app.route('/api/policies/<policy_id>/delete', methods=['POST'])
 def api_delete_policy(policy_id):
-  """Delete a policy"""
-  if 'authenticated' not in session or not session['authenticated']:
-    return jsonify({'error': 'Not authenticated'}), 401
+  """Delete a policy."""
+  try:
+    if 'authenticated' not in session or not session['authenticated']:
+      return jsonify({'error': 'Not authenticated'}), 401
 
-  success = bq_client.delete_policy(policy_id)
+    bq_client.delete_policy(policy_id)
+    return jsonify({'success': True, 'message': 'Policy deleted successfully'})
+  except Exception as e:
+    logger.error('Error in api_delete_policy: %s', e)
+    return jsonify({'error': str(e)}), 500
 
-  if success:
-    return jsonify({
-      'success': True,
-      'message': 'Policy deleted successfully'
-    })
-  else:
-    return jsonify({
-      'error': 'Failed to delete policy.'
-    }), 500
 
 @app.route('/api/similarity/<taxpayer_id>/<declaration_id>', methods=['GET'])
 def api_check_similarity(taxpayer_id, declaration_id):
-  """Check policy similarity for an anomaly"""
+  """Check policy similarity for an anomaly."""
   if 'authenticated' not in session or not session['authenticated']:
     return jsonify({'error': 'Not authenticated'}), 401
 
@@ -255,32 +280,47 @@ def api_check_similarity(taxpayer_id, declaration_id):
     # Get prediction data to check predicted_is_anomaly
     prediction_data = bq_client.get_prediction_for_taxpayer(taxpayer_id, declaration_id)
 
-    logger.info(f"Checking similarity for {taxpayer_id}/{declaration_id}")
-    logger.info(f"Prediction data: {prediction_data}")
+    logger.info('Checking similarity for %s/%s', taxpayer_id, declaration_id)
+    logger.info('Prediction data: %s', prediction_data)
 
     # Only check similarity if it's predicted as anomaly
     if not prediction_data or not prediction_data.get('predicted_is_anomaly'):
-      logger.info("Not an anomaly, skipping similarity check")
-      return jsonify({
-        'is_anomaly': False,
-        'message': 'No policy violation check needed for normal transactions'
-      })
+      logger.info('Not an anomaly, skipping similarity check')
+      return jsonify(
+        {
+          'is_anomaly': False,
+          'message': 'No policy violation check needed for normal transactions',
+        }
+      )
 
     # Get embedding service
     emb_service = get_embedding_service_instance()
 
     # Create query text from detailed data
     query_parts = []
-    if detailed_data.get('has_crypto_account') and detailed_data.get('declared_crypto_income', 0) == 0:
-      query_parts.append(f"Taxpayer has cryptocurrency account on {detailed_data.get('crypto_exchange_name', 'unknown exchange')} but declared zero crypto income")
+    if (
+      detailed_data.get('has_crypto_account')
+      and detailed_data.get('declared_crypto_income', 0) == 0
+    ):
+      query_parts.append(
+        'Taxpayer has cryptocurrency account on'
+        f' {detailed_data.get("crypto_exchange_name", "unknown exchange")}'
+        ' but declared zero crypto income'
+      )
     if detailed_data.get('is_late_filing'):
-      query_parts.append(f"Late filing by {detailed_data.get('days_filing_delay', 0)} days")
+      query_parts.append(
+        f'Late filing by {detailed_data.get("days_filing_delay", 0)} days'
+      )
     if detailed_data.get('is_late_payment'):
-      query_parts.append(f"Late payment by {detailed_data.get('days_payment_delay', 0)} days")
+      query_parts.append(
+        f'Late payment by {detailed_data.get("days_payment_delay", 0)} days'
+      )
     if detailed_data.get('deduction_ratio', 0) > 0.5:
-      query_parts.append(f"High deduction ratio of {detailed_data.get('deduction_ratio', 0):.2%}")
+      query_parts.append(
+        f'High deduction ratio of {detailed_data.get("deduction_ratio", 0):.2%}'
+      )
 
-    query_text = ". ".join(query_parts) if query_parts else "Tax anomaly detected"
+    query_text = '. '.join(query_parts) if query_parts else 'Tax anomaly detected'
 
     # Get query embedding
     query_embedding = emb_service.generate_embeddings([query_text])[0]
@@ -289,31 +329,36 @@ def api_check_similarity(taxpayer_id, declaration_id):
     result = bq_client.vector_search_similar_policy(query_embedding.tolist(), top_k=10)
 
     if not result:
-      return jsonify({
-        'is_anomaly': True,
-        'similarity': None,
-        'message': 'No policies found for similar to this violation'
-      })
+      return jsonify(
+        {
+          'is_anomaly': True,
+          'similarity': None,
+          'message': 'No policies found for similar to this violation',
+        }
+      )
 
     # Use VECTOR_SEARCH result with full policy
     # Return both the matched chunk (for display) and full policy (for context)
-    return jsonify({
-      'is_anomaly': True,
-      'similarity_score': result['similarity_score'],
-      'violated_policy': result['text_chunk'],        # Matched chunk for display
-      'full_policy': result['full_policy'],           # Complete policy document
-      'policy_filename': result['filename'],          # Policy filename
-      'matched_chunk_index': result['chunk_index'],   # Position of match
-      'query_description': query_text
-    })
+    return jsonify(
+      {
+        'is_anomaly': True,
+        'similarity_score': result['similarity_score'],
+        'violated_policy': result['text_chunk'],  # Matched chunk for display
+        'full_policy': result['full_policy'],  # Complete policy document
+        'policy_filename': result['filename'],  # Policy filename
+        'matched_chunk_index': result['chunk_index'],  # Position of match
+        'query_description': query_text,
+      }
+    )
 
   except Exception as e:
-    logger.error(f"Error checking similarity: {e}")
+    logger.error('Error checking similarity: %s', e)
     return jsonify({'error': str(e)}), 500
+
 
 @app.route('/api/llm/chat', methods=['POST'])
 def api_llm_chat():
-  """Chat endpoint that forwards requests to the LLM service"""
+  """Chat endpoint that forwards requests to the LLM service."""
   if 'authenticated' not in session or not session['authenticated']:
     return jsonify({'error': 'Not authenticated'}), 401
 
@@ -337,46 +382,56 @@ Your responses should be:
 - Concise but thorough"""
 
     # Build context section
-    context_section = ""
+    context_section = ''
     if policy_context and policy_context.get('content'):
-      context_section = f"\n\nPolicy Document ({policy_context.get('filename', 'Unknown')}):\n{policy_context['content']}\n"
+      context_section = (
+        '\n\nPolicy Document'
+        f' ({policy_context.get("filename", "Unknown")}):\n{policy_context["content"]}\n'
+      )
 
     # Build conversation history
-    history_text = ""
+    history_text = ''
     if history:
       for msg in history[-6:]:  # Include last 6 messages for context
         role = msg.get('role', 'user')
         content = msg.get('content', '')
         if role == 'user':
-          history_text += f"\nUser: {content}"
+          history_text += f'\nUser: {content}'
         elif role == 'assistant':
-          history_text += f"\nAssistant: {content}"
+          history_text += f'\nAssistant: {content}'
 
     # Construct the full prompt
-    full_prompt = f"{system_prompt}{context_section}{history_text}\n\nUser: {message}\n\nAssistant:"
+    full_prompt = (
+      f'{system_prompt}{context_section}{history_text}\n\nUser: {message}\n\nAssistant:'
+    )
 
     # Prepare request to LLM service
     llm_request = {
-      "model": LLM_MODEL_NAME,
-      "prompt": full_prompt,
-      "max_tokens": 10000,
-      "temperature": 0.7,
-      "top_p": 0.9,
-      "stop": ["User:", "\n\nUser:"]
+      'model': LLM_MODEL_NAME,
+      'prompt': full_prompt,
+      'max_tokens': 10000,
+      'temperature': 0.7,
+      'top_p': 0.9,
+      'stop': ['User:', '\n\nUser:'],
     }
 
-    logger.info(f"Sending request to LLM service at {LLM_SERVICE_URL}")
+    logger.info('Sending request to LLM service at %s', LLM_SERVICE_URL)
 
     # Send request to vLLM service
     response = requests.post(
-      f"{LLM_SERVICE_URL}/v1/completions",
-      json=llm_request,
-      timeout=30
+      f'{LLM_SERVICE_URL}/v1/completions', json=llm_request, timeout=30
     )
 
     if not response.ok:
-      logger.error(f"LLM service returned error: {response.status_code} - {response.text}")
-      return jsonify({'error': f'LLM service error: {response.status_code}'}), 500
+      logger.error(
+        'LLM service returned error: %s - %s',
+        response.status_code,
+        response.text,
+      )
+      return (
+        jsonify({'error': f'LLM service error: {response.status_code}'}),
+        500,
+      )
 
     llm_response = response.json()
 
@@ -384,32 +439,38 @@ Your responses should be:
     if 'choices' in llm_response and len(llm_response['choices']) > 0:
       assistant_response = llm_response['choices'][0]['text'].strip()
 
-      return jsonify({
-        'response': assistant_response,
-        'model': LLM_MODEL_NAME
-      })
+      return jsonify({'response': assistant_response, 'model': LLM_MODEL_NAME})
     else:
-      logger.error(f"Unexpected LLM response format: {llm_response}")
+      logger.error('Unexpected LLM response format: %s', llm_response)
       return jsonify({'error': 'Invalid response from LLM service'}), 500
 
   except requests.exceptions.Timeout:
-    logger.error("LLM service request timed out")
+    logger.error('LLM service request timed out')
     return jsonify({'error': 'Request to LLM service timed out'}), 504
   except requests.exceptions.ConnectionError:
-    logger.error(f"Could not connect to LLM service at {LLM_SERVICE_URL}")
-    return jsonify({'error': 'Could not connect to LLM service. Please ensure it is running.'}), 503
+    logger.error('Could not connect to LLM service at %s', LLM_SERVICE_URL)
+    return (
+      jsonify(
+        {'error': ('Could not connect to LLM service. Please ensure it is running.')}
+      ),
+      503,
+    )
   except Exception as e:
-    logger.error(f"Error in chat endpoint: {e}")
+    logger.error('Error in chat endpoint: %s', e)
     return jsonify({'error': str(e)}), 500
+
 
 @app.route('/health')
 def health():
-  """Health check endpoint"""
-  return jsonify({
+  """Health check endpoint."""
+  return jsonify(
+    {
       'status': 'healthy',
       'bigquery_connected': bq_client.client is not None,
-      'timestamp': datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-  })
+      'timestamp': Datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
+    }
+  )
+
 
 if __name__ == '__main__':
   app.run(debug=True, host='0.0.0.0', port=5001)

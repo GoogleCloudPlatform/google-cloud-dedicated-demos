@@ -14,16 +14,21 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-"""
-SQL Queries for Tax Office Application
-"""
+"""SQL Queries for Tax Office Application."""
+
+import os
 
 # BigQuery Resources
-DATASET = "tax_office_dataset"
-TABLE_ALL_DATA = f"`{DATASET}.tax_data_table`"
-TABLE_PREDICTIONS = f"`{DATASET}.predictions`"
-TABLE_POLICIES = f"`{DATASET}.policies`"
-TABLE_POLICY_EMBEDDINGS = f"`{DATASET}.policy_embeddings`"
+DATASET = os.environ.get('DATASET_ID', 'tax_office_dataset')
+TAX_TABLE = os.environ.get('TAX_TABLE_ID', 'tax_data_table')
+PREDICTIONS_TABLE = os.environ.get('PREDICTIONS_TABLE_ID', 'predictions')
+POLICIES_TABLE = os.environ.get('POLICY_TABLE_ID', 'policies')
+EMBEDDINGS_TABLE = os.environ.get('POLICY_EMBEDDINGS_TABLE_ID', 'policy_embeddings')
+
+TABLE_ALL_DATA = f'`{DATASET}.{TAX_TABLE}`'
+TABLE_PREDICTIONS = f'`{DATASET}.{PREDICTIONS_TABLE}`'
+TABLE_POLICIES = f'`{DATASET}.{POLICIES_TABLE}`'
+TABLE_POLICY_EMBEDDINGS = f'`{DATASET}.{EMBEDDINGS_TABLE}`'
 
 # Predictions query
 PREDICTIONS_QUERY = f"""

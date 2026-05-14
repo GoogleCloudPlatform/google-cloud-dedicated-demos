@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 #
 # Copyright 2026 Google LLC
 #
@@ -15,50 +15,30 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
+set -euo pipefail
 
-ARTIFACT_REGISTRY_HOST="docker.pkg-berlin-build0.goog"
-LOCAL_IMAGE_NAME="tax-office-app"
-LOCAL_IMAGE_TAG="latest"
-LOCAL_IMAGE="${LOCAL_IMAGE_NAME}:${LOCAL_IMAGE_TAG}"
-REMOTE_IMAGE_TAG="latest"
-APP_CONTEXT_PATH="../app/."
+BASE_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+TF_DIR="$BASE_DIR/terraform"
 
-REMOTE_IMAGE="${ARTIFACT_REGISTRY_HOST}/${GCP_PROJECT_ID/://}/${AR_REPO_NAME}/${LOCAL_IMAGE_NAME}:${REMOTE_IMAGE_TAG}"
+GCP_PROJECT_ID="${GCP_PROJECT_ID:-$(terraform -chdir="$TF_DIR" output -raw project_id)}"
+AR_REPO_NAME="${AR_REPO_NAME:-$(terraform -chdir="$TF_DIR" output -raw app_repository_id)}"
+UNIVERSE_DOMAIN="${UNIVERSE_DOMAIN:-$(terraform -chdir="$TF_DIR" output -raw universe_api_domain)}"
 
-# --- Execution Steps ---
-echo "=========================================="
-echo "0. Docker Daemon Check"
-echo "=========================================="
-if ! docker info &>/dev/null; then
-    echo "❌ Error: Cannot connect to the Docker daemon or permission denied."
-    echo "🚨 ACTION REQUIRED: If you see 'permission denied', run 'sudo usermod -aG docker $USER' and then 'newgrp docker' or re-login."
-    exit 1
-fi
+# Derive registry host: replace 'apis-' with 'pkg-' in the universe domain if it exists
+# Example: apis-berlin-build0.goog -> docker.pkg-berlin-build0.goog
+REGISTRY_DOMAIN="${UNIVERSE_DOMAIN/apis-/pkg-}"
+REGISTRY_HOST="${REGISTRY_HOST:-docker.$REGISTRY_DOMAIN}"
+IMAGE_NAME="tax-office-app"
+TAG="latest"
 
-echo "1. Explicitly logging in to Artifact Registry host: ${ARTIFACT_REGISTRY_HOST}"
-if ! gcloud auth print-access-token | docker login -u oauth2accesstoken --password-stdin "${ARTIFACT_REGISTRY_HOST}"; then
-    echo "Error: Failed to explicitly log in to Docker registry."
-    exit 1
-fi
-echo "Docker authentication configured successfully."
+PROJECT_PATH="${GCP_PROJECT_ID/://}"
+REMOTE_IMAGE="${REGISTRY_HOST}/${PROJECT_PATH}/${AR_REPO_NAME}/${IMAGE_NAME}:${TAG}"
 
-echo "2. Building local Docker image: ${LOCAL_IMAGE} from context: ${APP_CONTEXT_PATH}"
-if ! docker build -t "${LOCAL_IMAGE}" "${APP_CONTEXT_PATH}"; then
-    echo "Error: Failed to build Docker image."
-    exit 1
-fi
-echo "Image built successfully."
+echo "Building and pushing image to $REMOTE_IMAGE..."
 
-echo "3. Tagging local image ${LOCAL_IMAGE} with remote path: ${REMOTE_IMAGE}"
-if ! docker tag "${LOCAL_IMAGE}" "${REMOTE_IMAGE}"; then
-    echo "Error: Failed to tag Docker image."
-    exit 1
-fi
-echo "Image tagged successfully."
+docker info >/dev/null
+gcloud auth print-access-token | docker login -u oauth2accesstoken --password-stdin "$REGISTRY_HOST"
 
-echo "4. Pushing image to Artifact Registry..."
-if ! docker push "${REMOTE_IMAGE}"; then
-    echo "Error: Failed to push Docker image to ${ARTIFACT_REGISTRY_HOST}."
-    exit 1
-fi
-echo "Image push successful! Remote image is available at: ${REMOTE_IMAGE}"
+docker build -t "$IMAGE_NAME:$TAG" "$BASE_DIR/app"
+docker tag "$IMAGE_NAME:$TAG" "$REMOTE_IMAGE"
+docker push "$REMOTE_IMAGE"

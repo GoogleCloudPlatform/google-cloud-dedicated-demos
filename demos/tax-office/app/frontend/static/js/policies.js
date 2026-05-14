@@ -213,11 +213,21 @@ async function executePolicyDelete(policyId) {
   showLoadingOverlay("Deleting Policy", "Removing policy and embeddings...");
 
   try {
-    const response = await fetch(`/api/policies/${policyId}`, {
-      method: "DELETE",
+    const response = await fetch(`/api/policies/${policyId}/delete`, {
+      method: "POST",
     });
 
-    const result = await response.json();
+    // Check if response is JSON before parsing to avoid "Unexpected token <" error
+    const contentType = response.headers.get("content-type");
+    let result;
+    if (contentType && contentType.includes("application/json")) {
+      result = await response.json();
+    } else {
+      // If not JSON, it's likely an HTML error page from a proxy/WAF
+      throw new Error(
+        `Server returned non-JSON response (${response.status} ${response.statusText}). The request might be blocked by infrastructure.`,
+      );
+    }
 
     if (!response.ok) {
       throw new Error(result.error || "Failed to delete policy");

@@ -24,9 +24,9 @@ output "region" {
   value       = var.region
 }
 
-output "universe_domain" {
-  description = "The configured Sovereign Universe domain."
-  value       = var.universe_domain
+output "universe_api_domain" {
+  description = "The configured Sovereign Universe API domain."
+  value       = var.universe_api_domain
 }
 
 output "tax_office_cluster_name" {
@@ -42,4 +42,20 @@ output "tax_office_bucket_name" {
 output "app_repository_id" {
   description = "The ID of the Artifact Registry repository."
   value       = google_artifact_registry_repository.docker_registry.repository_id
+}
+
+output "dataset_id" {
+  value = var.dataset_id
+}
+
+output "tax_table_id" {
+  value = var.tax_table_id
+}
+
+output "policy_table_id" {
+  value = var.policy_table_id
+}
+
+output "policy_embeddings_table_id" {
+  value = var.policy_embeddings_table_id
 }

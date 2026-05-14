@@ -38,7 +38,7 @@ locals {
   app_ksa_member     = "principal://iam.googleapis.com/projects/${local.project_number}/locations/global/workloadIdentityPools/${local.wif_pool_id}/subject/ns/${local.resource_prefix}-ns/sa/app-ksa"
 
   # Splits the local path by the directory separator '/' and takes the last element (the file name).
-  # e.g., "./assets/tax_office_data.csv" -> "tax_office_data.csv"
+  # e.g., "../app/data_generator/tax_office_data.csv" -> "tax_office_data.csv"
   data_file_name = element(split("/", var.data_file_location), length(split("/", var.data_file_location)) - 1)
 
   bigquery_app_roles = toset([

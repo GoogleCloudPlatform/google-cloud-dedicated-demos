@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 #
 # Copyright 2026 Google LLC
 #
@@ -15,41 +15,53 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
+set -eu
 
-# --- Configuration ---
-TERRAFORM_DIR="../terraform"
-KUSTOMIZE_BASE="../k8s/tax-office-base"
+BASE_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
-echo "=========================================="
-echo "1. Cleaning up GKE Kubernetes resources using Kustomize"
-echo "=========================================="
+# TODO: Setup kubectl creds.
 
-kubectl delete -k "${KUSTOMIZE_BASE}" 2>/dev/null || echo "K8s resources already deleted or cluster unreachable, continuing cleanup..."
+if command -v kubectl >/dev/null 2>&1; then
+    echo "Attempting to delete Kubernetes resources from $BASE_DIR/k8s..."
+    kubectl delete -k "$BASE_DIR/k8s" --ignore-not-found 2>/dev/null || true
 
-echo "=========================================="
-echo "2. Destroying all infrastructure with Terraform"
-echo "=========================================="
-cd "${TERRAFORM_DIR}" || exit 1
-
-read -r -p "Are you sure you want to destroy ALL resources? This is irreversible. Type 'yes' to proceed: " confirm
-
-if [[ $confirm != "yes" ]]; then
-    echo "Aborted destruction."
-    exit 0
+    # Terraform unable to remove subnetwork, because it used by NEG created by GKE
+    # Ingress. Wait until in will be relesed.
+    echo "Waiting for 5 minutes (300 seconds) for GKE Ingress resources (like NEGs) to be fully deprovisioned by the GKE controller..."
+    sleep 300
 fi
 
-if ! terraform destroy -auto-approve; then
-    echo "Error: Terraform destroy failed."
-    exit 1
+if [ -d "$BASE_DIR/terraform/.terraform" ]; then
+    echo "Running terraform destroy..."
+    (cd "$BASE_DIR/terraform" && terraform destroy -auto-approve)
 fi
-echo "Infrastructure successfully destroyed."
 
-cd - >/dev/null
+# 1. Determine the data file path (Source of Truth: terraform/terraform.tfvars)
+TFVARS_FILE="$BASE_DIR/terraform/terraform.tfvars"
+DEFAULT_FILE_PATH="$BASE_DIR/app/data_generator/tax_office_data.csv"
+DATA_FILE_PATH=""
 
-echo "=========================================="
-echo "3. Cleaning up local data"
-echo "=========================================="
-rm -f ../terraform/assets/tax_office_data.csv
-echo "Local data artifact removed."
+if [ -f "$TFVARS_FILE" ]; then
+    # Extract value from tfvars, removing quotes and whitespace
+    EXTRACTED_PATH=$(grep -E '^\s*data_file_location\s*=' "$TFVARS_FILE" | cut -d'"' -f2 | xargs 2>/dev/null || true)
 
-echo "🔥 All cloud resources and local artifacts have been destroyed."
+    if [[ -n $EXTRACTED_PATH && $EXTRACTED_PATH != "REPLACE_ME" ]]; then
+        # If path is relative (e.g. starting with ../ or ./), resolve it relative to the terraform directory
+        if [[ $EXTRACTED_PATH == .* ]]; then
+            DATA_FILE_PATH=$(cd "$BASE_DIR/terraform" && realpath -m "$EXTRACTED_PATH" 2>/dev/null || true)
+        else
+            DATA_FILE_PATH="$EXTRACTED_PATH"
+        fi
+    fi
+fi
+
+# Fallback to default if not found or still REPLACE_ME
+DATA_FILE_PATH="${DATA_FILE_PATH:-$DEFAULT_FILE_PATH}"
+
+# 2. Delete the file if it exists
+if [ -f "$DATA_FILE_PATH" ]; then
+    echo "Removing generated data file: $DATA_FILE_PATH"
+    rm -f "$DATA_FILE_PATH"
+fi
+
+rm -rf "$BASE_DIR/scripts/.venv"

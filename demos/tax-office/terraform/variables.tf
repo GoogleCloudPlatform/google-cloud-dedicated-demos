@@ -36,7 +36,7 @@ variable "region" {
   }
 }
 
-variable "universe_domain" {
+variable "universe_api_domain" {
   description = "Sovereign Universe (e.g., 'eu0.cloud' for sovereign environments)"
   type        = string
   default     = null
@@ -108,7 +108,7 @@ variable "data_bucket_name" {
 variable "data_file_location" {
   description = "Local path to the file to upload to GCS."
   type        = string
-  default     = "./assets/tax_office_data.csv"
+  default     = "../app/data_generator/tax_office_data.csv"
 }
 
 # --- 5. BigQuery Configuration ---

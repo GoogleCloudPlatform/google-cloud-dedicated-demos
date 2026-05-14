@@ -41,7 +41,7 @@ their primary responsibilities.
 
 ## **🛠️ Prerequisites**
 
-1. **Google Cloud Project:** A GCP project with billing enabled.
+1. **Google Cloud Project:** A GCD project with billing enabled.
 2. **gcloud CLI:** The Google Cloud SDK installed and authenticated.
 3. **Terraform:** Terraform CLI installed.
 4. **Docker:** Docker daemon running for image building and pushing. The user
@@ -59,59 +59,95 @@ Before initiating the deployment process, you must complete the following
 critical configurations to ensure proper authentication and resource linking
 within your Google Cloud Project.
 
+### **Configuration reference**
+
+| Variable | GCD In France (GA) | GCD In Germany (Preview) |
+| --- | --- | --- |
+| `UNIVERSE_WEB_DOMAIN` | `cloud.s3nscloud.fr` | `cloud.berlin-build0.goog` |
+| `UNIVERSE_API_DOMAIN` | `s3nsapis.fr` | `apis-berlin-build0.goog` |
+| `UNIVERSE_NAME` | `s3ns` | `berlin` |
+| `UNIVERSE_PREFIX` | `s3ns` | `eu0` |
+| `UNIVERSE_REGION` | `u-france-east1` | `u-germany-northeast1` |
+
 ### **Authentication and API Setup**
 
-1. Log in to GCP.
+1. Login in to GCD.
+
+   Initialize the gcloud CLI for your GCD universe. Use the values from the
+   Configuration Reference table to replace the `<PLACEHOLDERS>` in the commands
+   below.
+
+   First, create a Workforce Identity Federation (WIF) login configuration:
 
    ```bash
-   gcloud auth login --login-config=/your_path/wif-login-config.json
-   gcloud auth application-default login
+   AUDIENCE=locations/global/workforcePools/<WORKFORCE_POOL_ID>/providers/<WIF_PROVIDER_ID>
+   # Replace with values from the Configuration Reference table
+   UNIVERSE_WEB_DOMAIN="<UNIVERSE_WEB_DOMAIN>"
+   UNIVERSE_API_DOMAIN="<UNIVERSE_API_DOMAIN>"
+   UNIVERSE_NAME="<UNIVERSE_NAME>"
+   WF_POOL_FILE_PATH="/tmp"
+
+   gcloud config configurations create $UNIVERSE_NAME
+   gcloud config configurations activate $UNIVERSE_NAME
+   gcloud config set universe_domain $UNIVERSE_API_DOMAIN
+
+   gcloud iam workforce-pools create-login-config $AUDIENCE \
+     --universe-cloud-web-domain="$UNIVERSE_WEB_DOMAIN" \
+     --universe-domain="$UNIVERSE_API_DOMAIN" \
+     --output-file="$WF_POOL_FILE_PATH/wif-login-config-$UNIVERSE_NAME.json" \
+     --activate
+   ```
+
+   Once the above file has been created and the gcloud profile configured,
+   run the following command to login to the organization with gcloud.
+   This will prompt a web browser that will allow login to the organization
+   with the configured IdP.
+
+   ```bash
+   gcloud auth login \
+     --login-config=$WF_POOL_FILE_PATH/wif-login-config-$UNIVERSE_NAME.json \
+     --no-launch-browser
+
+   gcloud auth application-default login \
+     --login-config=$WF_POOL_FILE_PATH/wif-login-config-$UNIVERSE_NAME.json
    ```
 
 2. Enable Cloud Resource Manager API. Ensure the Cloud Resource Manager API is
-   explicitly enabled within your GCP Project's console. This is necessary for
+   explicitly enabled within your GCD Project's console. This is necessary for
    managing project resources.
 
-3. Update Docker Image Registry Path in Kubernetes Deployment
+3. Before deployment, navigate to `terraform` and update the
+   `terraform.tfvars` file with your project-specific values.
 
-    ```none
-     * File: k8s/tax-office-base/tax-app/tax-app-deployment.yaml
-     * Change the image line to follow this pattern:
-       image: "docker.pkg-berlin-build0.goog/eu0/<prj_name>/tax-office-app-registry/tax-office-app:latest"
-   ```
+   | Variable | Status | Description |
+   | :--- | :--- | :--- |
+   | `project_id` | **Mandatory** | Your GCD Project ID. |
+   | `region` | **Mandatory** | Resource region (e.g., `u-germany-northeast1`). |
+   | `universe_api_domain` | **Mandatory** | Sovereign Universe API domain. |
 
-4. Update Project ID in Jupyter Notebook
+4. Provide Hugging Face token:
 
-    ```none
-     * File: k8s/tax-office-base/jupyter/notebooks/default/anomaly_detector.ipynb
-     * Search for and update: PROJECT_ID = 'eu0:svr-bigquery-demo'
-   ```
+   The Gemma LLM model is hosted on [Hugging Face](https://huggingface.co/), a
+   community platform for sharing machine learning models, datasets, and
+   applications. To download the model during deployment, you need an access
+   token.
 
-5. Update Project ID in BigQuery Python Client
+   * **Where to get a token:** Create a free account at
+     [huggingface.co](https://huggingface.co/) and generate a **Read** access
+     token in your [Settings > Tokens](https://huggingface.co/settings/tokens)
+     page.
+   * **Model Access:** Before deploying, make sure you have requested and been
+     granted access to the [Gemma model](https://huggingface.co/google/gemma-3-27b-it)
+     on Hugging Face (this typically requires accepting Google's license terms).
 
-    ```none
-     * File: app/backend/bigquery_client.py
-     * Search for and update:** PROJECT_ID = 'eu0:svr-bigquery-demo'
-    ```
-
-6. Before deployment, navigate to terraform and ensure the
-   terraform.tfvars file contains the necessary cloud-specific variables
-   (project_id, region, universe_domain, bucket_name, etc.). See
-   default.auto.tfvars.example for reference. Pay special attention to the
-   bucket_name variable, as Google Cloud Storage bucket names must be globally
-   unique and follow the Bucket naming guidelines:
-   <https://docs.cloud.google.com/storage/docs/buckets#naming>
-
-7. Create assets foler:
+   Once you have the token, run the following commands to create the necessary
+   Kubernetes secret configuration:
 
 ```bash
-mkdir -p terraform/assets
-```
-
-1. Provide Hugging Face token:
-
-```bash
-echo YOUR_HUGGING_FACE_TOKEN > k8s/tax-office-base/hugging-face-token.yaml
+# Navigate to the demos/tax-office directory
+cd demos/tax-office
+# Create required secret
+echo YOUR_HUGGING_FACE_TOKEN > k8s/hugging-face-token.yaml
 ```
 
 ### **2. Full Deployment**
@@ -127,18 +163,22 @@ cd scripts
 ```
 
 Upon completion, the script will output the external IP addresses for the **Tax
-Office Dashboard** and the **Jupyter Notebook**. _Note_: you might need to wait
-~15 minutes until pods get fully deployed (deployment of Gemma model will take
-some time).
+Office Dashboard** and the **Jupyter Notebook**.
+
+> IMPORTANT:
+>
+> **Wait for Deployment:** It may take **~15 minutes** for all pods to be fully
+> deployed and ready. The Gemma LLM model deployment, in particular, requires
+> significant time to pull and initialize.
 
 ### **3. Jupyter Notebook**
 
-The **Jupyter Notebook service** will be ready once the full_deploy script has
-finished running.
+The **Jupyter Notebook service** will be ready once the `full_deploy.sh` script
+has finished running.
 
 1. Click the provided **IP address** to open the deployed Jupyter Notebook.
-2. Use the following for authentication:
-    * **Password:** demobq
+2. Use the static credentials (see [Access Credentials](#4-access-credentials)
+   below) to log in.
 3. Once logged in, open **anomaly\_detector.ipynb**.
 4. From the **Run** menu, select **Run All Cells**.
 
@@ -147,16 +187,17 @@ related **views**.
 
 ### **4. Access Credentials**
 
-The web applications are configured with static demo credentials, will be also
-available under ip address which you will get once full_deploy ends:
+The web applications and Jupyter Notebook are configured with static demo
+credentials by default. While these can be customized in the source code
+(`app/app.py`) and Kubernetes manifests, the default values are:
 
-* **Username:** demo
-* **Password:** demobq
+* **Username:** `demo`
+* **Password:** `demobq`
 
 ### **5. Standalone deployments**
 
-We have scripts under `04-Taxoffice/scripts/standalone` in case you want to
-deploy each component separately. Make sure you run first:
+We have scripts under `scripts/standalone` in case you want to deploy each
+component separately. Make sure you run first:
 
 ```bash
 source standalone/deploy_infra.sh
@@ -176,6 +217,29 @@ cd scripts
 # Run the full destruction script (requires confirmation)
 ./full_destroy.sh
 ```
+
+## **❓ Troubleshooting**
+
+### **Terraform Destroy Failures**
+
+Occasionally, the `full_destroy.sh` script may fail during the Terraform
+destruction phase with an error similar to:
+
+```none
+Error: Error waiting for Deleting Network: The network resource '...' is
+already being used by '.../networkEndpointGroups/...'
+```
+
+This happens when GKE Network Endpoint Groups (NEGs) or VPC routes created
+by Kubernetes Ingress resources are not fully deprovisioned by the Google
+Cloud controller before Terraform attempts to delete the network.
+
+**Solution:**
+
+1. Manually delete the offending Network Endpoint Groups (NEGs) in the Google
+Cloud Console or using the `gcloud` CLI.
+2. Once the NEGs are removed, re-run the `full_destroy.sh` script to complete
+ the cleanup.
 
 ---
 

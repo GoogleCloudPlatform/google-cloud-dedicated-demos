@@ -15,10 +15,15 @@
 # limitations under the License.
 #
 terraform {
+  required_version = ">= 1.0"
   required_providers {
     google = {
       source  = "hashicorp/google"
-      version = ">= 5.0"
+      version = "~> 7.0"
+    }
+    time = {
+      source  = "hashicorp/time"
+      version = "~> 0.13"
     }
   }
 }
@@ -30,7 +35,7 @@ provider "google" {
   billing_project       = var.project_id
   request_timeout       = "5m"
   # Universe configuration for Sovereign
-  universe_domain = var.universe_domain
+  universe_domain = var.universe_api_domain
 }
 
 # Data source to fetch the project number based on the project ID.

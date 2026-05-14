@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/usr/bin/env bash
 #
 # Copyright 2026 Google LLC
 #
@@ -15,80 +15,64 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
+set -euo pipefail
 
-KUSTOMIZE_BASE="../k8s/tax-office-base"
-COMPUTECLASS_FILE="../k8s/tax-office-base/vllm/computeclass.yaml"
+BASE_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
+TF_DIR="$BASE_DIR/terraform"
 
-# Ensure GKE cluster details are available
-if [ -z "$GKE_CLUSTER_NAME" ] || [ -z "$GKE_REGION" ] || [ -z "$GCP_PROJECT_ID" ]; then
-    echo "Error: GKE_CLUSTER_NAME, GKE_REGION, or GCP_PROJECT_ID are missing."
-    echo "Did deploy_infra.sh run successfully and export variables?"
-    exit 1
-fi
+GKE_CLUSTER_NAME="${GKE_CLUSTER_NAME:-$(terraform -chdir="$TF_DIR" output -raw tax_office_cluster_name)}"
+GKE_REGION="${GKE_REGION:-$(terraform -chdir="$TF_DIR" output -raw region)}"
+GCP_PROJECT_ID="${GCP_PROJECT_ID:-$(terraform -chdir="$TF_DIR" output -raw project_id)}"
 
-echo "=========================================="
-echo "1. Configuring kubectl for GKE cluster: ${GKE_CLUSTER_NAME}"
-echo "=========================================="
-if ! gcloud container clusters get-credentials "${GKE_CLUSTER_NAME}" --dns-endpoint --region "${GKE_REGION}" --project "${GCP_PROJECT_ID}"; then
-    echo "Error: Failed to get GKE cluster credentials."
-    exit 1
-fi
-echo "kubectl configured successfully."
+gcloud container clusters get-credentials "$GKE_CLUSTER_NAME" --dns-endpoint --region "$GKE_REGION" --project "$GCP_PROJECT_ID" >/dev/null 2>&1
 
-echo "=========================================="
-echo "2. Applying Kubernetes manifests using Kustomize"
-echo "=========================================="
+kubectl apply -f "$BASE_DIR/k8s/vllm/computeclass.yaml"
+kubectl apply -k "$BASE_DIR/k8s"
 
-echo "Applying ComputeClass manifest from: ${COMPUTECLASS_FILE}..."
-if ! kubectl apply -f "$COMPUTECLASS_FILE"; then
-    echo "Error: Failed to apply ComputeClass manifest at ${COMPUTECLASS_FILE}."
-    exit 1
-fi
-echo "✅ ComputeClass applied successfully."
+echo "Injecting environment variables into deployment..."
+DATASET_ID=$(terraform -chdir="$TF_DIR" output -raw dataset_id)
+TAX_TABLE_ID=$(terraform -chdir="$TF_DIR" output -raw tax_table_id)
+POLICY_TABLE_ID=$(terraform -chdir="$TF_DIR" output -raw policy_table_id)
+POLICY_EMBEDDINGS_TABLE_ID=$(terraform -chdir="$TF_DIR" output -raw policy_embeddings_table_id)
+UNIVERSE_DOMAIN=$(terraform -chdir="$TF_DIR" output -raw universe_api_domain)
+PROJECT_ID=$(terraform -chdir="$TF_DIR" output -raw project_id)
+AR_REPO_NAME=$(terraform -chdir="$TF_DIR" output -raw app_repository_id)
 
-if [ -d "$KUSTOMIZE_BASE" ]; then
-    echo "Applying Kustomize base from: ${KUSTOMIZE_BASE}..."
-    if ! kubectl apply -k "$KUSTOMIZE_BASE"; then
-        echo "Error: Failed to apply Kustomize base at ${KUSTOMIZE_BASE}."
-        exit 1
-    fi
-    echo "✅ All resources defined in kustomization.yaml applied successfully."
-else
-    echo "Error: Kustomize base directory ${KUSTOMIZE_BASE} not found."
-    echo "Please ensure the directory structure includes a 'tax-office-base' directory."
-    exit 1
-fi
+# Derive registry host: replace 'apis-' with 'pkg-' in the universe domain if it exists
+REGISTRY_DOMAIN="${UNIVERSE_DOMAIN/apis-/pkg-}"
+REGISTRY_HOST="${REGISTRY_HOST:-docker.$REGISTRY_DOMAIN}"
+IMAGE_NAME="tax-office-app"
+TAG="latest"
 
-echo "=========================================="
-echo "GKE application deployment initiated."
-echo "Waiting for Ingress IP addresses..."
-echo "=========================================="
+PROJECT_PATH="${PROJECT_ID/://}"
+REMOTE_IMAGE="${REGISTRY_HOST}/${PROJECT_PATH}/${AR_REPO_NAME}/${IMAGE_NAME}:${TAG}"
 
-# Wait for Ingress IP addresses (check up to 20 minutes)
-APP_INGRESS_IP=""
-JUPYTER_INGRESS_IP=""
+echo "Updating deployment image to: $REMOTE_IMAGE"
+kubectl set image deployment/tax-office-app-deployment tax-office-container="$REMOTE_IMAGE" -n tax-office-ns
 
-for i in {1..120}; do
-    # Use -n tax-office-ns to ensure we look in the correct namespace
-    APP_INGRESS_IP=$(kubectl get ingress tax-app-ingress -n tax-office-ns -o=jsonpath='{.status.loadBalancer.ingress[0].ip}' 2>/dev/null)
-    JUPYTER_INGRESS_IP=$(kubectl get ingress jupyter-ingress -n tax-office-ns -o=jsonpath='{.status.loadBalancer.ingress[0].ip}' 2>/dev/null)
+kubectl set env deployment/tax-office-app-deployment -n tax-office-ns \
+    DATASET_ID="$DATASET_ID" \
+    TAX_TABLE_ID="$TAX_TABLE_ID" \
+    POLICY_TABLE_ID="$POLICY_TABLE_ID" \
+    POLICY_EMBEDDINGS_TABLE_ID="$POLICY_EMBEDDINGS_TABLE_ID" \
+    UNIVERSE_DOMAIN="$UNIVERSE_DOMAIN" \
+    PROJECT_ID="$PROJECT_ID"
 
-    if [ -n "${APP_INGRESS_IP}" ] && [ -n "${JUPYTER_INGRESS_IP}" ]; then
-        echo "✅ Ingress IPs assigned after $((i * 10)) seconds!"
+kubectl set env deployment/jupyter-notebook -n tax-office-ns \
+    DATASET_ID="$DATASET_ID" \
+    TAX_TABLE_ID="$TAX_TABLE_ID" \
+    POLICY_TABLE_ID="$POLICY_TABLE_ID" \
+    POLICY_EMBEDDINGS_TABLE_ID="$POLICY_EMBEDDINGS_TABLE_ID" \
+    UNIVERSE_DOMAIN="$UNIVERSE_DOMAIN" \
+    PROJECT_ID="$PROJECT_ID"
+
+while :; do
+    APP_IP=$(kubectl get ingress tax-app-ingress -n tax-office-ns -o=jsonpath='{.status.loadBalancer.ingress[0].ip}' 2>/dev/null || true)
+    JUPYTER_IP=$(kubectl get ingress jupyter-ingress -n tax-office-ns -o=jsonpath='{.status.loadBalancer.ingress[0].ip}' 2>/dev/null || true)
+
+    if [[ -n $APP_IP && -n $JUPYTER_IP ]]; then
+        printf "Jupyter:   http://%s\nDashboard: http://%s\n" "$JUPYTER_IP" "$APP_IP"
         break
     fi
-    echo "Still waiting for Ingress IPs... (Check ${i}/120)"
     sleep 10
 done
-
-if [ -z "${APP_INGRESS_IP}" ] || [ -z "${JUPYTER_INGRESS_IP}" ]; then
-    echo "Timed out waiting for Ingress IPs. Check your GKE ingresses."
-    exit 1
-fi
-
-echo "=========================================="
-echo "Deployment Endpoints"
-echo "=========================================="
-echo "Tax Office Dashboard: http://${APP_INGRESS_IP}"
-echo "Jupyter Notebook:    http://${JUPYTER_INGRESS_IP}"
-echo "Dashboard Login: demo / demobq"
