@@ -20,18 +20,17 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: jupyter-notebook
-  namespace: tax-office-ns
   labels:
-    app: jupyter
+    {{- include "tax-office.jupyter.labels" . | nindent 4 }}
 spec:
-  replicas: 1
+  replicas: {{ .Values.jupyter.replicaCount }}
   selector:
     matchLabels:
-      app: jupyter
+      {{- include "tax-office.jupyter.selectorLabels" . | nindent 6 }}
   template:
     metadata:
       labels:
-        app: jupyter
+        {{- include "tax-office.jupyter.selectorLabels" . | nindent 8 }}
     spec:
       serviceAccountName: jupyter-notebook-ksa
       # Set fsGroup: 1000 to match the 'jovyan' user in the official Jupyter
@@ -66,7 +65,8 @@ spec:
       # --- Main Container ---
       containers:
         - name: jupyter-container
-          image: docker.io/jupyter/base-notebook:x86_64-ubuntu-22.04
+          image: "{{ .Values.jupyter.image.repository }}:{{ .Values.jupyter.image.tag }}"
+          imagePullPolicy: {{ .Values.jupyter.image.pullPolicy }}
           ports:
             - containerPort: 8888
           readinessProbe:
@@ -85,15 +85,15 @@ spec:
           env:
             - name: JUPYTER_ENABLE_LAB
               value: "yes"
-            - name: JUPYTER_Token  # demobq
-              value: "argon2:$argon2id$v=19$m=10240,t=10,p=8$p490MJeztEo3GFH9\
-                VouZUg$3ryOxE77Gm4F8YpJ+eXglECdg1+4csvdDZyOjQz+m9A"
+            - name: JUPYTER_TOKEN
+              value: {{ .Values.jupyter.token | quote }}
+
           volumeMounts:
             - name: notebook-volume
               mountPath: /home/jovyan  # The home directory for 'jovyan' user
           command: ["start-notebook.sh"]
           args:
-            - "--NotebookApp.password=$(JUPYTER_Token)"
+            - "--NotebookApp.password=$(JUPYTER_TOKEN)"
             - "--NotebookApp.token=''"
             - "--NotebookApp.trust_xheaders=True"
 

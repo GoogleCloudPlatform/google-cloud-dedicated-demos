@@ -34,10 +34,9 @@ TAG="latest"
 PROJECT_PATH="${GCP_PROJECT_ID/://}"
 REMOTE_IMAGE="${REGISTRY_HOST}/${PROJECT_PATH}/${AR_REPO_NAME}/${IMAGE_NAME}:${TAG}"
 
-echo "Building and pushing image to $REMOTE_IMAGE..."
-
-docker info >/dev/null
-gcloud auth print-access-token | docker login -u oauth2accesstoken --password-stdin "$REGISTRY_HOST"
+echo "Building and pushing Docker image to: $REMOTE_IMAGE..."
+docker info >/dev/null 2>&1
+gcloud auth print-access-token | docker login -u oauth2accesstoken --password-stdin "$REGISTRY_HOST" >/dev/null 2>&1
 
 docker build -t "$IMAGE_NAME:$TAG" "$BASE_DIR/app"
 docker tag "$IMAGE_NAME:$TAG" "$REMOTE_IMAGE"

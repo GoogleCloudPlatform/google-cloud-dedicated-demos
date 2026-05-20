@@ -44,11 +44,10 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 # Static credentials from env or defaults
-DEMO_USERNAME = os.environ.get('APP_USERNAME', 'demo')
-DEMO_PASSWORD = os.environ.get('APP_PASSWORD', 'demobq')  # pragma: allowlist secret
+DEMO_USERNAME = os.environ.get('DEMO_USERNAME', 'demo')
+DEMO_PASSWORD = os.environ.get('DEMO_PASSWORD', 'demobq')  # pragma: allowlist secret
 
 LLM_SERVICE_URL = os.getenv('LLM_SERVICE_URL', 'http://llm-service:8000')
-# LLM_SERVICE_URL = os.getenv('LLM_SERVICE_URL', 'http://localhost:8000')
 LLM_MODEL_NAME = os.getenv('LLM_MODEL_NAME', 'google/gemma-3-27b-it')
 
 

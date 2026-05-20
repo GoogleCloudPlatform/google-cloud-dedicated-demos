@@ -15,10 +15,22 @@
 # limitations under the License.
 #
 ---
-apiVersion: kustomize.config.k8s.io/v1alpha1
-kind: Component
-resources:
-  - tax-app-deployment.yaml
-  - tax-app-ingress.yaml
-  - tax-app-sa.yaml
-  - tax-app-service.yaml
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: jupyter-ingress
+  labels:
+    {{- include "tax-office.jupyter.labels" . | nindent 4 }}
+  annotations:
+    kubernetes.io/ingress.class: "gce-regional-external"
+spec:
+  rules:
+    - http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: jupyter-notebook-service
+                port:
+                  number: 80

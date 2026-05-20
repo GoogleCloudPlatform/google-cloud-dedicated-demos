@@ -1,0 +1,57 @@
+#
+# Copyright 2026 Google LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+global:
+  projectId: "changeme"
+  universeDomain: "changeme"
+
+jupyter:
+  token: "argon2:$argon2id$v=19$m=10240,t=10,p=8$p490MJeztEo3GFH9VouZUg$3ryOxE77Gm4F8YpJ+eXglECdg1+4csvdDZyOjQz+m9A"
+  image:
+    repository: docker.io/jupyter/base-notebook
+    tag: x86_64-ubuntu-22.04
+    pullPolicy: IfNotPresent
+  replicaCount: 1
+  storageSize: 10Gi
+
+taxApp:
+  image:
+    repository: changeme
+    tag: latest
+    pullPolicy: Always
+  replicaCount: 3
+  flaskSecretKey: changeme # pragma: allowlist secret
+  demoPassword: changeme # pragma: allowlist secret
+
+vllm:
+  replicaCount: 1
+  image:
+    repository: docker.io/vllm/vllm-openai
+    tag: v0.10.0
+    pullPolicy: IfNotPresent
+  storageSize: 256Gi
+  gpuCount: 2
+  huggingFaceToken: changeme
+
+dnsPolicy: None
+dnsConfig:
+  searches:
+    - tax-office-ns.svc.cluster.local
+    - svc.cluster.local
+    - cluster.local
+  options:
+    - name: ndots
+      value: "5"

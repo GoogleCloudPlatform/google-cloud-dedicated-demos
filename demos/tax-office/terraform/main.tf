@@ -35,10 +35,9 @@ provider "google" {
   billing_project       = var.project_id
   request_timeout       = "5m"
   # Universe configuration for Sovereign
-  universe_domain = var.universe_api_domain
+  universe_domain       = var.universe_api_domain
 }
 
-# Data source to fetch the project number based on the project ID.
 data "google_project" "project" {
   project_id = var.project_id
 }

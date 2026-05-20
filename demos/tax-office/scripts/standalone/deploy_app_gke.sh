@@ -20,59 +20,57 @@ set -euo pipefail
 BASE_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 TF_DIR="$BASE_DIR/terraform"
 
-GKE_CLUSTER_NAME="${GKE_CLUSTER_NAME:-$(terraform -chdir="$TF_DIR" output -raw tax_office_cluster_name)}"
-GKE_REGION="${GKE_REGION:-$(terraform -chdir="$TF_DIR" output -raw region)}"
-GCP_PROJECT_ID="${GCP_PROJECT_ID:-$(terraform -chdir="$TF_DIR" output -raw project_id)}"
-
-gcloud container clusters get-credentials "$GKE_CLUSTER_NAME" --dns-endpoint --region "$GKE_REGION" --project "$GCP_PROJECT_ID" >/dev/null 2>&1
-
-kubectl apply -f "$BASE_DIR/k8s/vllm/computeclass.yaml"
-kubectl apply -k "$BASE_DIR/k8s"
-
-echo "Injecting environment variables into deployment..."
-DATASET_ID=$(terraform -chdir="$TF_DIR" output -raw dataset_id)
-TAX_TABLE_ID=$(terraform -chdir="$TF_DIR" output -raw tax_table_id)
-POLICY_TABLE_ID=$(terraform -chdir="$TF_DIR" output -raw policy_table_id)
-POLICY_EMBEDDINGS_TABLE_ID=$(terraform -chdir="$TF_DIR" output -raw policy_embeddings_table_id)
-UNIVERSE_DOMAIN=$(terraform -chdir="$TF_DIR" output -raw universe_api_domain)
-PROJECT_ID=$(terraform -chdir="$TF_DIR" output -raw project_id)
+echo "Fetching infrastructure details from Terraform..."
 AR_REPO_NAME=$(terraform -chdir="$TF_DIR" output -raw app_repository_id)
+DEMO_PASSWORD=$(terraform -chdir="$TF_DIR" output -raw demo_password)
+FLASK_SECRET_KEY=$(terraform -chdir="$TF_DIR" output -raw flask_secret_key)
+GCP_PROJECT_ID=$(terraform -chdir="$TF_DIR" output -raw project_id)
+GCP_PROJECT_NUM=$(terraform -chdir="$TF_DIR" output -raw project_number)
+GCP_UNIVERSE_DOMAIN=$(terraform -chdir="$TF_DIR" output -raw universe_api_domain)
+GKE_CLUSTER_NAME=$(terraform -chdir="$TF_DIR" output -raw tax_office_cluster_name)
+GKE_REGION=$(terraform -chdir="$TF_DIR" output -raw region)
+HUGGING_FACE_TOKEN=$(terraform -chdir="$TF_DIR" output -raw hugging_face_token)
+
+echo "Connecting to GKE cluster: $GKE_CLUSTER_NAME..."
+gcloud container clusters get-credentials "$GKE_CLUSTER_NAME" --dns-endpoint --region "$GKE_REGION" --project "$GCP_PROJECT_ID"
 
 # Derive registry host: replace 'apis-' with 'pkg-' in the universe domain if it exists
-REGISTRY_DOMAIN="${UNIVERSE_DOMAIN/apis-/pkg-}"
+REGISTRY_DOMAIN="${GCP_UNIVERSE_DOMAIN/apis-/pkg-}"
 REGISTRY_HOST="${REGISTRY_HOST:-docker.$REGISTRY_DOMAIN}"
 IMAGE_NAME="tax-office-app"
 TAG="latest"
 
-PROJECT_PATH="${PROJECT_ID/://}"
-REMOTE_IMAGE="${REGISTRY_HOST}/${PROJECT_PATH}/${AR_REPO_NAME}/${IMAGE_NAME}:${TAG}"
+PROJECT_PATH="${GCP_PROJECT_ID/://}"
 
-echo "Updating deployment image to: $REMOTE_IMAGE"
-kubectl set image deployment/tax-office-app-deployment tax-office-container="$REMOTE_IMAGE" -n tax-office-ns
+TAX_APP_IMAGE_REPO="${REGISTRY_HOST}/${PROJECT_PATH}/${AR_REPO_NAME}/${IMAGE_NAME}"
 
-kubectl set env deployment/tax-office-app-deployment -n tax-office-ns \
-    DATASET_ID="$DATASET_ID" \
-    TAX_TABLE_ID="$TAX_TABLE_ID" \
-    POLICY_TABLE_ID="$POLICY_TABLE_ID" \
-    POLICY_EMBEDDINGS_TABLE_ID="$POLICY_EMBEDDINGS_TABLE_ID" \
-    UNIVERSE_DOMAIN="$UNIVERSE_DOMAIN" \
-    PROJECT_ID="$PROJECT_ID"
 
-kubectl set env deployment/jupyter-notebook -n tax-office-ns \
-    DATASET_ID="$DATASET_ID" \
-    TAX_TABLE_ID="$TAX_TABLE_ID" \
-    POLICY_TABLE_ID="$POLICY_TABLE_ID" \
-    POLICY_EMBEDDINGS_TABLE_ID="$POLICY_EMBEDDINGS_TABLE_ID" \
-    UNIVERSE_DOMAIN="$UNIVERSE_DOMAIN" \
-    PROJECT_ID="$PROJECT_ID"
+echo "Fetching kube-dns IP address..."
+KUBE_DNS_IP=$(kubectl get svc kube-dns -n kube-system -o jsonpath='{.spec.clusterIP}')
 
+echo "Deploying application with Helm..."
+helm upgrade --install tax-office "$BASE_DIR/k8s/helm" \
+    --namespace tax-office-ns --create-namespace \
+    --set global.projectId="$GCP_PROJECT_ID" \
+    --set global.universeDomain="$GCP_UNIVERSE_DOMAIN" \
+    --set taxApp.image.repository="$TAX_APP_IMAGE_REPO" \
+    --set taxApp.image.tag="$TAG" \
+    --set taxApp.flaskSecretKey="$FLASK_SECRET_KEY" \
+    --set taxApp.demoPassword="$DEMO_PASSWORD" \
+    --set vllm.huggingFaceToken="$HUGGING_FACE_TOKEN" \
+    --set dnsConfig.nameservers[0]="${KUBE_DNS_IP}"
+
+echo "Waiting for Ingress IP addresses..."
 while :; do
     APP_IP=$(kubectl get ingress tax-app-ingress -n tax-office-ns -o=jsonpath='{.status.loadBalancer.ingress[0].ip}' 2>/dev/null || true)
     JUPYTER_IP=$(kubectl get ingress jupyter-ingress -n tax-office-ns -o=jsonpath='{.status.loadBalancer.ingress[0].ip}' 2>/dev/null || true)
 
     if [[ -n $APP_IP && -n $JUPYTER_IP ]]; then
-        printf "Jupyter:   http://%s\nDashboard: http://%s\n" "$JUPYTER_IP" "$APP_IP"
+        printf "\nDeployment complete!\n"
+        printf "Jupyter:   http://%s\n" "$JUPYTER_IP"
+        printf "Dashboard: http://%s\n" "$APP_IP"
         break
     fi
+    echo -n "."
     sleep 10
 done

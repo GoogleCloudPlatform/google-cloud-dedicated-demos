@@ -31,7 +31,7 @@ their primary responsibilities.
 | **scripts** | Scripts for deployment and destruction. |
 | **app** | **Frontend**, **backend**, and **generator**. |
 | **policies** | Policy docs for creating embeddings. |
-| **k8s** | **Kubernetes manifest files** (Kustomize). |
+| **k8s** | **Kubernetes manifest files** (Helm charts). |
 | **terraform** | Infrastructure-related **Terraform code**. |
 | **docs** | Readme specific files. |
 
@@ -49,6 +49,7 @@ their primary responsibilities.
    communicate with the Docker daemon. On Linux systems, this typically means
    the user needs to be a member of the `docker` group.
 5. **Python 3:** Python 3.9+ with pip and venv enabled.
+6. **kubectl**, **helm** binaries installed.
 
 ## **⚙️ Deployment Pre-configuration Checklist**
 
@@ -69,7 +70,7 @@ within your Google Cloud Project.
 | `UNIVERSE_PREFIX` | `s3ns` | `eu0` |
 | `UNIVERSE_REGION` | `u-france-east1` | `u-germany-northeast1` |
 
-### **Authentication and API Setup**
+### 1. **Authentication and API Setup**
 
 1. Login in to GCD.
 
@@ -116,16 +117,7 @@ within your Google Cloud Project.
    explicitly enabled within your GCD Project's console. This is necessary for
    managing project resources.
 
-3. Before deployment, navigate to `terraform` and update the
-   `terraform.tfvars` file with your project-specific values.
-
-   | Variable | Status | Description |
-   | :--- | :--- | :--- |
-   | `project_id` | **Mandatory** | Your GCD Project ID. |
-   | `region` | **Mandatory** | Resource region (e.g., `u-germany-northeast1`). |
-   | `universe_api_domain` | **Mandatory** | Sovereign Universe API domain. |
-
-4. Provide Hugging Face token:
+3. Get and provide Hugging Face token:
 
    The Gemma LLM model is hosted on [Hugging Face](https://huggingface.co/), a
    community platform for sharing machine learning models, datasets, and
@@ -140,19 +132,25 @@ within your Google Cloud Project.
      granted access to the [Gemma model](https://huggingface.co/google/gemma-3-27b-it)
      on Hugging Face (this typically requires accepting Google's license terms).
 
-   Once you have the token, run the following commands to create the necessary
-   Kubernetes secret configuration:
+   Once you have the token, update the `hugging_face_token` parameter value in 
+   `terraform.tfvars` file with your newly created token in next step.
 
-```bash
-# Navigate to the demos/tax-office directory
-cd demos/tax-office
-# Create required secret
-echo YOUR_HUGGING_FACE_TOKEN > k8s/hugging-face-token.yaml
-```
+4. Before deployment, navigate to `terraform` and update the `terraform.tfvars`
+   file with your **mandatory** project-specific values.
+
+   | Variable | Status | Description |
+   | :--- | :--- | :--- |
+   | `project_id` | **Mandatory** | Your GCD Project ID. |
+   | `region` | **Mandatory** | Resource region (e.g., `u-germany-northeast1`). |
+   | `universe_api_domain` | **Mandatory** | Sovereign Universe API domain. |
+   | `data_bucket_name ` | **Mandatory** | Unique backet name. |
+   | `hugging_face_token` | **Mandatory** | Your hugging face token. |
+   | `demo_password` | **Mandatory** | Password for demologin to dashboard and Jupyter Notebook. |
+   
 
 ### **2. Full Deployment**
 
-The full_deploy.sh script handles the entire workflow: data generation,
+The `full_deploy.sh` script handles the entire workflow: data generation,
 infrastructure, image build/push, and application deployment.
 
 ```bash
@@ -171,39 +169,36 @@ Office Dashboard** and the **Jupyter Notebook**.
 > deployed and ready. The Gemma LLM model deployment, in particular, requires
 > significant time to pull and initialize.
 
-### **3. Jupyter Notebook**
-
-The **Jupyter Notebook service** will be ready once the `full_deploy.sh` script
-has finished running.
+### **3. Log in to the Jupyter Notebook**
 
 1. Click the provided **IP address** to open the deployed Jupyter Notebook.
-2. Use the static credentials (see [Access Credentials](#4-access-credentials)
+2. Use the credentials (see [Access Credentials](#5-access-credentials)
    below) to log in.
-3. Once logged in, open **anomaly\_detector.ipynb**.
+3. Once logged in, open `anomaly_detector.ipynb`.
 4. From the **Run** menu, select **Run All Cells**.
 
 This script will automatically create the **Machine Learning model** and all
 related **views**.
 
-### **4. Access Credentials**
+### **4. Log in to the Main Dashboard**
 
-The web applications and Jupyter Notebook are configured with static demo
-credentials by default. While these can be customized in the source code
-(`app/app.py`) and Kubernetes manifests, the default values are:
+1. Click the provided **IP address** to open the Main Dashboard.
+2. Use the credentials (see [Access Credentials](#5-access-credentials)
+   below) to log in.
 
-* **Username:** `demo`
-* **Password:** `demobq`
+### **5. Access Credentials**
 
-### **5. Standalone deployments**
+The web applications and Jupyter Notebook are configured with static `demo` login 
+by default. Password you should take from `demo_password` in `terraform.tfvars`.
 
-We have scripts under `scripts/standalone` in case you want to deploy each
-component separately. Make sure you run first:
+## **6. Standalone deployments**
+
+We have scripts under `scripts/standalone` in case you want to deploy each component separately. Make sure you run first:
 
 ```bash
 source standalone/deploy_infra.sh
 ```
 
-As it sets necessary environment variables for all other standalone scripts.
 
 ## **🔥 Cleanup**
 

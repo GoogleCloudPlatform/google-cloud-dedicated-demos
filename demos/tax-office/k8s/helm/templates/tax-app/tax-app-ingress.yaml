@@ -15,11 +15,22 @@
 # limitations under the License.
 #
 ---
-# Service Account for the Jupyter Pod
-apiVersion: v1
-kind: ServiceAccount
+apiVersion: networking.k8s.io/v1
+kind: Ingress
 metadata:
-  name: jupyter-notebook-ksa
-  namespace: tax-office-ns
+  name: tax-app-ingress
   labels:
-    app: jupyter
+    {{- include "tax-office.taxApp.labels" . | nindent 4 }}
+  annotations:
+    kubernetes.io/ingress.class: "gce-regional-external"
+spec:
+  rules:
+    - http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: tax-office-app-service
+                port:
+                  number: 80

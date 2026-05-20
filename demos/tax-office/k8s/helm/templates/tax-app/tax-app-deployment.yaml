@@ -19,28 +19,39 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: tax-office-app-deployment
-  namespace: tax-office-ns
   labels:
-    app: tax-office-app
+    {{- include "tax-office.taxApp.labels" . | nindent 4 }}
 spec:
-  replicas: 3
+  replicas: {{ .Values.taxApp.replicaCount }}
   selector:
     matchLabels:
-      app: tax-office-app
+      {{- include "tax-office.taxApp.selectorLabels" . | nindent 6 }}
   template:
     metadata:
       labels:
-        app: tax-office-app
+        {{- include "tax-office.taxApp.selectorLabels" . | nindent 8 }}
     spec:
       serviceAccountName: app-ksa
+      dnsPolicy: {{ .Values.dnsPolicy | default "ClusterFirst" }}
+      {{- if .Values.dnsConfig }}
+      dnsConfig:
+        {{- toYaml .Values.dnsConfig | nindent 8 }}
+      {{- end }}
       containers:
         - name: tax-office-container
-          # TODO: change it as parameter which should be potentially injected.
-          image: >-
-            docker.pkg-berlin-build0.goog/eu0/svr-bigquery-demo/tax-office-app-registry/tax-office-app:latest
-          imagePullPolicy: Always
+          image: "{{ .Values.taxApp.image.repository }}:{{ .Values.taxApp.image.tag }}"
+          imagePullPolicy: {{ .Values.taxApp.image.pullPolicy }}
           ports:
             - containerPort: 5001
+          env:
+            - name: FLASK_SECRET_KEY
+              value: {{ .Values.taxApp.flaskSecretKey }}
+            - name: DEMO_PASSWORD
+              value: {{ .Values.taxApp.demoPassword }}
+            - name: PROJECT_ID
+              value: {{ .Values.global.projectId }}
+            - name: UNIVERSE_DOMAIN
+              value: {{ .Values.global.universeDomain }}
           readinessProbe:
             httpGet:
               path: /health

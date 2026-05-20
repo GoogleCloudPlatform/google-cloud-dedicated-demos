@@ -29,6 +29,11 @@ output "universe_api_domain" {
   value       = var.universe_api_domain
 }
 
+output "project_number" {
+  description = "Project number."
+  value       = data.google_project.project.number
+}
+
 output "tax_office_cluster_name" {
   description = "The name of the deployed GKE cluster."
   value       = google_container_cluster.tax_office_cluster.name
@@ -58,4 +63,22 @@ output "policy_table_id" {
 
 output "policy_embeddings_table_id" {
   value = var.policy_embeddings_table_id
+}
+
+output "flask_secret_key" {
+  description = "Secret key for Flask sessions."
+  value       = var.flask_secret_key
+  sensitive   = true
+}
+
+output "demo_password" {
+  description = "Password for the demo application user."
+  value       = var.demo_password
+  sensitive   = true
+}
+
+output "hugging_face_token" {
+  description = "Hugging Face API token for downloading models."
+  value       = var.hugging_face_token
+  sensitive   = true
 }

@@ -25,10 +25,4 @@ cd "$TF_DIR"
 terraform init -input=false
 terraform apply -auto-approve -input=false
 
-export GCP_PROJECT_ID=$(terraform output -raw project_id)
-export GKE_REGION=$(terraform output -raw region)
-export GKE_CLUSTER_NAME=$(terraform output -raw tax_office_cluster_name)
-export AR_REPO_NAME=$(terraform output -raw app_repository_id)
-export GCS_BUCKET_NAME=$(terraform output -raw tax_office_bucket_name)
-
 cd - >/dev/null

@@ -14,6 +14,9 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-project_id      = "REPLACE_ME"
-region          = "REPLACE_ME"
-universe_api_domain = "REPLACE_ME"
+project_id             = "REPLACE_ME"
+region                 = "REPLACE_ME"
+universe_api_domain    = "REPLACE_ME"
+data_bucket_name       = "REPLACE_ME"
+hugging_face_token     = "REPLACE_ME"
+demo_password          = "REPLACE_ME"

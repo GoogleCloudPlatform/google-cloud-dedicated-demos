@@ -19,10 +19,11 @@ apiVersion: apps/v1
 kind: Deployment
 metadata:
   name: vllm-gemma-deployment
-  namespace: tax-office-ns
+  labels:
+    {{- include "tax-office.vllm.labels" . | nindent 4 }}
 spec:
   progressDeadlineSeconds: 600
-  replicas: 1
+  replicas: {{ .Values.vllm.replicaCount }}
   revisionHistoryLimit: 10
   selector:
     matchLabels:
@@ -40,7 +41,7 @@ spec:
       containers:
         - args:
             - --model=$(MODEL_ID)
-            - --tensor-parallel-size=8
+            - --tensor-parallel-size={{ .Values.vllm.gpuCount }}
             - --host=0.0.0.0
             - --port=8000
             - --swap-space=16
@@ -57,12 +58,9 @@ spec:
             - name: MODEL_ID
               value: google/gemma-3-27b-it
             - name: HUGGING_FACE_HUB_TOKEN
-              valueFrom:
-                secretKeyRef:
-                  key: hugging-face-token.yaml
-                  name: hugging-face
-          image: docker.io/vllm/vllm-openai:v0.10.0
-          imagePullPolicy: IfNotPresent
+              value: {{ .Values.vllm.huggingFaceToken }}
+          image: "{{ .Values.vllm.image.repository }}:{{ .Values.vllm.image.tag }}"
+          imagePullPolicy: {{ .Values.vllm.image.pullPolicy }}
           name: inference-server
           readinessProbe:
             failureThreshold: 5
@@ -76,12 +74,12 @@ spec:
             timeoutSeconds: 5
           resources:
             limits:
-              nvidia.com/gpu: "8"
+              nvidia.com/gpu: "{{ .Values.vllm.gpuCount }}"
             requests:
               cpu: "10"
               ephemeral-storage: 10Gi
               memory: 100Gi
-              nvidia.com/gpu: "8"
+              nvidia.com/gpu: "{{ .Values.vllm.gpuCount }}"
           securityContext:
             capabilities:
               drop:

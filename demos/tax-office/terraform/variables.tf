@@ -52,8 +52,9 @@ variable "project_services" {
     "compute.googleapis.com",
     "container.googleapis.com",
     "dns.googleapis.com",
-    "secretmanager.googleapis.com",
-    "storage.googleapis.com"
+    "iam.googleapis.com",
+    "storage.googleapis.com",
+    "sts.googleapis.com"
   ]
 }
 
@@ -135,4 +136,27 @@ variable "policy_embeddings_table_id" {
   description = "Big Query table id for policy embeddings data."
   type        = string
   default     = "policy_embeddings"
+}
+
+# --- 6. Secrets (Sensitive) ---
+
+variable "flask_secret_key" {
+  description = "Secret key for Flask sessions."
+  type        = string
+  sensitive   = true
+  default     = "change-me-in-tfvars"
+}
+
+variable "demo_password" {
+  description = "Password for the demo application user."
+  type        = string
+  sensitive   = true
+  default     = "change-me-in-tfvars"
+}
+
+variable "hugging_face_token" {
+  description = "Hugging Face API token for downloading models."
+  type        = string
+  sensitive   = true
+  default     = "change-me-in-tfvars"
 }

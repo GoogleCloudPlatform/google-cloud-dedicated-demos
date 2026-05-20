@@ -15,21 +15,16 @@
 # limitations under the License.
 #
 ---
-apiVersion: networking.k8s.io/v1
-kind: Ingress
+# Persistent Volume Claim (PVC) to store notebooks persistently
+apiVersion: v1
+kind: PersistentVolumeClaim
 metadata:
-  name: tax-app-ingress
-  namespace: tax-office-ns
-  annotations:
-    kubernetes.io/ingress.class: "gce-regional-external"
+  name: jupyter-notebook-pvc
+  labels:
+    {{- include "tax-office.jupyter.labels" . | nindent 4 }}
 spec:
-  rules:
-    - http:
-        paths:
-          - path: /
-            pathType: Prefix
-            backend:
-              service:
-                name: tax-office-app-service
-                port:
-                  number: 80
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: {{ .Values.jupyter.storageSize }}

@@ -15,19 +15,10 @@
 # limitations under the License.
 #
 ---
-apiVersion: kustomize.config.k8s.io/v1beta1
-kind: Kustomization
-
-resources:
-  - namespace.yaml
-
-components:
-  - vllm
-  - jupyter
-  - tax-app
-
-secretGenerator:
-  - name: hugging-face
-    namespace: tax-office-ns
-    files:
-      - hugging-face-token.yaml
+# Service Account for the Jupyter Pod
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: jupyter-notebook-ksa
+  labels:
+    {{- include "tax-office.jupyter.labels" . | nindent 4 }}

@@ -18,26 +18,23 @@
 set -eu
 
 BASE_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
+TF_DIR="$BASE_DIR/terraform"
 
-# TODO: Setup kubectl creds.
+echo "Uninstalling Helm release..."
+helm uninstall tax-office -n tax-office-ns || true
 
-if command -v kubectl >/dev/null 2>&1; then
-    echo "Attempting to delete Kubernetes resources from $BASE_DIR/k8s..."
-    kubectl delete -k "$BASE_DIR/k8s" --ignore-not-found 2>/dev/null || true
+# Terraform unable to remove subnetwork, because it used by NEG created by GKE
+# Ingress. Wait until in will be relesed.
+echo "Waiting for 5 minutes (300 seconds) for GKE Ingress resources (like NEGs) to be fully deprovisioned by the GKE controller..."
+sleep 300
 
-    # Terraform unable to remove subnetwork, because it used by NEG created by GKE
-    # Ingress. Wait until in will be relesed.
-    echo "Waiting for 5 minutes (300 seconds) for GKE Ingress resources (like NEGs) to be fully deprovisioned by the GKE controller..."
-    sleep 300
-fi
-
-if [ -d "$BASE_DIR/terraform/.terraform" ]; then
+if [ -d "$TF_DIR/.terraform" ]; then
     echo "Running terraform destroy..."
-    (cd "$BASE_DIR/terraform" && terraform destroy -auto-approve)
+    (cd "$TF_DIR" && terraform destroy -auto-approve)
 fi
 
 # 1. Determine the data file path (Source of Truth: terraform/terraform.tfvars)
-TFVARS_FILE="$BASE_DIR/terraform/terraform.tfvars"
+TFVARS_FILE="$TF_DIR/terraform.tfvars"
 DEFAULT_FILE_PATH="$BASE_DIR/app/data_generator/tax_office_data.csv"
 DATA_FILE_PATH=""
 
@@ -48,7 +45,7 @@ if [ -f "$TFVARS_FILE" ]; then
     if [[ -n $EXTRACTED_PATH && $EXTRACTED_PATH != "REPLACE_ME" ]]; then
         # If path is relative (e.g. starting with ../ or ./), resolve it relative to the terraform directory
         if [[ $EXTRACTED_PATH == .* ]]; then
-            DATA_FILE_PATH=$(cd "$BASE_DIR/terraform" && realpath -m "$EXTRACTED_PATH" 2>/dev/null || true)
+            DATA_FILE_PATH=$(cd "$TF_DIR" && realpath -m "$EXTRACTED_PATH" 2>/dev/null || true)
         else
             DATA_FILE_PATH="$EXTRACTED_PATH"
         fi

@@ -26,6 +26,10 @@ resource "google_container_cluster" "tax_office_cluster" {
     workload_pool = local.wif_pool_id
   }
 
+  secret_manager_config {
+    enabled = false
+  }
+
   cluster_autoscaling {
     auto_provisioning_defaults {
       service_account = google_service_account.tax_office_node_sa.email

@@ -15,19 +15,19 @@
 # limitations under the License.
 #
 ---
-# Service to expose the Deployment
 apiVersion: v1
 kind: Service
 metadata:
-  name: jupyter-notebook-service
-  namespace: tax-office-ns
+  name: tax-office-app-service
+  labels:
+    {{- include "tax-office.taxApp.labels" . | nindent 4 }}
   annotations:
     cloud.google.com/neg: '{"ingress": true}'
 spec:
+  type: ClusterIP
   selector:
-    app: jupyter
+    app: tax-office-app
   ports:
     - protocol: TCP
       port: 80
-      targetPort: 8888
-  type: ClusterIP
+      targetPort: 5001

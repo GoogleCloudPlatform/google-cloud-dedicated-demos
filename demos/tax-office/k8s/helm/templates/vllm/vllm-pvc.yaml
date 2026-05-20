@@ -16,6 +16,16 @@
 #
 ---
 apiVersion: v1
-kind: Namespace
+kind: PersistentVolumeClaim
 metadata:
-  name: tax-office-ns
+  name: model-cache
+  labels:
+    {{- include "tax-office.vllm.labels" . | nindent 4 }}
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: {{ .Values.vllm.storageSize }}
+  storageClassName: hyperdisk-balanced
+  volumeMode: Filesystem

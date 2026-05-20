@@ -16,15 +16,8 @@
 #
 ---
 apiVersion: v1
-kind: PersistentVolumeClaim
+kind: ServiceAccount
 metadata:
-  name: model-cache
-  namespace: tax-office-ns
-spec:
-  accessModes:
-    - ReadWriteOnce
-  resources:
-    requests:
-      storage: 256Gi
-  storageClassName: hyperdisk-balanced
-  volumeMode: Filesystem
+  name: app-ksa
+  labels:
+    {{- include "tax-office.taxApp.labels" . | nindent 4 }}
