@@ -61,4 +61,7 @@ if [ -f "$DATA_FILE_PATH" ]; then
     rm -f "$DATA_FILE_PATH"
 fi
 
+echo "Cleaning up local deployment secrets..."
+rm -f "$BASE_DIR/k8s/helm/deployment-secrets.yaml"
+
 rm -rf "$BASE_DIR/scripts/.venv"

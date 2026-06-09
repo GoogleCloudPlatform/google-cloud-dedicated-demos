@@ -37,15 +37,18 @@ app = Flask(
   template_folder='frontend/templates',
   static_folder='frontend/static',
 )
-app.secret_key = os.environ.get('FLASK_SECRET_KEY', 'tax_office_demo_secret_key_2024')
+app.secret_key = os.environ.get('FLASK_SECRET_KEY')
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
-# Static credentials from env or defaults
-DEMO_USERNAME = os.environ.get('DEMO_USERNAME', 'demo')
-DEMO_PASSWORD = os.environ.get('DEMO_PASSWORD', 'demobq')  # pragma: allowlist secret
+# Static credentials from env
+DEMO_USERNAME = os.environ.get('DEMO_USERNAME')
+DEMO_PASSWORD = os.environ.get('DEMO_PASSWORD')  # pragma: allowlist secret
+
+if not DEMO_USERNAME or not DEMO_PASSWORD:
+  raise RuntimeError('DEMO_USERNAME and DEMO_PASSWORD environment variables must be set')
 
 LLM_SERVICE_URL = os.getenv('LLM_SERVICE_URL', 'http://llm-service:8000')
 LLM_MODEL_NAME = os.getenv('LLM_MODEL_NAME', 'google/gemma-3-27b-it')

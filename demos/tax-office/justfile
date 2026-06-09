@@ -1,0 +1,11 @@
+set shell := ["bash", "-euo", "pipefail", "-c"]
+
+default:
+    @just --list
+
+lint: k8s-validate
+    pre-commit run --all-files --show-diff-on-failure
+
+k8s-validate:
+    helm lint k8s/helm
+    helm template k8s/helm | kubeconform -summary -strict --ignore-missing-schemas -kubernetes-version 1.30.0

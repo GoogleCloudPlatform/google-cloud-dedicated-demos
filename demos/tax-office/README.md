@@ -1,45 +1,95 @@
-# **🇪🇺 Tax Anomaly Detection Platform (Sovereign Cloud)**
+# Sovereign Tax Anomaly Detection with BigQuery ML & Gemma
 
-This project provides an end-to-end solution for detecting potential anomalies
-in tax declarations using Google Cloud services, focusing on a **Sovereign
-Cloud** architecture.
+## Overview
 
-The solution encompasses data generation, infrastructure provisioning
-(Terraform), model training (BigQuery ML), application deployment (Flask
-dashboard and Jupyter notebook on GKE), and Gemma LLM model integration with RAG
-database.
+This sample application demonstrates how to optimize tax enforcement and data
+sovereignty by leveraging BigQuery ML as a unified machine learning platform,
+integrated with a RAG pipeline utilizing Google’s open-weight Gemma LLM.
 
-## **🚀 Core Components**
+**Please note that this is a proof-of-concept prototype built for demonstration
+purposes, and the implementation is not audited or secured for production use
+cases.**
 
-| Component | Tech | Purpose |
-| :--- | :--- | :--- |
-| **Data** | Python | Generate tax data (TRAINING/NEW\_FILING). |
-| **Infra** | Terraform | Provision VPC, GKE, BQ, GCS, Registry. |
-| **Model** | BQ ML | Logistic Regression for anomaly detection. |
-| **LLM** | Gemma | Gemma for enhancing Tax policy info. |
-| **RAG** | Vector DB | BigQuery Vector Search feature. |
-| **APP** | Flask | Web app for prediction visualization. |
-| **Analysis** | Jupyter | Notebook for ML analysis/validation. |
+### Business Use Case: Sovereign Tax Enforcement
 
-## 📂 **Project Structure Overview**
+In highly regulated environments, such as the public financial sector, the
+ability to detect fraud while keeping data strictly in-country is a
+mission-critical requirement.
 
-This table outlines the main directories within the project repository and
-their primary responsibilities.
+This application provides a blueprint for solving these challenges. Agencies can
+deploy BigQuery ML on GCD to analyze millions of tax declarations and identify
+high-risk anomalies in real time. Simultaneously, a local, open-weight Gemma RAG
+system uses vector search to map those anomalies directly to tax policies. This
+ensures context-aware compliance and full auditability — all without ever making
+external API calls or moving data outside the sovereign boundary.
 
-| Folder | Description |
-| :--- | :--- |
-| **scripts** | Scripts for deployment and destruction. |
-| **app** | **Frontend**, **backend**, and **generator**. |
-| **policies** | Policy docs for creating embeddings. |
-| **k8s** | **Kubernetes manifest files** (Helm charts). |
-| **terraform** | Infrastructure-related **Terraform code**. |
-| **docs** | Readme specific files. |
+### Target Audience
 
-## **👷‍♀️ Architecture diagram**
+This solution is designed for national tax authorities or regulated financial
+agencies. It serves the following stakeholders:
+
+- **Auditors & Tax Investigators**: Review real-time dashboards to investigate
+  flagged anomalies and use the grounded Gemma AI assistant to generate
+  traceable case summaries.
+- **Compliance Officers**: Centrally manage the system's legal knowledge base by
+  uploading and indexing official tax policy documents within a secure, local
+  interface.
+- **Data Scientists**: Securely access raw data via GKE-hosted Jupyter
+  environments to iteratively train, validate, and redeploy native anomaly
+  detection models.
+
+### Core Capabilities
+
+- **Sovereign Anomaly Detection**: Utilize native BigQuery ML to screen massive
+  datasets and flag high-risk anomalies instantly, ensuring data never leaves
+  the sovereign boundary.
+- **Retrieval-Augmented Generation (RAG)**: Execute semantic vector searches
+  across internal policy libraries to provide grounded, context-aware insights
+  using the open-weight Gemma LLM.
+- **Localized AI Assistance**: Generate summaries of policy violations through
+  an AI assistant running entirely within the regional perimeter.
+- **Dynamic Knowledge Management**: Easily maintain an up-to-date compliance
+  database by indexing official regulations as vector embeddings for immediate
+  use in RAG pipelines.
+
+### Architecture
+
+This architecture leverages native BigQuery ML and a RAG pipeline with Gemma LLM
+to deliver secure, context-aware tax anomaly detection. It guarantees local data
+residency and regulatory compliance by hosting all operations within a Google
+Cloud Dedicated (GCD) environment.
 
 ![Tax Office](docs/tax_office.png)
 
-## **🛠️ Prerequisites**
+### Components
+
+| Component    | Tech      | Purpose                                                                             |
+| :----------- | :-------- | :---------------------------------------------------------------------------------- |
+| **Data**     | Python    | Generate tax data (TRAINING/NEW_FILING).                                            |
+| **Infra**    | Terraform | Provision VPC, GKE, BQ, GCS, Registry.                                              |
+| **Model**    | BQ ML     | Logistic Regression for anomaly detection.                                          |
+| **LLM**      | Gemma     | Open-weight model providing context-aware insights grounded in official tax policy. |
+| **RAG**      | BigQuery  | Vector Search for semantic matching and RAG grounding.                              |
+| **Analysis** | Jupyter   | Notebook for ML model training and analysis/validation.                             |
+| **App**      | Flask     | Web app for prediction visualization.                                               |
+
+### Project Structure Overview
+
+This table outlines the main directories within the project repository and their
+primary responsibilities.
+
+| Folder        | Description                                 |
+| :------------ | :------------------------------------------ |
+| **scripts**   | Scripts for deployment and destruction.     |
+| **app**       | Frontend, backend, and generator.           |
+| **policies**  | Sample policy docs for creating embeddings. |
+| **k8s**       | Kubernetes manifest files (Helm charts).    |
+| **terraform** | Infrastructure-related Terraform code.      |
+| **docs**      | Readme specific files.                      |
+
+## Deploying Tax Anomaly Detection Sample Application
+
+### Prerequisites
 
 1. **Google Cloud Project:** A GCD project with billing enabled.
 2. **gcloud CLI:** The Google Cloud SDK installed and authenticated.
@@ -51,171 +101,234 @@ their primary responsibilities.
 5. **Python 3:** Python 3.9+ with pip and venv enabled.
 6. **kubectl**, **helm** binaries installed.
 
-## **⚙️ Deployment Pre-configuration Checklist**
-
-The entire pipeline is orchestrated by a set of shell scripts located in the
-./scripts directory.
+### Deployment Configuration
 
 Before initiating the deployment process, you must complete the following
-critical configurations to ensure proper authentication and resource linking
-within your Google Cloud Project.
+critical configuration steps to ensure proper authentication and resource
+linking within your Google Cloud Project.
 
-### **Configuration reference**
-
-| Variable | GCD In France (GA) | GCD In Germany (Preview) |
-| --- | --- | --- |
-| `UNIVERSE_WEB_DOMAIN` | `cloud.s3nscloud.fr` | `cloud.berlin-build0.goog` |
-| `UNIVERSE_API_DOMAIN` | `s3nsapis.fr` | `apis-berlin-build0.goog` |
-| `UNIVERSE_NAME` | `s3ns` | `berlin` |
-| `UNIVERSE_PREFIX` | `s3ns` | `eu0` |
-| `UNIVERSE_REGION` | `u-france-east1` | `u-germany-northeast1` |
-
-### 1. **Authentication and API Setup**
-
-1. Login in to GCD.
-
-   Initialize the gcloud CLI for your GCD universe. Use the values from the
-   Configuration Reference table to replace the `<PLACEHOLDERS>` in the commands
-   below.
-
-   First, create a Workforce Identity Federation (WIF) login configuration:
-
-   ```bash
-   AUDIENCE=locations/global/workforcePools/<WORKFORCE_POOL_ID>/providers/<WIF_PROVIDER_ID>
-   # Replace with values from the Configuration Reference table
-   UNIVERSE_WEB_DOMAIN="<UNIVERSE_WEB_DOMAIN>"
-   UNIVERSE_API_DOMAIN="<UNIVERSE_API_DOMAIN>"
-   UNIVERSE_NAME="<UNIVERSE_NAME>"
-   WF_POOL_FILE_PATH="/tmp"
-
-   gcloud config configurations create $UNIVERSE_NAME
-   gcloud config configurations activate $UNIVERSE_NAME
-   gcloud config set universe_domain $UNIVERSE_API_DOMAIN
-
-   gcloud iam workforce-pools create-login-config $AUDIENCE \
-     --universe-cloud-web-domain="$UNIVERSE_WEB_DOMAIN" \
-     --universe-domain="$UNIVERSE_API_DOMAIN" \
-     --output-file="$WF_POOL_FILE_PATH/wif-login-config-$UNIVERSE_NAME.json" \
-     --activate
-   ```
-
-   Once the above file has been created and the gcloud profile configured,
-   run the following command to login to the organization with gcloud.
-   This will prompt a web browser that will allow login to the organization
-   with the configured IdP.
-
-   ```bash
-   gcloud auth login \
-     --login-config=$WF_POOL_FILE_PATH/wif-login-config-$UNIVERSE_NAME.json \
-     --no-launch-browser
-
-   gcloud auth application-default login \
-     --login-config=$WF_POOL_FILE_PATH/wif-login-config-$UNIVERSE_NAME.json
-   ```
+1. Initialize the gcloud CLI for your GCD universe using Workforce Identity
+   Federation by following the instructions
+   [here](../../README.md#google-cloud-cli).
 
 2. Enable Cloud Resource Manager API. Ensure the Cloud Resource Manager API is
    explicitly enabled within your GCD Project's console. This is necessary for
    managing project resources.
 
-3. Get and provide Hugging Face token:
-
-   The Gemma LLM model is hosted on [Hugging Face](https://huggingface.co/), a
-   community platform for sharing machine learning models, datasets, and
-   applications. To download the model during deployment, you need an access
-   token.
-
-   * **Where to get a token:** Create a free account at
+3. Provide Hugging Face token:
+   - The Gemma LLM model is hosted on [Hugging Face](https://huggingface.co/), a
+     community platform for sharing machine learning models, datasets, and
+     applications. To download the model during deployment, you need an access
+     token.
+   - **Where to get a token:** Create a free account at
      [huggingface.co](https://huggingface.co/) and generate a **Read** access
      token in your [Settings > Tokens](https://huggingface.co/settings/tokens)
      page.
-   * **Model Access:** Before deploying, make sure you have requested and been
-     granted access to the [Gemma model](https://huggingface.co/google/gemma-3-27b-it)
-     on Hugging Face (this typically requires accepting Google's license terms).
+   - **Model Access:** Before deploying, make sure you have requested and been
+     granted access to the
+     [Gemma model](https://huggingface.co/google/gemma-3-27b-it) on Hugging Face
+     (this typically requires accepting Google's license terms).
+   - Once you have the token, update the `hugging_face_token` parameter value in
+     the `terraform.tfvars` file with your newly created token in the next step.
 
-   Once you have the token, update the `hugging_face_token` parameter value in 
-   `terraform.tfvars` file with your newly created token in next step.
+4. Navigate to `terraform` and update the `terraform.tfvars` file with your
+   **mandatory** project-specific values.
 
-4. Before deployment, navigate to `terraform` and update the `terraform.tfvars`
-   file with your **mandatory** project-specific values.
+   | Variable              | Description                                            |
+   | :-------------------- | :----------------------------------------------------- |
+   | `project_id`          | Your GCD Project ID.                                   |
+   | `region`              | The region for resources (e.g., u-germany-northeast1). |
+   | `universe_api_domain` | Sovereign Universe API domain.                         |
+   | `data_bucket_name`    | Unique bucket name for demo data.                      |
+   | `hugging_face_token`  | Your hugging face token from step 3.                   |
+   | `demo_username`       | Username for login to the dashboard.                   |
+   | `demo_password`       | Password for login to dashboard and Jupyter Notebook.  |
 
-   | Variable | Status | Description |
-   | :--- | :--- | :--- |
-   | `project_id` | **Mandatory** | Your GCD Project ID. |
-   | `region` | **Mandatory** | Resource region (e.g., `u-germany-northeast1`). |
-   | `universe_api_domain` | **Mandatory** | Sovereign Universe API domain. |
-   | `data_bucket_name ` | **Mandatory** | Unique backet name. |
-   | `hugging_face_token` | **Mandatory** | Your hugging face token. |
-   | `demo_password` | **Mandatory** | Password for demologin to dashboard and Jupyter Notebook. |
-   
+#### Gemma Model Usage & Deployment
 
-### **2. Full Deployment**
+The demo uses the open source [vLLM library](https://docs.vllm.ai/en/stable/) to
+automatically download and deploy models via its native Hugging Face
+[integration](https://docs.vllm.ai/en/v0.7.0/design/huggingface_integration.html).
+
+##### Data Privacy & Localization:
+
+Once the model weights are downloaded, all communication with Hugging Face
+servers ceases. All subsequent LLM requests are processed entirely locally
+within your environment — no data is ever sent back to external servers. This
+setup is optimized for standard demo reliability and security.
+
+##### ​Customizing for Strict Sovereignty:
+
+If downloading directly from Hugging Face does not meet your specific data
+sovereignty requirements, you can modify the vLLM Kubernetes deployment
+configuration located at `k8s/helm/templates/vllm/`. For example, you can:
+
+- ​Pre-download the model to local storage from an approved provider.
+- Implement checksum verification to ensure model integrity.
+- Update the Helm templates to mount and point vLLM to your localized storage.
+
+### Deployment Scripts
+
+The entire pipeline is orchestrated by a set of shell scripts located in the
+`scripts` directory.
+
+#### Full Deployment
 
 The `full_deploy.sh` script handles the entire workflow: data generation,
 infrastructure, image build/push, and application deployment.
 
 ```bash
-# Navigate to the scripts directory
-cd scripts
 # Run the full deployment script
-./full_deploy.sh
+./scripts/full_deploy.sh
 ```
 
 Upon completion, the script will output the external IP addresses for the **Tax
 Office Dashboard** and the **Jupyter Notebook**.
 
 > IMPORTANT:
->
+> 
 > **Wait for Deployment:** It may take **~15 minutes** for all pods to be fully
 > deployed and ready. The Gemma LLM model deployment, in particular, requires
 > significant time to pull and initialize.
 
-### **3. Log in to the Jupyter Notebook**
+#### Standalone Deployment
+
+We have scripts under `scripts/standalone` in case you want to deploy each
+component separately. Make sure you run first:
+
+```bash
+source scripts/standalone/deploy_infra.sh
+```
+
+as it sets necessary environment variables for all other standalone scripts.
+
+## Access and Usage
+
+The web application and Jupyter Notebook are configured with the credentials
+that are set in the `terraform.tfvars` file during step 4 of the
+[Deployment Configuration](#deployment-configuration). The jupyter notebook only
+requires the password, while the dashboard asks for both username and password.
+
+### Restricting Public Access
+
+Once deployment is complete, the public IP addresses for the Jupyter Notebook
+and the web app will be displayed.
+
+​⚠️ **Critical Security Note**: By default, no firewall rules or access
+restrictions are applied to these GKE endpoints, making them accessible to
+anyone on the internet.
+
+​If you plan to leave this demo running long-term, please secure your
+environment using one of the following methods:
+- **​IP Restriction**: Limit incoming traffic exclusively to your internal IP
+  subnets.
+- **Private Endpoints**: Reconfigure the GKE services to disable public IP
+  exposure entirely.
+
+### Jupyter Notebook
+
+The Jupyter Notebook will be ready once the `full_deploy.sh` script has finished
+running or `deploy_app_gke.sh` has finished running in case standalone scripts
+are being run:
 
 1. Click the provided **IP address** to open the deployed Jupyter Notebook.
-2. Use the credentials (see [Access Credentials](#5-access-credentials)
-   below) to log in.
+2. Use the credentials (see [Access and Usage](#access-and-usage)) to log in.
 3. Once logged in, open `anomaly_detector.ipynb`.
 4. From the **Run** menu, select **Run All Cells**.
 
-This script will automatically create the **Machine Learning model** and all
-related **views**.
+The notebook will run all cells and automatically create the **Logistic
+Regression BQ model** and all related **views**.
 
-### **4. Log in to the Main Dashboard**
+### Web App
 
-1. Click the provided **IP address** to open the Main Dashboard.
-2. Use the credentials (see [Access Credentials](#5-access-credentials)
-   below) to log in.
+Once the deployment script completes successfully, you can access the
+interactive dashboard using the provided external IP address. Follow this
+step-by-step flow to navigate the application and simulate an auditor workflow:
 
-### **5. Access Credentials**
+1. **Log In**: Navigate to the Web App URL and log in using previously setup
+   credentials (see [Access and Usage](#access-and-usage)). Click **Continue to
+   Dashboard** once the secure connection to the Google Cloud Dedicated
+   environment is established.
+2. **Review Real-Time Anomalies**: The main dashboard displays tax declarations
+   scored by the BigQuery ML Logistic Regression engine in real-time. High-risk
+   anomalies requiring immediate investigation are highlighted in red.
+3. **Analyze a Violation**: Click on a specific flagged anomaly row to activate
+   the Policy Violation Engine. The system automatically uses BigQuery Vector
+   Search to match the filing against internal tax codes and presents the exact
+   policy clause violated along with a semantic similarity score.
+4. **Interact with the AI Assistant**: Open the chat console to interact with
+   the grounded, open-weights Gemma LLM. Enter a prompt such as
+   `"summarize this policy violation for me"` to receive a localized, legally
+   sound case summary generated securely within the regional perimeter.
+5. **Manage Compliance Documents**: Click on Policies in the top-right corner to
+   access the Policy Management Interface. Authorized compliance team members
+   can upload, edit, or delete policy documents here, which are instantly
+   chunked and indexed as vector embeddings within BigQuery to dynamically
+   update the AI's knowledge base.
 
-The web applications and Jupyter Notebook are configured with static `demo` login 
-by default. Password you should take from `demo_password` in `terraform.tfvars`.
+## Testing with Sample Documents
 
-## **6. Standalone deployments**
+The repository contains pre-structured configurations to simulate both incoming
+taxpayer records and official legal frameworks. Testing your deployment involves
+verifying how these two data sources interact.
 
-We have scripts under `scripts/standalone` in case you want to deploy each component separately. Make sure you run first:
+### 1. Generating Sample Tax Declarations
 
-```bash
-source standalone/deploy_infra.sh
-```
+You do not need to manually upload mock taxpayer filings. The automated
+deployment pipeline (`full_deploy.sh`) automatically runs a Python generator
+script (`app/data_generator`) to produce mock taxpayer records (`TRAINING` and
+`NEW_FILING` datasets) and ingest them directly into BigQuery.
 
+To verify these sample filings are present, you can look at the interactive web
+app dashboard, which pulls rows of live-scored declarations directly from this
+generated dataset.
 
-## **🔥 Cleanup**
+### 2. Uploading Sample Policy Documents
+
+To test how the system matches those sample filings against internal
+regulations, you must manually populate the knowledge base with your own policy
+files or the provided examples:
+
+1.  Log into the Web App dashboard using your credentials (see
+    [Access and Usage](#access-and-usage)) and click on **Policies** in the
+    top-right corner.
+2.  Click on **Select files to upload**.
+3.  Navigate to your local copy of the repository, open the `policies/`
+    directory, select one of the provided tax policy files, and click **Open**.
+    You can also upload your own tax policy files, however make sure that these
+    are text (UTF-8 encoded) files, not in PDF, HTML, or Word documents.
+4.  The system will instantly chunk the document and calculate semantic vector
+    embeddings natively inside BigQuery.
+
+### 3. Validating the End-to-End Match
+
+Once both data sources exist in BigQuery, you can validate the integration:
+
+1. Return to the main dashboard and click on a high-risk anomaly row
+   (*highlighted in red*).
+2. Verify that the Policy Violation Engine successfully calculates a semantic
+   match between the specific data in that mock tax declaration and the text
+   chunks from your uploaded policy file.
+3. Open the AI Assistant chat box and ask the model to analyze the match (e.g.,
+   `"summarize this policy violation for me"`) to confirm that the local Gemma
+   LLM is successfully reading the data and policy context within the regional
+   perimeter.
+
+## Cleanup
 
 To destroy all cloud resources created by Terraform (GKE, VPC, BigQuery, GCS,
-Artifact Registry) and clean up local data artifacts, run the destroy
-script. **This action is irreversible.**
+Artifact Registry) and clean up local data artifacts, run the destroy script.
+
+​⚠️ **This action is irreversible.**
 
 ```bash
-# Navigate to the scripts directory
-cd scripts
-# Run the full destruction script (requires confirmation)
-./full_destroy.sh
+# Run the full destruction script
+./scripts/full_destroy.sh
 ```
 
-## **❓ Troubleshooting**
+## Troubleshooting
 
-### **Terraform Destroy Failures**
+### Terraform Destroy Failures
 
 Occasionally, the `full_destroy.sh` script may fail during the Terraform
 destruction phase with an error similar to:
@@ -225,16 +338,16 @@ Error: Error waiting for Deleting Network: The network resource '...' is
 already being used by '.../networkEndpointGroups/...'
 ```
 
-This happens when GKE Network Endpoint Groups (NEGs) or VPC routes created
-by Kubernetes Ingress resources are not fully deprovisioned by the Google
-Cloud controller before Terraform attempts to delete the network.
+This happens when GKE Network Endpoint Groups (NEGs) or VPC routes created by
+Kubernetes Ingress resources are not fully deprovisioned by the Google Cloud
+controller before Terraform attempts to delete the network.
 
 **Solution:**
 
 1. Manually delete the offending Network Endpoint Groups (NEGs) in the Google
-Cloud Console or using the `gcloud` CLI.
+   Cloud Console or using the `gcloud` CLI.
 2. Once the NEGs are removed, re-run the `full_destroy.sh` script to complete
- the cleanup.
+   the cleanup.
 
 ---
 

@@ -512,7 +512,7 @@ class BigQueryClient:
 
   def delete_policy(self, policy_id: str) -> bool:
     """Delete a policy and its embeddings.
-    
+
     Uses a soft-delete fallback if BigQuery prevents deletion (e.g. streaming buffer).
     """
     if not self.client:
@@ -549,7 +549,7 @@ class BigQueryClient:
     """Workaround for streaming buffer: mark policy as deleted instead of removing it."""
     if not self.client:
       return False
-    
+
     query_job = self.client.query(
       MARK_POLICY_DELETED_QUERY, job_config=job_config
     )

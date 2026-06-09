@@ -58,7 +58,10 @@ spec:
             - name: MODEL_ID
               value: google/gemma-3-27b-it
             - name: HUGGING_FACE_HUB_TOKEN
-              value: {{ .Values.vllm.huggingFaceToken }}
+              valueFrom:
+                secretKeyRef:
+                  name: vllm-gemma-secret
+                  key: huggingface-token
           image: "{{ .Values.vllm.image.repository }}:{{ .Values.vllm.image.tag }}"
           imagePullPolicy: {{ .Values.vllm.image.pullPolicy }}
           name: inference-server

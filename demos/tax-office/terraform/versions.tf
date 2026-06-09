@@ -14,10 +14,24 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-project_id          = "REPLACE_ME"
-region              = "REPLACE_ME"
-universe_api_domain = "REPLACE_ME"
-data_bucket_name    = "REPLACE_ME"
-hugging_face_token  = "REPLACE_ME" # pragma: allowlist secret
-demo_username       = "REPLACE_ME"
-demo_password       = "REPLACE_ME" # pragma: allowlist secret
+terraform {
+  required_version = ">= 1.0"
+  required_providers {
+    google = {
+      source  = "hashicorp/google"
+      version = "~> 7.0"
+    }
+    time = {
+      source  = "hashicorp/time"
+      version = "~> 0.13"
+    }
+    local = {
+      source  = "hashicorp/local"
+      version = ">= 2.0"
+    }
+    random = {
+      source  = "hashicorp/random"
+      version = ">= 3.0"
+    }
+  }
+}

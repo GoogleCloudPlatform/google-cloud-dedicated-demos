@@ -15,6 +15,11 @@
 # limitations under the License.
 #
 import io
+import os
+# Set environment variables for testing before importing app
+os.environ['DEMO_USERNAME'] = 'test_demo_user'
+os.environ['DEMO_PASSWORD'] = 'test_demo_password'
+os.environ['FLASK_SECRET_KEY'] = 'test_flask_secret_key'
 import unittest
 from unittest import mock
 import app

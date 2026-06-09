@@ -85,17 +85,34 @@ spec:
           env:
             - name: JUPYTER_ENABLE_LAB
               value: "yes"
-            - name: JUPYTER_TOKEN
-              value: {{ .Values.jupyter.token | quote }}
+            - name: JUPYTER_RAW_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: jupyter-notebook-secret
+                  key: jupyter-raw-password
 
           volumeMounts:
             - name: notebook-volume
               mountPath: /home/jovyan  # The home directory for 'jovyan' user
-          command: ["start-notebook.sh"]
+          command: ["sh", "-c"]
           args:
-            - "--NotebookApp.password=$(JUPYTER_TOKEN)"
-            - "--NotebookApp.token=''"
-            - "--NotebookApp.trust_xheaders=True"
+            - |
+              if [ -z "$JUPYTER_RAW_PASSWORD" ]; then
+                echo "Error: JUPYTER_RAW_PASSWORD is not set"
+                exit 1
+              fi
+              HASHED_PW=$(python3 -c "
+              import os
+              try:
+                  from jupyter_server.auth import passwd
+              except ImportError:
+                  from notebook.auth import passwd
+              print(passwd(os.environ['JUPYTER_RAW_PASSWORD']))
+              ")
+              exec start-notebook.sh \
+                --NotebookApp.password="${HASHED_PW}" \
+                --NotebookApp.token='' \
+                --NotebookApp.trust_xheaders=True
 
       volumes:
         - name: notebook-volume

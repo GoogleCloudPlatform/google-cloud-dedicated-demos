@@ -27,3 +27,8 @@ resource "time_sleep" "wait_for_service_enablement" {
   depends_on      = [google_project_service.apis_to_enable]
   create_duration = "180s"
 }
+
+resource "random_password" "flask_secret_key" {
+  length  = 32
+  special = true
+}

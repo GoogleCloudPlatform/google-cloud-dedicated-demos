@@ -65,20 +65,21 @@ output "policy_embeddings_table_id" {
   value = var.policy_embeddings_table_id
 }
 
-output "flask_secret_key" {
-  description = "Secret key for Flask sessions."
-  value       = var.flask_secret_key
-  sensitive   = true
-}
 
-output "demo_password" {
-  description = "Password for the demo application user."
-  value       = var.demo_password
-  sensitive   = true
-}
-
-output "hugging_face_token" {
-  description = "Hugging Face API token for downloading models."
-  value       = var.hugging_face_token
-  sensitive   = true
+resource "local_file" "helm_secrets" {
+  filename        = "${path.module}/../k8s/helm/deployment-secrets.yaml"
+  file_permission = "0600"
+  content = yamlencode({
+    taxApp = {
+      flaskSecretKey = random_password.flask_secret_key.result
+      demoPassword   = var.demo_password
+      demoUsername   = var.demo_username
+    }
+    jupyter = {
+      rawPassword    = var.demo_password
+    }
+    vllm = {
+      huggingFaceToken = var.hugging_face_token
+    }
+  })
 }

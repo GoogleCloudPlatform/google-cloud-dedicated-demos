@@ -14,19 +14,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-terraform {
-  required_version = ">= 1.0"
-  required_providers {
-    google = {
-      source  = "hashicorp/google"
-      version = "~> 7.0"
-    }
-    time = {
-      source  = "hashicorp/time"
-      version = "~> 0.13"
-    }
-  }
-}
 
 provider "google" {
   project               = var.project_id
@@ -35,9 +22,10 @@ provider "google" {
   billing_project       = var.project_id
   request_timeout       = "5m"
   # Universe configuration for Sovereign
-  universe_domain       = var.universe_api_domain
+  universe_domain = var.universe_api_domain
 }
 
 data "google_project" "project" {
   project_id = var.project_id
 }
+

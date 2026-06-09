@@ -45,9 +45,20 @@ spec:
             - containerPort: 5001
           env:
             - name: FLASK_SECRET_KEY
-              value: {{ .Values.taxApp.flaskSecretKey }}
+              valueFrom:
+                secretKeyRef:
+                  name: tax-office-app-secret
+                  key: flask-secret-key
             - name: DEMO_PASSWORD
-              value: {{ .Values.taxApp.demoPassword }}
+              valueFrom:
+                secretKeyRef:
+                  name: tax-office-app-secret
+                  key: demo-password
+            - name: DEMO_USERNAME
+              valueFrom:
+                secretKeyRef:
+                  name: tax-office-app-secret
+                  key: demo-username
             - name: PROJECT_ID
               value: {{ .Values.global.projectId }}
             - name: UNIVERSE_DOMAIN

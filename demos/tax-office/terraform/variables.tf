@@ -140,18 +140,18 @@ variable "policy_embeddings_table_id" {
 
 # --- 6. Secrets (Sensitive) ---
 
-variable "flask_secret_key" {
-  description = "Secret key for Flask sessions."
-  type        = string
-  sensitive   = true
-  default     = "change-me-in-tfvars"
-}
 
 variable "demo_password" {
   description = "Password for the demo application user."
   type        = string
   sensitive   = true
   default     = "change-me-in-tfvars"
+}
+
+variable "demo_username" {
+  description = "Username for the demo application."
+  type        = string
+  default     = "demo"
 }
 
 variable "hugging_face_token" {

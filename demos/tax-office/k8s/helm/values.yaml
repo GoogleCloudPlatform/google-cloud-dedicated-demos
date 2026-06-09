@@ -19,7 +19,7 @@ global:
   universeDomain: "changeme"
 
 jupyter:
-  token: "argon2:$argon2id$v=19$m=10240,t=10,p=8$p490MJeztEo3GFH9VouZUg$3ryOxE77Gm4F8YpJ+eXglECdg1+4csvdDZyOjQz+m9A"
+  rawPassword: "changeme" # pragma: allowlist secret
   image:
     repository: docker.io/jupyter/base-notebook
     tag: x86_64-ubuntu-22.04
@@ -35,6 +35,7 @@ taxApp:
   replicaCount: 3
   flaskSecretKey: changeme # pragma: allowlist secret
   demoPassword: changeme # pragma: allowlist secret
+  demoUsername: changeme
 
 vllm:
   replicaCount: 1
