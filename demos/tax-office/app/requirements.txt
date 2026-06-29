@@ -109,9 +109,9 @@ fastembed==0.7.3 \
     --hash=sha256:04e95eb5ccc706513166c23bf8e5429ed160c5783b7b11514431a77624d480a5 \
     --hash=sha256:a377b57843abd773318042960be39f1aef29827530acb98b035a554742a85cdf
     # via -r requirements.in
-filelock==3.19.1 \
-    --hash=sha256:66eda1888b0171c998b35be2bcc0f6d75c388a7ce20c3f3f37aa8e96c2dddf58 \
-    --hash=sha256:d38e30481def20772f5baf097c122c3babc4fcdb7e14e57049eb9d88c6dc017d
+filelock==3.20.3 \
+    --hash=sha256:18c57ee915c7ec61cff0ecf7f0f869936c7c30191bb0cf406f1341778d0834e1 \
+    --hash=sha256:4b0dda527ee31078689fc205ec4f1c1bf7d56cf88b6dc9426c4f230e46c2dce1
     # via huggingface-hub
 flask==2.3.3 \
     --hash=sha256:09c347a92aa7ff4a8e7f3206795f30d826654baf38b873d0744cd571ca609efc \
