@@ -19,6 +19,12 @@ document.addEventListener("DOMContentLoaded", function () {
   loadDetailedData();
 });
 
+window.addEventListener("languageChanged", function () {
+  if (window.currentDetailData) {
+    populateDetailedData(window.currentDetailData);
+  }
+});
+
 // Load detailed data from API
 async function loadDetailedData() {
   const taxpayerId = document.getElementById("taxpayer-id").textContent;
@@ -34,8 +40,12 @@ async function loadDetailedData() {
     }
 
     const result = await response.json();
+    window.currentDetailData = result.data;
     populateDetailedData(result.data);
     hideLoading();
+    if (window.i18n && window.i18n.applyTranslations) {
+      window.i18n.applyTranslations();
+    }
     checkPolicyViolation(taxpayerId, declarationId);
   } catch (error) {
     console.error("Error fetching detailed data:", error);
@@ -45,14 +55,22 @@ async function loadDetailedData() {
 
 // Populate the page with detailed data
 function populateDetailedData(data) {
+  const naTxt = window.i18n ? window.i18n.t("common.na") : "N/A";
   // Basic Information
+  const indTxt = window.i18n
+    ? window.i18n.t("detail.badge.individual")
+    : "INDIVIDUAL";
+  const busTxt = window.i18n
+    ? window.i18n.t("detail.badge.business")
+    : "BUSINESS";
+  const typeTxt = data.taxpayer_type === "INDIVIDUAL" ? indTxt : busTxt;
   document.getElementById("taxpayer-type").innerHTML =
-    `<span class="badge ${data.taxpayer_type === "INDIVIDUAL" ? "badge-individual" : "badge-business"}">${data.taxpayer_type}</span>`;
-  document.getElementById("tax-year").textContent = data.tax_year || "N/A";
+    `<span class="badge ${data.taxpayer_type === "INDIVIDUAL" ? "badge-individual" : "badge-business"}">${typeTxt}</span>`;
+  document.getElementById("tax-year").textContent = data.tax_year || naTxt;
   document.getElementById("industry-code").textContent =
-    data.industry_code || "N/A";
+    data.industry_code || naTxt;
   document.getElementById("address-state").textContent =
-    data.address_state || "N/A";
+    data.address_state || naTxt;
 
   // Show/hide type-specific information
   if (data.taxpayer_type === "INDIVIDUAL") {
@@ -121,7 +139,7 @@ function populateDetailedData(data) {
 
   // Filing & Payment Behavior
   document.getElementById("filing-date").textContent =
-    data.filing_date || "N/A";
+    data.filing_date || naTxt;
   document.getElementById("is-late-filing").innerHTML = getBooleanBadge(
     data.is_late_filing,
   );
@@ -131,7 +149,7 @@ function populateDetailedData(data) {
     data.has_amendments,
   );
   document.getElementById("payment-date").textContent =
-    data.payment_date || "N/A";
+    data.payment_date || naTxt;
   document.getElementById("is-late-payment").innerHTML = getBooleanBadge(
     data.is_late_payment,
   );
@@ -159,14 +177,14 @@ function populateDetailedData(data) {
 
   // Anomaly Detection Results
   document.getElementById("is-anomaly").innerHTML =
-    data.is_anomaly !== null ? getBooleanBadge(data.is_anomaly) : "N/A";
+    data.is_anomaly !== null ? getBooleanBadge(data.is_anomaly) : naTxt;
   document.getElementById("anomaly-confidence").textContent = (
     data.anomaly_confidence * 100
   ).toFixed(2);
   document.getElementById("data-source").textContent =
-    data.data_source || "N/A";
-  document.getElementById("created-at").textContent = data.created_at || "N/A";
-  document.getElementById("updated-at").textContent = data.updated_at || "N/A";
+    data.data_source || naTxt;
+  document.getElementById("created-at").textContent = data.created_at || naTxt;
+  document.getElementById("updated-at").textContent = data.updated_at || naTxt;
 
   setProgressBar("anomaly-confidence-bar", data.anomaly_confidence * 100);
 
@@ -185,8 +203,12 @@ function formatCurrency(amount) {
 }
 
 function getBooleanBadge(value) {
-  if (value === null || value === undefined) return "N/A";
-  return `<span class="badge ${value ? "badge-true" : "badge-false"}">${value ? "Yes" : "No"}</span>`;
+  if (value === null || value === undefined) {
+    return window.i18n ? window.i18n.t("common.na") : "N/A";
+  }
+  const yesTxt = window.i18n ? window.i18n.t("common.yes") : "Yes";
+  const noTxt = window.i18n ? window.i18n.t("common.no") : "No";
+  return `<span class="badge ${value ? "badge-true" : "badge-false"}">${value ? yesTxt : noTxt}</span>`;
 }
 
 function setProgressBar(elementId, percentage) {
@@ -301,6 +323,10 @@ async function checkPolicyViolation(taxpayerId, declarationId) {
     message.style.display = "block";
     message.className = "policy-message error";
     message.textContent = "Error checking policy violations: " + error.message;
+  } finally {
+    if (window.i18n && window.i18n.applyTranslations) {
+      window.i18n.applyTranslations();
+    }
   }
 }
 
@@ -322,12 +348,16 @@ function setupPolicyToggle() {
       // Hide policy
       policyContainer.style.display = "none";
       icon.textContent = "visibility";
-      text.textContent = "View Full Policy";
+      text.textContent = window.i18n
+        ? window.i18n.t("detail.view_full_policy")
+        : "View Full Policy";
     } else {
       // Show policy
       policyContainer.style.display = "block";
       icon.textContent = "visibility_off";
-      text.textContent = "Hide Full Policy";
+      text.textContent = window.i18n
+        ? window.i18n.t("detail.hide_full_policy")
+        : "Hide Full Policy";
     }
   });
 }

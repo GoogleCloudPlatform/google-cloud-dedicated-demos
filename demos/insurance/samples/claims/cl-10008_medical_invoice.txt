@@ -1,0 +1,9 @@
+==================================================
+CLAIM ID: CL-10008
+DOCUMENT TYPE: MEDICAL INVOICE
+Date of Service: 2025-02-20
+Patient: Céline Leclerc (ID: 8901234)
+DOB: 1988-01-01
+Provider: Dr. François Prototype (Provider ID: 9)
+Service: Dermatology specialist consultation
+Amount: 95.00 €

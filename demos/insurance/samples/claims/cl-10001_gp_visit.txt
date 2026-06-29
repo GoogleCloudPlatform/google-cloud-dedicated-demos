@@ -1,0 +1,10 @@
+==================================================
+CLAIM ID: CL-10001
+DOCUMENT TYPE: VISIT SUMMARY
+Date of Service: 2025-01-05
+Patient: François Dubois (ID: 5478932)
+DOB: 1968-01-01
+Provider: Dr. Thomas Fictif (General Practice)
+Amount Billed: 35.00 €
+
+Notes: Patient presented for routine annual checkup. Vitals normal. General health is good. Approved.

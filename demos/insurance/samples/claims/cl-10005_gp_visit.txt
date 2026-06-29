@@ -1,0 +1,9 @@
+==================================================
+CLAIM ID: CL-10005
+DOCUMENT TYPE: PRESCRIPTION & VISIT NOTE
+Date of Service: 2025-01-22
+Patient: Philippe Lambert (ID: 2345678)
+DOB: 1981-01-01
+Provider: Cabinet Médical Fictif (Provider ID: 4)
+Service: General practitioner visit - routine checkup
+Total Billed: 35.00 €

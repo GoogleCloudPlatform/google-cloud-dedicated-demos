@@ -14,6 +14,13 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+// Re-render policy list when language switches
+window.addEventListener("languageChanged", function () {
+  if (window.cachedPolicies) {
+    renderPoliciesList(window.cachedPolicies);
+  }
+});
+
 // Initialize the policies page
 document.addEventListener("DOMContentLoaded", function () {
   setupPolicyUpload();
@@ -73,15 +80,22 @@ async function uploadMultiplePolicies(files) {
   let failCount = 0;
   const failedFiles = [];
 
-  showLoadingOverlay(
-    "Uploading Policies",
-    `Preparing to upload ${totalFiles} file(s)...`,
-  );
+  const titleTxt = window.i18n
+    ? window.i18n.t("policies.overlay.uploading_title")
+    : "Uploading Policies";
+  const prepTxt = window.i18n
+    ? window.i18n.t("policies.overlay.uploading_prep")
+    : `Preparing to upload ${totalFiles} file(s)...`;
+  showLoadingOverlay(titleTxt, prepTxt);
+
+  const fileTxt = window.i18n
+    ? window.i18n.t("policies.overlay.uploading_file")
+    : "Uploading file:";
 
   // Upload files sequentially to avoid overwhelming the server
   for (let i = 0; i < files.length; i++) {
     const file = files[i];
-    updateLoadingProgress(`Uploading ${i + 1}/${totalFiles}: ${file.name}`);
+    updateLoadingProgress(`${fileTxt} ${i + 1}/${totalFiles}: ${file.name}`);
 
     try {
       const formData = new FormData();
@@ -107,12 +121,21 @@ async function uploadMultiplePolicies(files) {
 
   // Show completion message
   if (failCount === 0) {
-    updateLoadingProgress(`Successfully uploaded ${successCount} file(s)!`);
+    const succTxt = window.i18n
+      ? window.i18n.t("policies.overlay.upload_success")
+      : `Successfully uploaded ${successCount} file(s)!`;
+    updateLoadingProgress(succTxt);
   } else if (successCount === 0) {
-    updateLoadingProgress(`Failed to upload all ${failCount} file(s)`);
+    const failTxt = window.i18n
+      ? window.i18n.t("policies.overlay.upload_fail")
+      : `Failed to upload all ${failCount} file(s)`;
+    updateLoadingProgress(failTxt);
   } else {
+    const failTxt = window.i18n
+      ? window.i18n.t("policies.overlay.upload_fail")
+      : "Failed to upload file(s).";
     updateLoadingProgress(
-      `Uploaded ${successCount} file(s), ${failCount} failed`,
+      `${failTxt} (${successCount} OK, ${failCount} failed)`,
     );
   }
 
@@ -122,30 +145,34 @@ async function uploadMultiplePolicies(files) {
   hideLoadingOverlay();
 }
 
-async function loadPolicies() {
+function renderPoliciesList(policies) {
+  window.cachedPolicies = policies;
   const container = document.getElementById("policies-container");
-  container.innerHTML =
-    '<div class="loading-policies">Loading policies...</div>';
+  if (!container) return;
 
-  try {
-    const response = await fetch("/api/policies");
-    if (!response.ok) {
-      throw new Error("Failed to load policies");
-    }
+  if (policies.length === 0) {
+    const emptyTxt = window.i18n
+      ? window.i18n.t("policies.list.empty")
+      : "No policies uploaded yet. Upload your first policy document to get started!";
+    container.innerHTML = `<div class="loading-policies">${emptyTxt}</div>`;
+    return;
+  }
 
-    const policies = await response.json();
+  const sizeTxt = window.i18n
+    ? window.i18n.t("policies.card.size")
+    : "File Size:";
+  const embedTxt = window.i18n
+    ? window.i18n.t("policies.card.embed")
+    : "Embeddings:";
+  const uploadedTxt = window.i18n
+    ? window.i18n.t("policies.card.uploaded")
+    : "Uploaded:";
 
-    if (policies.length === 0) {
-      container.innerHTML =
-        '<div class="loading-policies">No policies uploaded yet. Upload your first policy document to get started!</div>';
-      return;
-    }
-
-    container.innerHTML = "";
-    policies.forEach((policy) => {
-      const policyCard = document.createElement("div");
-      policyCard.className = "policy-card";
-      policyCard.innerHTML = `
+  container.innerHTML = "";
+  policies.forEach((policy) => {
+    const policyCard = document.createElement("div");
+    policyCard.className = "policy-card";
+    policyCard.innerHTML = `
                 <div class="policy-card-header">
                     <div class="policy-card-icon">
                         <span class="material-icons">description</span>
@@ -157,20 +184,37 @@ async function loadPolicies() {
                 </div>
                 <div class="policy-card-meta">
                     <div class="policy-meta-item">
-                        <span class="policy-meta-label">File Size:</span>
+                        <span class="policy-meta-label">${sizeTxt}</span>
                         <span class="policy-meta-value">${formatFileSize(policy.file_size)}</span>
                     </div>
                     <div class="policy-meta-item">
-                        <span class="policy-meta-label">Embeddings:</span>
+                        <span class="policy-meta-label">${embedTxt}</span>
                         <span class="policy-meta-value">${policy.embedding_count}</span>
                     </div>
                 </div>
                 <div class="policy-card-footer">
-                    Uploaded: ${policy.uploaded_at}
+                    ${uploadedTxt} ${policy.uploaded_at}
                 </div>
             `;
-      container.appendChild(policyCard);
-    });
+    container.appendChild(policyCard);
+  });
+}
+
+async function loadPolicies() {
+  const container = document.getElementById("policies-container");
+  const loadingTxt = window.i18n
+    ? window.i18n.t("policies.list.loading")
+    : "Loading policies...";
+  container.innerHTML = `<div class="loading-policies">${loadingTxt}</div>`;
+
+  try {
+    const response = await fetch("/api/policies");
+    if (!response.ok) {
+      throw new Error("Failed to load policies");
+    }
+
+    const policies = await response.json();
+    renderPoliciesList(policies);
   } catch (error) {
     console.error("Error loading policies:", error);
     container.innerHTML =
@@ -210,7 +254,13 @@ async function deletePolicy(policyId, filename) {
 }
 
 async function executePolicyDelete(policyId) {
-  showLoadingOverlay("Deleting Policy", "Removing policy and embeddings...");
+  const delTitle = window.i18n
+    ? window.i18n.t("policies.overlay.deleting_title")
+    : "Deleting Policy";
+  const delDesc = window.i18n
+    ? window.i18n.t("policies.overlay.deleting_desc")
+    : "Removing policy and embeddings...";
+  showLoadingOverlay(delTitle, delDesc);
 
   try {
     const response = await fetch(`/api/policies/${policyId}/delete`, {
@@ -233,7 +283,10 @@ async function executePolicyDelete(policyId) {
       throw new Error(result.error || "Failed to delete policy");
     }
 
-    updateLoadingProgress("Policy deleted successfully!");
+    const delSucc = window.i18n
+      ? window.i18n.t("policies.overlay.deleted_success")
+      : "Policy deleted successfully!";
+    updateLoadingProgress(delSucc);
     await new Promise((resolve) => setTimeout(resolve, 1000));
 
     // Reload policies list

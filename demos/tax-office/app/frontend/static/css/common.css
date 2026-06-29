@@ -275,3 +275,31 @@ body {
     margin-top: 24px;
   }
 }
+
+/* Language Switcher Styles */
+.language-switcher-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background: #f8f9fa;
+  border: 1px solid #dadce0;
+  border-radius: 20px;
+  padding: 4px 12px;
+  color: #5f6368;
+}
+
+.language-switcher-wrapper .material-icons {
+  font-size: 18px;
+  color: #1a73e8;
+}
+
+.ui-lang-switcher {
+  border: none;
+  background: transparent;
+  font-family: "Google Sans", sans-serif;
+  font-size: 14px;
+  font-weight: 500;
+  color: #3c4043;
+  cursor: pointer;
+  outline: none;
+}

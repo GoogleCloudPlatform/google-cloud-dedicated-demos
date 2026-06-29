@@ -1,0 +1,10 @@
+==================================================
+CLAIM ID: CL-10002
+DOCUMENT TYPE: SPECIALIST CONSULTATION NOTE
+Date of Service: 2025-01-12
+Patient: Marie Lefevre (ID: 9012345)
+DOB: 1990-01-01
+Provider: Dr. Philippe Factice (Orthopedics)
+Amount Billed: 70.00 €
+
+Notes: Consultation for knee pain. Evaluated right knee. Mild patellar tendinitis suspected. Recommended physical therapy.

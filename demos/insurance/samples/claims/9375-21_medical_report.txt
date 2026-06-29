@@ -1,0 +1,49 @@
+==================================================
+CLAIM ID: 9375-21
+CLAIM REFERENCE: CLM/2025/021587
+DOCUMENT TYPE: MEDICAL REPORT
+9501 Avenue de l'Exemple, Paris, 75007
+Tel: +33199000001
+
+MEDICAL CONSULTATION REPORT
+Date: 15/02/2025
+Patient: Jean Petit (ID: 7854219)
+DOB: 01/01/1975
+
+REASON FOR CONSULTATION:
+Patient presents with episodes of chest pain occurring during moderate physical activity over the past two weeks.
+
+SUBJECTIVE:
+Patient reports intermittent chest pain, described as pressure-like discomfort in the central chest area, lasting 3-5 minutes. Pain occasionally radiates to left shoulder. Pain is triggered by physical exertion (climbing stairs, brisk walking) and is relieved by rest. Patient denies shortness of breath, nausea, or diaphoresis during episodes. No prior history of cardiac issues.
+
+OBJECTIVE:
+Vital Signs:
+BP: 138/88 mmHg
+HR: 76 bpm, regular
+RR: 16/min
+Temp: 36.7°C
+SpO2: 98% on room air
+
+Physical Examination:
+Cardiovascular: Regular rate and rhythm, no murmurs, gallops, or rubs. Normal S1, S2. No JVD.
+Pulmonary: Clear to auscultation bilaterally. No wheezes, rales, or rhonchi.
+Abdomen: Soft, non-tender, non-distended. No hepatosplenomegaly.
+Extremities: No edema, cyanosis, or clubbing.
+
+ECG Findings:
+Normal sinus rhythm, normal intervals, no ST-T wave changes, no evidence of ischemia or previous infarction.
+
+ASSESSMENT:
+Chest pain, likely angina pectoris (I20.9). Moderate cardiovascular risk profile based on age, gender, and presenting symptoms.
+
+PLAN:
+1. Prescription for sublingual nitroglycerin PRN for acute chest pain episodes
+2. Basic laboratory tests including lipid profile, blood glucose
+3. Scheduled for exercise stress test in 1 week
+4. Advised to avoid strenuous physical activity until further evaluation
+5. Follow-up appointment in 2 weeks to review test results
+
+Dr. Marie Exemple
+Professional ID: 1
+[Signature]
+Date: 15/02/2025

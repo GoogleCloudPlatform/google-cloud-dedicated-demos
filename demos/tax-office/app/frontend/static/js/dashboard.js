@@ -17,6 +17,17 @@
 let refreshInterval;
 let isRefreshing = false;
 
+// Re-render table when language switches
+window.addEventListener("languageChanged", function () {
+  if (window.cachedPredictions) {
+    updateTable(window.cachedPredictions);
+  }
+  const refreshBtn = document.getElementById("refresh-btn");
+  if (refreshBtn && !isRefreshing) {
+    refreshBtn.innerHTML = `<span class="material-icons">refresh</span> ${window.i18n ? window.i18n.t("dashboard.refresh") : "Refresh Now"}`;
+  }
+});
+
 // Initialize the dashboard
 document.addEventListener("DOMContentLoaded", function () {
   refreshData();
@@ -58,8 +69,10 @@ async function refreshData() {
   isRefreshing = true;
   const refreshBtn = document.getElementById("refresh-btn");
   refreshBtn.disabled = true;
-  refreshBtn.innerHTML =
-    '<span class="material-icons">refresh</span> Refreshing...';
+  const refreshingTxt = window.i18n
+    ? window.i18n.t("dashboard.refreshing")
+    : "Refreshing...";
+  refreshBtn.innerHTML = `<span class="material-icons">refresh</span> ${refreshingTxt}`;
 
   try {
     // Check for preloaded data from connecting page
@@ -90,8 +103,10 @@ async function refreshData() {
   } finally {
     isRefreshing = false;
     refreshBtn.disabled = false;
-    refreshBtn.innerHTML =
-      '<span class="material-icons">refresh</span> Refresh Now';
+    const refreshTxt = window.i18n
+      ? window.i18n.t("dashboard.refresh")
+      : "Refresh Now";
+    refreshBtn.innerHTML = `<span class="material-icons">refresh</span> ${refreshTxt}`;
   }
 }
 
@@ -111,18 +126,24 @@ function updateStats(stats) {
 
 // Update predictions table
 function updateTable(predictions) {
+  window.cachedPredictions = predictions;
   const tbody = document.getElementById("predictions-tbody");
   const table = document.getElementById("predictions-table");
   const loading = document.getElementById("loading");
 
   if (predictions.length === 0) {
-    loading.textContent = "No predictions available";
+    loading.textContent = window.i18n
+      ? window.i18n.t("dashboard.table.no_data")
+      : "No predictions available";
     loading.style.display = "block";
     table.style.display = "none";
     return;
   }
 
   tbody.innerHTML = "";
+
+  const yesTxt = window.i18n ? window.i18n.t("common.yes") : "Yes";
+  const noTxt = window.i18n ? window.i18n.t("common.no") : "No";
 
   predictions.forEach((prediction) => {
     const row = document.createElement("tr");
@@ -134,7 +155,7 @@ function updateTable(predictions) {
             <td>${escapeHtml(prediction.declaration_id)}</td>
             <td>
                 <span class="anomaly-badge ${prediction.predicted_is_anomaly ? "anomaly-true" : "anomaly-false"}">
-                    ${prediction.predicted_is_anomaly ? "Yes" : "No"}
+                    ${prediction.predicted_is_anomaly ? yesTxt : noTxt}
                 </span>
             </td>
             <td>

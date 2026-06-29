@@ -1,0 +1,100 @@
+analysis_id,claim_id,risk_score,is_duplicate,is_documentation_complete,is_provider_flagged,is_amount_unusual,is_service_unusual,recommendation,analysis_notes,analyzed_at
+2,9381-04,87.5,TRUE,FALSE,TRUE,FALSE,FALSE,Investigate,"Duplicate MRI service within 30-day period detected. Provider has history of similar claims. Missing documentation for medical necessity. Recommend follow-up with provider.",2025-02-22 09:45:18
+3,CL-10001,12.8,FALSE,TRUE,FALSE,FALSE,FALSE,Approve,Routine GP visit with standard pricing.,2025-01-07 14:22:30
+4,CL-10002,18.5,FALSE,TRUE,FALSE,FALSE,FALSE,Approve,Standard specialist consultation with normal pricing.,2025-01-14 16:05:12
+5,CL-10003,28.4,FALSE,TRUE,FALSE,FALSE,FALSE,Approve,Emergency appendectomy with expected hospitalization duration and costs.,2025-01-11 12:30:45
+6,CL-10004,15.2,FALSE,TRUE,FALSE,FALSE,FALSE,Approve,Standard physiotherapy session within expected price range.,2025-01-20 10:55:20
+7,CL-10005,10.5,FALSE,TRUE,FALSE,FALSE,FALSE,Approve,Routine GP visit with standard pricing.,2025-01-23 15:15:08
+8,CL-10006,14.8,FALSE,TRUE,FALSE,FALSE,FALSE,Approve,Prescription medications within expected price range.,2025-01-16 11:40:33
+9,CL-10007,17.2,FALSE,TRUE,FALSE,FALSE,FALSE,Approve,Standard laboratory tests with normal pricing.,2025-01-26 13:25:52
+10,CL-10008,22.5,FALSE,TRUE,FALSE,FALSE,FALSE,Approve,Specialist consultation with normal pricing.,2025-01-21 09:10:14
+11,CL-10009,45.8,FALSE,FALSE,FALSE,FALSE,FALSE,Request Information,Missing documentation for health specialist consultation. Required forms not submitted.,2025-01-29 14:50:27
+12,CL-10010,25.2,FALSE,TRUE,FALSE,FALSE,FALSE,Approve,Standard dental treatment with expected pricing.,2025-01-31 10:30:15
+13,CL-10011,28.5,FALSE,TRUE,FALSE,FALSE,FALSE,Approve,Mental health consultation with standard pricing and expected frequency.,2025-02-04 16:45:08
+14,CL-10012,11.8,FALSE,TRUE,FALSE,FALSE,FALSE,Approve,Routine GP visit with standard pricing.,2025-02-06 13:20:42
+15,CL-10013,54.2,FALSE,TRUE,FALSE,TRUE,FALSE,Request Information,Hospital stay duration longer than average for the condition. Requesting additional information from provider.,2025-02-09 11:05:33
+16,CL-10014,20.5,FALSE,TRUE,FALSE,FALSE,FALSE,Approve,Specialist consultation with normal pricing.,2025-02-11 14:55:18
+17,CL-10015,15.8,FALSE,TRUE,FALSE,FALSE,FALSE,Approve,Standard eye exam with normal pricing.,2025-02-13 10:40:27
+18,CL-10016,19.2,FALSE,TRUE,FALSE,FALSE,FALSE,Approve,Endocrinology consultation with normal pricing.,2025-02-16 15:30:12
+19,CL-10017,14.5,FALSE,TRUE,FALSE,FALSE,FALSE,Approve,Prescription medications within expected price range.,2025-02-19 12:15:45
+20,CL-10018,48.8,FALSE,FALSE,FALSE,FALSE,TRUE,Request Information,Complex laboratory test requires additional medical justification. Requesting physician notes.,2025-02-21 09:50:33
+21,CL-10019,20.2,FALSE,TRUE,FALSE,FALSE,FALSE,Approve,Rheumatology consultation with normal pricing.,2025-02-24 16:35:08
+22,CL-10020,78.5,FALSE,TRUE,FALSE,TRUE,FALSE,Investigate,Unusually high cost for hospital stay compared to procedure average. Requires review of detailed billing.,2025-02-26 13:20:45
+23,CL-10021,16.2,FALSE,TRUE,FALSE,FALSE,FALSE,Approve,Standard physiotherapy session with normal pricing.,2025-03-02 11:05:22
+24,CL-10022,12.8,FALSE,TRUE,FALSE,FALSE,FALSE,Approve,Routine GP visit with standard pricing.,2025-03-04 14:40:37
+25,CL-10023,21.5,FALSE,TRUE,FALSE,FALSE,FALSE,Approve,Allergy consultation with normal pricing.,2025-03-06 09:25:18
+26,CL-10024,13.2,FALSE,TRUE,FALSE,FALSE,FALSE,Approve,Prescription medications within expected price range.,2025-03-09 15:10:54
+27,CL-10025,42.8,FALSE,FALSE,FALSE,FALSE,FALSE,Request Information,Consultation notes incomplete. Requesting additional documentation from provider.,2025-03-11 11:55:30
+28,CL-10026,22.5,FALSE,TRUE,FALSE,FALSE,FALSE,Approve,Cardiology consultation with normal pricing.,2025-03-13 14:30:15
+29,CL-10027,68.2,TRUE,TRUE,FALSE,FALSE,TRUE,Investigate,Unusual frequency of genetic testing within short time period. Need to verify medical necessity.,2025-03-16 10:15:42
+30,CL-10028,24.5,FALSE,TRUE,FALSE,FALSE,FALSE,Approve,Urology consultation with normal pricing.,2025-03-18 16:00:27
+31,CL-10029,52.8,FALSE,TRUE,FALSE,TRUE,FALSE,Request Information,Hospital stay duration longer than average. Requesting additional information from provider.,2025-03-21 12:45:08
+32,CL-10030,20.2,FALSE,TRUE,FALSE,FALSE,FALSE,Approve,Gastroenterology consultation with normal pricing.,2025-03-23 09:30:33
+33,CL-10031,17.5,FALSE,TRUE,FALSE,FALSE,FALSE,Approve,Audiology consultation with normal pricing.,2025-03-26 15:15:18
+34,CL-10032,11.2,FALSE,TRUE,FALSE,FALSE,FALSE,Approve,Routine GP visit with standard pricing.,2025-03-29 11:00:45
+35,CL-10033,43.5,FALSE,FALSE,FALSE,FALSE,FALSE,Request Information,CT scan medical necessity requires additional documentation. Requesting physician notes.,2025-04-02 14:45:22
+36,CL-10034,15.8,FALSE,TRUE,FALSE,FALSE,FALSE,Approve,Prescription medications within expected price range.,2025-04-04 10:30:37
+37,CL-10035,23.2,FALSE,TRUE,FALSE,FALSE,FALSE,Approve,Hematology consultation with normal pricing.,2025-04-06 16:15:12
+38,CL-10036,17.5,FALSE,TRUE,FALSE,FALSE,FALSE,Approve,Nutritionist consultation with normal pricing.,2025-04-09 13:00:54
+39,CL-10037,16.8,FALSE,TRUE,FALSE,FALSE,FALSE,Approve,Standard laboratory tests with normal pricing.,2025-04-11 09:45:30
+40,CL-10038,45.2,FALSE,FALSE,FALSE,FALSE,FALSE,Request Information,Diagnosis information incomplete. Requesting additional documentation from provider.,2025-04-13 15:30:15
+41,CL-10039,82.5,FALSE,FALSE,FALSE,TRUE,FALSE,Investigate,"Unusually high cost for hospital stay compared to procedure average. Missing surgical report. Requires review of detailed billing.",2025-04-16 11:15:42
+42,CL-10040,65.8,FALSE,TRUE,FALSE,FALSE,TRUE,Reject,Cosmetic procedure not covered under patient's insurance plan.,2025-04-19 14:00:27
+43,CL-10041,24.2,FALSE,TRUE,FALSE,FALSE,FALSE,Approve,Nephrology consultation with normal pricing.,2025-04-21 09:45:08
+44,CL-10042,22.5,FALSE,TRUE,FALSE,FALSE,FALSE,Approve,Infectious disease consultation with normal pricing.,2025-04-23 15:30:33
+45,CL-10043,38.2,FALSE,FALSE,FALSE,FALSE,FALSE,Request Information,Dental procedure code requires verification. Requesting additional information from provider.,2025-04-26 11:15:18
+46,CL-10044,14.5,FALSE,TRUE,FALSE,FALSE,FALSE,Approve,Prescription medications within expected price range.,2025-04-29 14:00:45
+47,CL-10045,32.8,FALSE,TRUE,FALSE,FALSE,FALSE,Approve,Surgical procedure within expected cost range and with proper documentation.,2025-05-02 09:45:22
+48,CL-10046,15.2,FALSE,TRUE,FALSE,FALSE,FALSE,Approve,Standard eye exam with normal pricing.,2025-05-04 15:30:37
+49,CL-10047,44.5,FALSE,FALSE,FALSE,FALSE,FALSE,Request Information,Complex laboratory test results not included in submission. Requesting complete documentation.,2025-05-06 11:15:12
+50,CL-10048,25.8,FALSE,TRUE,FALSE,FALSE,FALSE,Approve,Oncology consultation with normal pricing.,2025-05-09 14:00:54
+51,CL-10049,21.2,FALSE,TRUE,FALSE,FALSE,FALSE,Approve,Cardiology consultation with normal pricing.,2025-05-11 09:45:30
+52,CL-10050,12.5,FALSE,TRUE,FALSE,FALSE,FALSE,Approve,Routine GP visit with standard pricing.,2025-05-13 15:30:15
+53,CL-10051,72.8,FALSE,TRUE,FALSE,TRUE,TRUE,Investigate,Extended hospitalization beyond typical duration for the procedure. Requires review of medical necessity.,2025-05-16 11:15:42
+54,CL-10052,11.5,FALSE,TRUE,FALSE,FALSE,FALSE,Approve,Routine GP visit with standard pricing.,2025-05-19 14:00:27
+55,CL-10053,20.2,FALSE,TRUE,FALSE,FALSE,FALSE,Approve,Orthopedic consultation with normal pricing.,2025-05-21 09:45:08
+56,CL-10054,48.5,FALSE,FALSE,FALSE,FALSE,TRUE,Request Information,MRI scan medical necessity requires additional documentation. Requesting physician notes.,2025-05-23 15:30:33
+57,CL-10055,14.8,FALSE,TRUE,FALSE,FALSE,FALSE,Approve,Prescription medications within expected price range.,2025-05-26 11:15:18
+58,CL-10056,16.2,FALSE,TRUE,FALSE,FALSE,FALSE,Approve,Standard laboratory tests with normal pricing.,2025-05-29 14:00:45
+59,CL-10057,22.5,FALSE,TRUE,FALSE,FALSE,FALSE,Approve,Dermatology consultation with normal pricing.,2025-06-02 09:45:22
+60,CL-10058,16.8,FALSE,TRUE,FALSE,FALSE,FALSE,Approve,Standard physiotherapy session with normal pricing.,2025-06-04 15:30:37
+61,CL-10059,24.2,FALSE,TRUE,FALSE,FALSE,FALSE,Approve,Gynecology consultation with normal pricing.,2025-06-06 11:15:12
+62,CL-10060,13.5,FALSE,TRUE,FALSE,FALSE,FALSE,Approve,Routine dental check-up with standard pricing.,2025-06-09 14:00:54
+63,CL-10061,42.8,FALSE,FALSE,FALSE,FALSE,TRUE,Request Information,Mental health session frequency exceeds plan guidelines. Requesting medical necessity documentation.,2025-06-11 09:45:30
+64,CL-10062,75.2,FALSE,TRUE,FALSE,TRUE,FALSE,Investigate,Unusually high cost for hospital stay compared to procedure average. Requires review of detailed billing.,2025-06-13 15:30:15
+65,CL-10063,11.8,FALSE,TRUE,FALSE,FALSE,FALSE,Approve,Routine GP visit with standard pricing.,2025-06-16 11:15:42
+66,CL-10064,15.5,FALSE,TRUE,FALSE,FALSE,FALSE,Approve,Prescription medications within expected price range.,2025-06-19 14:00:27
+67,CL-10065,21.2,FALSE,TRUE,FALSE,FALSE,FALSE,Approve,Neurology consultation with normal pricing.,2025-06-21 09:45:08
+68,CL-10066,15.8,FALSE,TRUE,FALSE,FALSE,FALSE,Approve,Standard eye exam with normal pricing.,2025-06-23 15:30:33
+69,CL-10067,45.2,FALSE,FALSE,FALSE,FALSE,FALSE,Request Information,Complex laboratory test results not included in submission. Requesting complete documentation.,2025-06-26 11:15:18
+70,CL-10068,62.5,FALSE,TRUE,FALSE,FALSE,TRUE,Reject,Endocrinology service not covered under patient's current insurance plan.,2025-06-29 14:00:45
+71,CL-10069,28.8,FALSE,TRUE,FALSE,FALSE,FALSE,Approve,Hospital stay with proper documentation and expected duration.,2025-07-02 09:45:22
+72,CL-10070,20.5,FALSE,TRUE,FALSE,FALSE,FALSE,Approve,Rheumatology consultation with normal pricing.,2025-07-04 15:30:37
+73,CL-10071,16.2,FALSE,TRUE,FALSE,FALSE,FALSE,Approve,Standard physiotherapy session with normal pricing.,2025-07-06 11:15:12
+74,CL-10072,42.5,FALSE,FALSE,FALSE,FALSE,FALSE,Request Information,Consultation notes incomplete. Requesting additional documentation from provider.,2025-07-09 14:00:54
+75,CL-10073,12.8,FALSE,TRUE,FALSE,FALSE,FALSE,Approve,Routine GP visit with standard pricing.,2025-07-11 09:45:30
+76,CL-10074,16.2,FALSE,TRUE,FALSE,FALSE,FALSE,Approve,Prescription medications within expected price range.,2025-07-13 15:30:15
+77,CL-10075,21.5,FALSE,TRUE,FALSE,FALSE,FALSE,Approve,Pulmonology consultation with normal pricing.,2025-07-16 11:15:42
+78,CL-10076,68.8,TRUE,TRUE,FALSE,FALSE,FALSE,Investigate,Duplicate cardiology consultation within 30-day period. Need to verify medical necessity.,2025-07-19 14:00:27
+79,CL-10077,46.2,FALSE,FALSE,FALSE,FALSE,TRUE,Request Information,Genetic testing requires additional medical justification. Requesting physician notes.,2025-07-21 09:45:08
+80,CL-10078,24.5,FALSE,TRUE,FALSE,FALSE,FALSE,Approve,Urology consultation with normal pricing.,2025-07-23 15:30:33
+81,CL-10079,30.8,FALSE,TRUE,FALSE,FALSE,FALSE,Approve,Hospital stay with proper documentation and expected duration.,2025-07-26 11:15:18
+82,CL-10080,21.2,FALSE,TRUE,FALSE,FALSE,FALSE,Approve,Gastroenterology consultation with normal pricing.,2025-07-29 14:00:45
+83,CL-10081,18.5,FALSE,TRUE,FALSE,FALSE,FALSE,Approve,Audiology consultation with normal pricing.,2025-07-31 09:45:22
+84,CL-10082,11.8,FALSE,TRUE,FALSE,FALSE,FALSE,Approve,Routine GP visit with standard pricing.,2025-08-03 15:30:37
+85,CL-10083,44.2,FALSE,FALSE,FALSE,FALSE,TRUE,Request Information,CT scan medical necessity requires additional documentation. Requesting physician notes.,2025-08-06 11:15:12
+86,CL-10084,14.5,FALSE,TRUE,FALSE,FALSE,FALSE,Approve,Prescription medications within expected price range.,2025-08-09 14:00:54
+87,CL-10085,22.8,FALSE,TRUE,FALSE,FALSE,FALSE,Approve,Hematology consultation with normal pricing.,2025-08-11 09:45:30
+88,CL-10086,72.5,FALSE,TRUE,TRUE,FALSE,FALSE,Investigate,Provider has unusual billing pattern for nutritionist consultations. Requires review of multiple claims.,2025-08-13 15:30:15
+89,CL-10087,16.2,FALSE,TRUE,FALSE,FALSE,FALSE,Approve,Standard laboratory tests with normal pricing.,2025-08-16 11:15:42
+90,CL-10088,20.5,FALSE,TRUE,FALSE,FALSE,FALSE,Approve,ENT consultation with normal pricing.,2025-08-19 14:00:27
+91,CL-10089,56.8,FALSE,TRUE,FALSE,TRUE,FALSE,Request Information,Hospital stay duration longer than average. Requesting additional information from provider.,2025-08-21 09:45:08
+92,CL-10090,64.2,FALSE,TRUE,FALSE,FALSE,TRUE,Reject,Surgical procedure not medically necessary according to submitted documentation.,2025-08-24 15:30:33
+93,CL-10091,23.5,FALSE,TRUE,FALSE,FALSE,FALSE,Approve,Nephrology consultation with normal pricing.,2025-08-26 11:15:18
+94,CL-10092,22.8,FALSE,TRUE,FALSE,FALSE,FALSE,Approve,Infectious disease consultation with normal pricing.,2025-08-29 14:00:45
+95,CL-10093,27.2,FALSE,TRUE,FALSE,FALSE,FALSE,Approve,Dental treatment with expected pricing and proper documentation.,2025-09-02 09:45:22
+96,CL-10094,15.5,FALSE,TRUE,FALSE,FALSE,FALSE,Approve,Prescription medications within expected price range.,2025-09-04 15:30:37
+97,CL-10095,46.8,FALSE,FALSE,FALSE,FALSE,FALSE,Request Information,Surgical procedure code requires verification. Requesting additional information from provider.,2025-09-06 11:15:12
+98,CL-10096,15.2,FALSE,TRUE,FALSE,FALSE,FALSE,Approve,Standard eye exam with normal pricing.,2025-09-09 14:00:54
+99,CL-10097,26.5,FALSE,TRUE,FALSE,FALSE,FALSE,Approve,Complex laboratory testing with proper documentation and expected pricing.,2025-09-11 09:45:30
+100,CL-10098,74.8,TRUE,TRUE,TRUE,FALSE,FALSE,Investigate,Unusual frequency of specialist visits. Provider has history of similar claims pattern. Requires review.,2025-09-13 15:30:15

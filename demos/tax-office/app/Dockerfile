@@ -34,10 +34,14 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 # Copy requirements first for better caching
 COPY requirements.txt .
 
-# Install Python dependencies and pre-download FastEmbed model
+# Install Python dependencies
+RUN pip install --no-cache-dir --require-hashes -r requirements.txt
+
+# Pre-download FastEmbed model
 # This avoids runtime downloads and permission issues
-RUN pip install --no-cache-dir --require-hashes -r requirements.txt \
-    && python -c "from fastembed import TextEmbedding; TextEmbedding('sentence-transformers/all-MiniLM-L6-v2')"
+# hadolint ignore=DL3059
+RUN python -c "import logging; logging.basicConfig(level=logging.INFO); from fastembed import TextEmbedding; print('Starting FastEmbed model download...'); TextEmbedding('sentence-transformers/all-MiniLM-L6-v2'); print('FastEmbed model download complete!')"
+
 
 # Copy application code
 COPY . .

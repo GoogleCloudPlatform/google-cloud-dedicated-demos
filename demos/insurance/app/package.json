@@ -1,0 +1,22 @@
+{
+  "name": "tpc_next_demo",
+  "version": "1.0.0",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "type": "module",
+  "author": "",
+  "license": "ISC",
+  "description": "",
+  "dependencies": {
+    "@google-cloud/bigquery": "^7.9.3",
+    "@google-cloud/cloud-sql-connector": "^1.6.1",
+    "@google-cloud/storage": "^7.15.2",
+    "express": "^4.21.2",
+    "mysql2": "^3.13.0",
+    "pg": "^8.14.1",
+    "pg-hstore": "^2.3.4",
+    "sequelize": "^6.37.6"
+  }
+}

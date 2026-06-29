@@ -36,12 +36,20 @@
       rel="stylesheet"
       href="{{ url_for('static', filename='css/connecting.css') }}"
     />
+    <script src="{{ url_for('static', filename='js/i18n.js') }}"></script>
     <script
       src="{{ url_for('static', filename='js/connecting.js') }}"
       defer
     ></script>
   </head>
   <body>
+    <div
+      style="position: absolute; top: 20px; right: 20px"
+      class="language-switcher-wrapper"
+    >
+      <span class="material-icons">language</span>
+      <select class="ui-lang-switcher" aria-label="Select UI Language"></select>
+    </div>
     <div class="connecting-container">
       <div class="world-map">
         <!-- Connection path animation -->
@@ -96,7 +104,9 @@
           <div class="marker-icon">
             <span class="material-icons">computer</span>
           </div>
-          <div class="marker-label">Your Location</div>
+          <div class="marker-label" data-i18n="connecting.marker.your_loc">
+            Your Location
+          </div>
         </div>
 
         <!-- Destination point (Trusted Local Partner) -->
@@ -106,7 +116,9 @@
             <span class="material-icons">cloud</span>
           </div>
           <div class="marker-label partner-label">
-            <div class="partner-name">Trusted Local Partner</div>
+            <div class="partner-name" data-i18n="connecting.marker.partner">
+              Trusted Local Partner
+            </div>
             <div class="partner-subtitle">Google Cloud Dedicated</div>
           </div>
         </div>
@@ -118,31 +130,40 @@
           <span class="material-icons">cloud</span>
         </div>
         <h1>
-          Connecting to <span class="highlight">Google Cloud Dedicated</span>
+          <span data-i18n="connecting.title">Connecting to</span>
+          <span class="highlight">Google Cloud Dedicated</span>
         </h1>
-        <div class="status-message">
+        <div class="status-message" data-i18n="connecting.msg.step2">
           Establishing secure connection to Trusted Local Partner...
         </div>
 
         <div class="connection-steps">
           <div class="step active" id="step1">
             <span class="material-icons step-icon">lock</span>
-            <span class="step-text">Authenticating</span>
+            <span class="step-text" data-i18n="connecting.step1"
+              >Authenticating</span
+            >
             <span class="material-icons step-check">check_circle</span>
           </div>
           <div class="step" id="step2">
             <span class="material-icons step-icon">vpn_key</span>
-            <span class="step-text">Establishing secure tunnel</span>
+            <span class="step-text" data-i18n="connecting.step2"
+              >Establishing secure tunnel</span
+            >
             <span class="material-icons step-check">check_circle</span>
           </div>
           <div class="step" id="step3">
             <span class="material-icons step-icon">storage</span>
-            <span class="step-text">Connecting to BigQuery</span>
+            <span class="step-text" data-i18n="connecting.step3"
+              >Connecting to BigQuery</span
+            >
             <span class="material-icons step-check">check_circle</span>
           </div>
           <div class="step" id="step4">
             <span class="material-icons step-icon">done_all</span>
-            <span class="step-text">Loading dashboard</span>
+            <span class="step-text" data-i18n="connecting.step4"
+              >Loading dashboard</span
+            >
             <span class="material-icons step-check">check_circle</span>
           </div>
         </div>
@@ -153,9 +174,13 @@
 
         <button class="continue-btn" id="continueBtn" style="display: none">
           <span class="material-icons">arrow_forward</span>
-          Continue to Dashboard
+          <span data-i18n="connecting.continue">Continue to Dashboard</span>
         </button>
-        <p class="disclaimer-text" style="margin-top: 20px">
+        <p
+          class="disclaimer-text"
+          style="margin-top: 20px"
+          data-i18n="common.disclaimer"
+        >
           This content is for demonstration purposes only and does not represent
           an endorsement or partnership with any specific tax authority
         </p>

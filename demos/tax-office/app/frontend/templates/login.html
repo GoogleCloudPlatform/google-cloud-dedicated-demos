@@ -36,24 +36,32 @@
       rel="stylesheet"
       href="{{ url_for('static', filename='css/login.css') }}"
     />
+    <script src="{{ url_for('static', filename='js/i18n.js') }}"></script>
   </head>
   <body>
+    <div
+      style="position: absolute; top: 20px; right: 20px"
+      class="language-switcher-wrapper"
+    >
+      <span class="material-icons">language</span>
+      <select class="ui-lang-switcher" aria-label="Select UI Language"></select>
+    </div>
     <div class="login-container">
       <div class="login-header">
         <div class="google-cloud-logo">
           <span class="material-icons">cloud</span>
         </div>
-        <h1>Tax Office</h1>
-        <p>Anomaly Detection Dashboard</p>
+        <h1 data-i18n="login.title">Tax Office</h1>
+        <p data-i18n="login.subtitle">Anomaly Detection Dashboard</p>
       </div>
 
       {% if error %}
-      <div class="error-message">{{ error }}</div>
+      <div class="error-message" data-i18n="login.invalid">{{ error }}</div>
       {% endif %}
 
       <form method="POST">
         <div class="form-group">
-          <label for="username">Username</label>
+          <label for="username" data-i18n="login.username">Username</label>
           <input
             type="text"
             id="username"
@@ -64,7 +72,7 @@
         </div>
 
         <div class="form-group">
-          <label for="password">Password</label>
+          <label for="password" data-i18n="login.pass_label">Password</label>
           <input
             type="password"
             id="password"
@@ -74,11 +82,13 @@
           />
         </div>
 
-        <button type="submit" class="login-btn">Login</button>
+        <button type="submit" class="login-btn" data-i18n="login.btn">
+          Login
+        </button>
       </form>
 
       <div class="demo-info">
-        <p class="disclaimer-text">
+        <p class="disclaimer-text" data-i18n="common.disclaimer">
           This content is for demonstration purposes only and does not represent
           an endorsement or partnership with any specific tax authority
         </p>

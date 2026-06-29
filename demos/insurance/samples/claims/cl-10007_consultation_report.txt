@@ -1,0 +1,9 @@
+==================================================
+CLAIM ID: CL-10007
+DOCUMENT TYPE: CONSULTATION REPORT
+Date of Service: 2025-01-25
+Patient: Antoine Dupont (ID: 1234567)
+DOB: 1995-01-01
+Provider: Dr. Marie Exemple (Provider ID: 1)
+Service: Cardiology consultation
+Amount: 80.00 €

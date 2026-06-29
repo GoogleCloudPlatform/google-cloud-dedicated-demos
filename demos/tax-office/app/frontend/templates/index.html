@@ -36,17 +36,25 @@
       rel="stylesheet"
       href="{{ url_for('static', filename='css/index.css') }}"
     />
+    <script src="{{ url_for('static', filename='js/i18n.js') }}"></script>
   </head>
   <body>
+    <div
+      style="position: absolute; top: 20px; right: 20px"
+      class="language-switcher-wrapper"
+    >
+      <span class="material-icons">language</span>
+      <select class="ui-lang-switcher" aria-label="Select UI Language"></select>
+    </div>
     <div class="hero-container">
       <div class="logo-section">
         <div class="cloud-icon-wrapper">
           <span class="material-icons cloud-icon">cloud</span>
         </div>
-        <h1>Tax Anomaly Detection Application</h1>
+        <h1 data-i18n="index.title">Tax Anomaly Detection Application</h1>
       </div>
 
-      <p class="description">
+      <p class="description" data-i18n="index.desc">
         Leveraging cutting-edge Google Cloud solutions to identify and prevent
         tax anomalies with precision and speed.
       </p>
@@ -56,51 +64,64 @@
           <div class="feature-icon">
             <span class="material-icons">smart_toy</span>
           </div>
-          <h3>AI-Powered</h3>
-          <p>Advanced artificial intelligence for accurate predictions</p>
+          <h3 data-i18n="index.feature.ai_title">AI-Powered</h3>
+          <p data-i18n="index.feature.ai_desc">
+            Advanced artificial intelligence for accurate predictions
+          </p>
         </div>
         <div class="feature">
           <div class="feature-icon">
             <span class="material-icons">psychology</span>
           </div>
-          <h3>Smart Detection</h3>
-          <p>Advanced ML models identify anomalies in real-time</p>
+          <h3 data-i18n="index.feature.smart_title">Smart Detection</h3>
+          <p data-i18n="index.feature.smart_desc">
+            Advanced ML models identify anomalies in real-time
+          </p>
         </div>
 
         <div class="feature">
           <div class="feature-icon">
             <span class="material-icons">storage</span>
           </div>
-          <h3>BigQuery Power</h3>
-          <p>Lightning-fast analytics on massive datasets</p>
+          <h3 data-i18n="index.feature.bq_title">BigQuery Power</h3>
+          <p data-i18n="index.feature.bq_desc">
+            Lightning-fast analytics on massive datasets
+          </p>
         </div>
 
         <div class="feature">
           <div class="feature-icon">
             <span class="material-icons">search</span>
           </div>
-          <h3>Vector Search</h3>
-          <p>Semantic policy matching using embeddings</p>
+          <h3 data-i18n="index.feature.vector_title">Vector Search</h3>
+          <p data-i18n="index.feature.vector_desc">
+            Semantic policy matching using embeddings
+          </p>
         </div>
       </div>
 
       {% if is_authenticated %}
-      <a href="/connecting" class="cta-button">Go to Dashboard</a>
+      <a href="/connecting" class="cta-button" data-i18n="index.cta.dashboard"
+        >Go to Dashboard</a
+      >
       {% else %}
-      <a href="/login" class="cta-button">Get Started</a>
+      <a href="/login" class="cta-button" data-i18n="index.cta.start"
+        >Get Started</a
+      >
       {% endif %}
 
       <div class="powered-by">
-        <p class="powered-by-title">Powered by Google Cloud Dedicated</p>
+        <p class="powered-by-title" data-i18n="index.powered">
+          Powered by Google Cloud Dedicated
+        </p>
         <div class="tech-badges">
           <span class="badge">BigQuery</span>
           <span class="badge">Vector Search</span>
           <span class="badge">Cloud ML</span>
         </div>
-        <p class="disclaimer-text">
-          <strong>Disclaimer:</strong> This content is for demonstration
-          purposes only and does not represent an endorsement or partnership
-          with any specific tax authority
+        <p class="disclaimer-text" data-i18n="common.disclaimer">
+          This content is for demonstration purposes only and does not represent
+          an endorsement or partnership with any specific tax authority
         </p>
       </div>
     </div>

@@ -1,0 +1,103 @@
+#
+# Copyright 2026 Google LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: db-init-job
+  annotations:
+    helm.sh/hook: pre-install
+    helm.sh/hook-weight: "-1"
+spec:
+  template:
+    metadata:
+      labels:
+        app: db-init-job
+    spec:
+      serviceAccountName: {{ .Values.insuranceApp.serviceAccount.name }} # Uses Workload Identity for GCS & Cloud SQL Proxy
+      volumes:
+        - name: workspace
+          emptyDir: {}
+      initContainers:
+        - name: download-data
+          image: {{ .Values.insuranceApp.gcloudImage | quote }}
+          volumeMounts:
+            - name: workspace
+              mountPath: /workspace
+          command: [ "bash", "-c" ]
+          args:
+            - |
+              echo "Downloading database schema and sample CSV data from GCS..."
+              gcloud storage cp gs://{{ .Values.global.bucket }}/transactional_db_schema_postgres.sql /workspace/
+              gcloud storage cp gs://{{ .Values.global.bucket }}/*.csv /workspace/
+              echo "✅ Download complete."
+        - name: cloud-sql-proxy
+          image: {{ .Values.insuranceApp.proxyImage | quote }}
+          restartPolicy: Always # Native Kubernetes sidecar container
+          env:
+            - name: GOOGLE_CLOUD_UNIVERSE_DOMAIN
+              value: {{ .Values.global.universeDomain | quote }}
+          args:
+            - "--structured-logs"
+            - "--port=5432"
+            - "--universe-domain={{ .Values.global.universeDomain }}"
+            - "--psc" # Forces proxy to connect over Private Service Connect
+            - "{{ .Values.global.projectId }}:{{ .Values.global.region }}:{{ .Values.global.sqlInstanceName }}"
+          securityContext:
+            runAsNonRoot: true
+          resources:
+            requests:
+              memory: "1Gi"
+              cpu: "500m"
+      containers:
+        - name: psql-import
+          image: {{ .Values.insuranceApp.pgImage | quote }}
+          env:
+            - name: PGPASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: insurance-db-secrets
+                  key: DB_PASSWORD
+          volumeMounts:
+            - name: workspace
+              mountPath: /workspace
+          command: [ "bash", "-c" ]
+          args:
+            - |
+              set -euo pipefail
+              echo "Waiting for Cloud SQL Auth Proxy sidecar to become ready..."
+              sleep 5
+
+              echo "Executing PostgreSQL DDL Schema..."
+              psql -h 127.0.0.1 -p 5432 -U postgres -d {{ .Values.global.databaseName }} -f /workspace/transactional_db_schema_postgres.sql
+
+              echo "Importing sample CSV data..."
+              psql -h 127.0.0.1 -p 5432 -U postgres -d {{ .Values.global.databaseName }} -c "\copy customers FROM '/workspace/customers.csv' WITH (FORMAT csv, HEADER true);"
+              psql -h 127.0.0.1 -p 5432 -U postgres -d {{ .Values.global.databaseName }} -c "\copy providers FROM '/workspace/providers.csv' WITH (FORMAT csv, HEADER true);"
+              psql -h 127.0.0.1 -p 5432 -U postgres -d {{ .Values.global.databaseName }} -c "\copy service_types FROM '/workspace/service_types.csv' WITH (FORMAT csv, HEADER true);"
+              psql -h 127.0.0.1 -p 5432 -U postgres -d {{ .Values.global.databaseName }} -c "\copy insurance_plans FROM '/workspace/insurance_plans.csv' WITH (FORMAT csv, HEADER true);"
+              psql -h 127.0.0.1 -p 5432 -U postgres -d {{ .Values.global.databaseName }} -c "\copy claims FROM '/workspace/claims.csv' WITH (FORMAT csv, HEADER true);"
+              psql -h 127.0.0.1 -p 5432 -U postgres -d {{ .Values.global.databaseName }} -c "\copy risk_analysis FROM '/workspace/risk_analysis.csv' WITH (FORMAT csv, HEADER true);"
+
+              echo "Granting schema, table, and sequence permissions to IAM user..."
+              psql -h 127.0.0.1 -p 5432 -U postgres -d {{ .Values.global.databaseName }} -c 'GRANT USAGE, CREATE ON SCHEMA public TO "{{ .Values.global.iamDatabaseUser }}";'
+              psql -h 127.0.0.1 -p 5432 -U postgres -d {{ .Values.global.databaseName }} -c 'GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA public TO "{{ .Values.global.iamDatabaseUser }}";'
+              psql -h 127.0.0.1 -p 5432 -U postgres -d {{ .Values.global.databaseName }} -c 'GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA public TO "{{ .Values.global.iamDatabaseUser }}";'
+              psql -h 127.0.0.1 -p 5432 -U postgres -d {{ .Values.global.databaseName }} -c 'ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL PRIVILEGES ON TABLES TO "{{ .Values.global.iamDatabaseUser }}";'
+              psql -h 127.0.0.1 -p 5432 -U postgres -d {{ .Values.global.databaseName }} -c 'ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL PRIVILEGES ON SEQUENCES TO "{{ .Values.global.iamDatabaseUser }}";'
+
+              echo "✅ Database initialization finished successfully."
+      restartPolicy: Never

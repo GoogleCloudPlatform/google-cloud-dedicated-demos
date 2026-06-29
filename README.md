@@ -8,8 +8,8 @@ hardware, with sales, support, and operations by a local partner. It is
 engineered specifically for regulated industries like the public sector and
 healthcare with strict sovereignty requirements. While it is built on the same
 industry-leading technologies that power Google's public cloud, the Google Cloud
-Dedicated instances in France and Germany are operated exclusively by authorized
-local partners S3NS and Thales, respectively.
+Dedicated instances in France and Germany are operated exclusively by fully
+independent local providers (such as [S3NS](https://www.s3ns.io/en) in France).
 
 This hybrid approach offers the best of both worlds by wrapping hyperscale
 innovation in local control. Google Cloud Dedicated translates this sovereignty
@@ -43,21 +43,36 @@ the next couple of months. Stay tuned.
 
 ### Sovereign Tax Anomaly Detection with BigQuery ML & Gemma
 
-This
-[Tax Anomaly Detection](https://github.com/GoogleCloudPlatform/google-cloud-dedicated-demos/tree/main/demos/tax-office)
-sample application leverages BigQuery ML and a RAG pipeline with Google’s
-open-weight Gemma LLM to optimize tax enforcement while ensuring data
-sovereignty. Built for regulated industries and the public financial sector, the
-architecture guarantees local data residency by running all operations within
-Google Cloud Dedicated infrastructure.
+This [Tax Anomaly Detection](./demos/tax-office) sample application leverages
+BigQuery ML and a RAG pipeline with Google’s open-weight Gemma LLM to optimize
+tax enforcement while ensuring data sovereignty. Built for regulated industries
+and the public financial sector, the architecture guarantees local data
+residency by running all operations within Google Cloud Dedicated
+infrastructure.
 
 As the first in a series of reference architectures for regulated public
 sectors, this application provides a blueprint for secure, localized AI
 innovation.
 
-Follow the
-[Tax Anomaly Detection - User Guide](https://github.com/GoogleCloudPlatform/google-cloud-dedicated-demos/blob/main/demos/tax-office/README.md)
+Follow the [Tax Anomaly Detection - User Guide](./demos/tax-office/README.md)
 for a step-by-step walkthrough to deploy the infrastructure and workflow.
+
+### Sovereign Health Insurance Risk Analysis with BigQuery ML & Gemma
+
+This [Health Insurance Risk Analysis](./demos/insurance) sample application
+demonstrates how to optimize health insurance risk analysis and claims
+verification while ensuring data sovereignty. By leveraging BigQuery ML for
+health risk modeling and a regional open-weight Gemma LLM for claims document
+verification, the architecture guarantees local data residency within Google
+Cloud Dedicated infrastructure.
+
+As another key reference architecture for highly regulated sectors, this
+application provides a blueprint for secure, localized data modeling and
+automated claim checks.
+
+Follow the
+[Health Insurance Risk Analysis - User Guide](./demos/insurance/README.md) for a
+step-by-step walkthrough to deploy the infrastructure and verification workflow.
 
 ## General Prerequisites & Setup
 
@@ -74,13 +89,13 @@ GCD environments, as compared to GCP. Please replace the placeholders in the
 commands and configurations given in each demo README with the values
 corresponding to your target universe.
 
-| Variable              | Google Cloud (GCP) | GCD In France (GA)   | GCD In Germany (Preview)   |
-| --------------------- | ------------------ | -------------------- | -------------------------- |
-| `UNIVERSE_WEB_DOMAIN` | `cloud.google.com` | `cloud.s3nscloud.fr` | `cloud.berlin-build0.goog` |
-| `UNIVERSE_API_DOMAIN` | `googleapis.com`   | `s3nsapis.fr`        | `apis-berlin-build0.goog`  |
-| `UNIVERSE_NAME`       | `google`           | `s3ns`               | `berlin`                   |
-| `UNIVERSE_PREFIX`     | n/a                | `s3ns`               | `eu0`                      |
-| `UNIVERSE_REGION`     | n/a                | `u-france-east1`     | `u-germany-northeast1`     |
+Variable              | Google Cloud (GCP) | GCD In France (GA)   | GCD In Germany (Preview)
+--------------------- | ------------------ | -------------------- | ------------------------
+`UNIVERSE_WEB_DOMAIN` | `cloud.google.com` | `cloud.s3nscloud.fr` | `cloud.berlin-build0.goog`
+`UNIVERSE_API_DOMAIN` | `googleapis.com`   | `s3nsapis.fr`        | `apis-berlin-build0.goog`
+`UNIVERSE_NAME`       | `google`           | `s3ns`               | `berlin`
+`UNIVERSE_PREFIX`     | n/a                | `s3ns`               | `eu0`
+`UNIVERSE_REGION`     | n/a                | `u-france-east1`     | `u-germany-northeast1`
 
 ### Google Cloud CLI
 

@@ -21,6 +21,7 @@ Flask web application for monitoring tax anomaly predictions
 """
 
 import datetime
+import json
 import logging
 import os
 from backend.bigquery_client import BigQueryClient
@@ -163,6 +164,25 @@ def api_detailed_data(taxpayer_id, declaration_id):
       'timestamp': Datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
     }
   )
+
+
+@app.route('/api/i18n/languages')
+def get_available_languages():
+  """Scan static/i18n directory and return available language metadata."""
+  i18n_dir = os.path.join(app.static_folder, 'i18n')
+  languages = []
+  if os.path.exists(i18n_dir):
+    for filename in sorted(os.listdir(i18n_dir)):
+      if filename.endswith('.json'):
+        filepath = os.path.join(i18n_dir, filename)
+        try:
+          with open(filepath, 'r', encoding='utf-8') as f:
+            data = json.load(f)
+            if '_meta' in data:
+              languages.append(data['_meta'])
+        except Exception as e:
+          logger.error('Failed to load language file %s: %s', filename, e)
+  return jsonify(languages)
 
 
 @app.route('/detail/<taxpayer_id>/<declaration_id>')
@@ -369,6 +389,7 @@ def api_llm_chat():
     message = data.get('message', '')
     policy_context = data.get('policy_context')
     history = data.get('history', [])
+    language = data.get('language', 'en')
 
     if not message:
       return jsonify({'error': 'No message provided'}), 400
@@ -382,6 +403,17 @@ Your responses should be:
 - Enhanced with your knowledge to provide complete understanding
 - Professional and helpful
 - Concise but thorough"""
+
+    if language == 'fr':
+      system_prompt += (
+        '\nCRITICAL: You MUST answer and explain completely in French'
+        ' (Français).'
+      )
+    elif language == 'de':
+      system_prompt += (
+        '\nCRITICAL: You MUST answer and explain completely in German'
+        ' (Deutsch).'
+      )
 
     # Build context section
     context_section = ''

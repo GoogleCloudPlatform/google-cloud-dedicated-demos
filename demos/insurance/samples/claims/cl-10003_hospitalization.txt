@@ -1,0 +1,10 @@
+==================================================
+CLAIM ID: CL-10003
+DOCUMENT TYPE: DISCHARGE SUMMARY
+Admission Date: 2025-01-10
+Discharge Date: 2025-01-14
+Patient: Thomas Moreau (ID: 3456789)
+DOB: 1985-01-01
+Provider: Hôpital Fictif de Paris (Provider ID: 3)
+Service: Hospitalization for appendectomy
+Total Cost: 1200.00 €

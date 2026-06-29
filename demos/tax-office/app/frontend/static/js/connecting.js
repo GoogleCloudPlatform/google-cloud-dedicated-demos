@@ -16,14 +16,30 @@
  */
 // Connection animation sequence
 const steps = [
-  { id: "step1", delay: 800, message: "Authenticating credentials..." },
+  {
+    id: "step1",
+    delay: 800,
+    key: "connecting.msg.step1",
+    message: "Authenticating credentials...",
+  },
   {
     id: "step2",
     delay: 1600,
+    key: "connecting.msg.step2",
     message: "Establishing secure tunnel to Trusted Local Partner...",
   },
-  { id: "step3", delay: 2400, message: "Connecting to BigQuery instance..." },
-  { id: "step4", delay: 3200, message: "Connection established successfully!" },
+  {
+    id: "step3",
+    delay: 2400,
+    key: "connecting.msg.step3",
+    message: "Connecting to BigQuery instance...",
+  },
+  {
+    id: "step4",
+    delay: 3200,
+    key: "connecting.msg.step4",
+    message: "Connection established successfully!",
+  },
 ];
 
 const statusMessage = document.querySelector(".status-message");
@@ -51,7 +67,10 @@ steps.forEach((step, index) => {
     stepElement.classList.add("active", "completed");
 
     // Update status message
-    statusMessage.textContent = step.message;
+    statusMessage.textContent = window.i18n
+      ? window.i18n.t(step.key)
+      : step.message;
+    statusMessage.setAttribute("data-i18n", step.key);
 
     // Show button after last step
     if (index === steps.length - 1) {

@@ -1,0 +1,39 @@
+==================================================
+CLAIM ID: 9375-21
+CLAIM REFERENCE: CLM/2025/021587
+DOCUMENT TYPE: CLAIM FORM
+Claim Reference: CLM/2025/021587
+Date of Submission: 2025-02-18
+
+PATIENT INFORMATION:
+Name: Jean Petit
+Patient ID: 7854219
+DOB: 01/01/1975
+Address: 9001 Rue Fictive, Paris, 75008
+Contact: +33699000001
+
+PROVIDER INFORMATION:
+Provider: Dr. Marie Exemple
+Specialty: Cardiology
+Provider ID: 1
+Address: 9501 Avenue de l'Exemple, Paris, 75007
+Contact: +33199000001
+
+SERVICE DETAILS:
+Date of Service: 15/02/2025
+Service Provided: Cardiology consultation for chest pain assessment
+Service Code: CSC453
+Diagnosis Code: I20.9 (Angina pectoris, unspecified)
+
+CHARGES:
+Total Amount: 89.00 €
+Régime Obligatoire (Base): 25.00 €
+Mutuelle Coverage Requested: 64.00 €
+
+PAYMENT INFORMATION:
+Payment Method: Bank Transfer
+IBAN: FR00 0000 0000 0000 0000 0000 000
+
+I hereby certify that the above information is true and accurate.
+Signature: [Signature]
+Date: 18/02/2025

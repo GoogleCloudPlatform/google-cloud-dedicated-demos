@@ -1,0 +1,45 @@
+==================================================
+CLAIM ID: 9381-04
+CLAIM REFERENCE: CLM/2025/021652
+DOCUMENT TYPE: IMAGING REPORT
+Tel: +33199000006
+
+MAGNETIC RESONANCE IMAGING REPORT
+Date of Examination: 21/02/2025
+Patient: Sophie Bernard (ID: 6621984)
+DOB: 01/01/1983
+Referring Physician: Dr. Thomas Fictif
+
+EXAMINATION: MRI of the Lumbar Spine
+
+CLINICAL INDICATION: Chronic lower back pain with recent exacerbation and right leg radiculopathy
+
+TECHNIQUE:
+T1-weighted sagittal and axial images
+T2-weighted sagittal and axial images
+STIR sagittal images
+T2-weighted fat-suppressed sagittal and axial images
+
+FINDINGS:
+The vertebral bodies demonstrate normal height and alignment. Normal marrow signal intensity is noted throughout.
+
+L3-L4: Mild disc bulge without significant canal or foraminal stenosis.
+
+L4-L5: Moderate disc herniation, central and right paracentral in location, causing moderate central canal stenosis and moderate right lateral recess stenosis. There is contact with the descending right L5 nerve root. Mild bilateral foraminal narrowing is also noted.
+
+L5-S1: Mild disc bulge with small annular tear, causing mild bilateral foraminal narrowing without significant central canal stenosis.
+
+The conus medullaris terminates at L1 level and appears normal in signal and morphology. The visualized paravertebral soft tissues are unremarkable.
+
+IMPRESSION:
+1. Moderate disc herniation at L4-L5 level with right paracentral component, likely accounting for the patient's right-sided radiculopathy due to compression of the right L5 nerve root.
+2. Mild disc bulge at L3-L4 without significant neural compression.
+3. Mild disc bulge at L5-S1 with annular tear, without significant neural compression.
+
+RECOMMENDATIONS:
+Clinical correlation is advised. Consider referral to spine specialist for evaluation and management options.
+
+Radiologist: Dr. Claire Exemple
+Medical License: 00-00000
+[Signature]
+Date: 21/02/2025

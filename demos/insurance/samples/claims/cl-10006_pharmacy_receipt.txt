@@ -1,0 +1,8 @@
+==================================================
+CLAIM ID: CL-10006
+DOCUMENT TYPE: PHARMACY RECEIPT
+Date of Service: 2025-01-15
+Patient: Sophie Bernard (ID: 6621984)
+Provider: Pharmacie de l'Exemple (Provider ID: 7)
+Items: Prescription Medications
+Total Paid: 450.00 €

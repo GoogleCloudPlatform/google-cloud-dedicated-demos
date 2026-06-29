@@ -36,6 +36,7 @@
       rel="stylesheet"
       href="{{ url_for('static', filename='css/policies.css') }}"
     />
+    <script src="{{ url_for('static', filename='js/i18n.js') }}"></script>
   </head>
   <body>
     <header class="header">
@@ -43,27 +44,36 @@
         <div class="header-left">
           <a href="/dashboard" class="back-btn">
             <span class="material-icons">arrow_back</span>
-            Back to Dashboard
+            <span data-i18n="common.back_dashboard">Back to Dashboard</span>
           </a>
           <a href="/home" class="header-logo">
             <span class="material-icons">cloud</span>
           </a>
           <div>
-            <h1>Policy Management</h1>
+            <h1 data-i18n="policies.header_title">Policy Management</h1>
             <div class="header-location">
               <span class="material-icons">place</span>
-              <span>Google Cloud Dedicated - Trusted Local Partner</span>
+              <span data-i18n="common.location_partner"
+                >Google Cloud Dedicated - Trusted Local Partner</span
+              >
             </div>
           </div>
         </div>
         <div class="header-actions">
+          <div class="language-switcher-wrapper">
+            <span class="material-icons">language</span>
+            <select
+              class="ui-lang-switcher"
+              aria-label="Select UI Language"
+            ></select>
+          </div>
           <div class="user-info">
             <span class="material-icons">account_circle</span>
             <span>{{ username }}</span>
           </div>
           <a href="/logout" class="logout-btn">
             <span class="material-icons">logout</span>
-            Logout
+            <span data-i18n="common.logout">Logout</span>
           </a>
         </div>
       </div>
@@ -74,9 +84,9 @@
         <div class="page-header-content">
           <h2>
             <span class="material-icons">policy</span>
-            Tax Policy Management
+            <span data-i18n="policies.page_title">Tax Policy Management</span>
           </h2>
-          <p>
+          <p data-i18n="policies.page_desc">
             Upload and manage tax policy documents (.txt files) for violation
             detection
           </p>
@@ -89,8 +99,8 @@
           <div class="upload-icon">
             <span class="material-icons">cloud_upload</span>
           </div>
-          <h3>Upload Policy Documents</h3>
-          <p>
+          <h3 data-i18n="policies.upload.title">Upload Policy Documents</h3>
+          <p data-i18n="policies.upload.desc">
             Select one or multiple .txt files. Maximum file size: 10MB per file
           </p>
           <input
@@ -102,7 +112,7 @@
           />
           <button id="upload-policy-btn" class="upload-btn">
             <span class="material-icons">upload_file</span>
-            Select Files to Upload
+            <span data-i18n="policies.upload.btn">Select Files to Upload</span>
           </button>
         </div>
       </div>
@@ -112,7 +122,7 @@
         <div class="section-header">
           <h3>
             <span class="material-icons">folder_open</span>
-            Uploaded Policies
+            <span data-i18n="policies.list.title">Uploaded Policies</span>
           </h3>
           <button
             id="refresh-policies-btn"
@@ -123,7 +133,9 @@
           </button>
         </div>
         <div id="policies-container" class="policies-grid">
-          <div class="loading-policies">Loading policies...</div>
+          <div class="loading-policies" data-i18n="policies.list.loading">
+            Loading policies...
+          </div>
         </div>
       </div>
 
@@ -132,9 +144,9 @@
         <div class="info-card">
           <h3>
             <span class="material-icons">info</span>
-            About Policy Documents
+            <span data-i18n="policies.info.title">About Policy Documents</span>
           </h3>
-          <p>
+          <p data-i18n="policies.info.desc">
             Policy documents are used to detect violations in tax declarations.
             When an anomaly is detected, the system performs similarity matching
             against uploaded policies to identify the most relevant policy
@@ -143,15 +155,21 @@
           <div class="info-features">
             <div class="feature">
               <span class="material-icons">check_circle</span>
-              <span>Automatic embedding generation using AI</span>
+              <span data-i18n="policies.info.feat1"
+                >Automatic embedding generation using AI</span
+              >
             </div>
             <div class="feature">
               <span class="material-icons">check_circle</span>
-              <span>Fast similarity search with vector matching</span>
+              <span data-i18n="policies.info.feat2"
+                >Fast similarity search with vector matching</span
+              >
             </div>
             <div class="feature">
               <span class="material-icons">check_circle</span>
-              <span>Only checked for predicted anomalies</span>
+              <span data-i18n="policies.info.feat3"
+                >Only checked for predicted anomalies</span
+              >
             </div>
           </div>
         </div>
@@ -164,12 +182,14 @@
       <div class="modal-content">
         <div class="modal-header">
           <span class="material-icons modal-icon-warning">warning</span>
-          <h3>Delete Policy?</h3>
+          <h3 data-i18n="policies.modal.title">Delete Policy?</h3>
         </div>
         <div class="modal-body">
-          <p>Are you sure you want to delete this policy document?</p>
+          <p data-i18n="policies.modal.desc">
+            Are you sure you want to delete this policy document?
+          </p>
           <p class="modal-filename" id="delete-filename"></p>
-          <p class="modal-warning">
+          <p class="modal-warning" data-i18n="policies.modal.warning">
             This action cannot be undone. All embeddings associated with this
             policy will also be deleted.
           </p>
@@ -178,10 +198,15 @@
           <button
             class="modal-btn modal-btn-cancel"
             onclick="hideDeleteModal()"
+            data-i18n="common.cancel"
           >
             Cancel
           </button>
-          <button class="modal-btn modal-btn-delete" id="confirm-delete-btn">
+          <button
+            class="modal-btn modal-btn-delete"
+            id="confirm-delete-btn"
+            data-i18n="policies.modal.delete_btn"
+          >
             Delete Policy
           </button>
         </div>
@@ -192,13 +217,19 @@
     <div id="loading-overlay" class="loading-overlay" style="display: none">
       <div class="loading-overlay-content">
         <div class="loading-spinner"></div>
-        <div id="loading-message" class="loading-message">Processing...</div>
+        <div
+          id="loading-message"
+          class="loading-message"
+          data-i18n="common.processing"
+        >
+          Processing...
+        </div>
         <div id="loading-progress" class="loading-progress"></div>
       </div>
     </div>
 
     <div class="page-disclaimer">
-      <p class="disclaimer-text">
+      <p class="disclaimer-text" data-i18n="common.disclaimer">
         This content is for demonstration purposes only and does not represent
         an endorsement or partnership with any specific tax authority
       </p>

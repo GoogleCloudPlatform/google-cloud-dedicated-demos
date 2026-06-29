@@ -1,0 +1,259 @@
+<!--
+  ~ Copyright 2026 Google LLC
+  ~
+  ~ Licensed under the Apache License, Version 2.0 (the "License");
+  ~ you may not use this file except in compliance with the License.
+  ~ You may obtain a copy of the License at
+  ~
+  ~     https://www.apache.org/licenses/LICENSE-2.0
+  ~
+  ~
+  ~ Unless required by applicable law or agreed to in writing, software
+  ~ distributed under the License is distributed on an "AS IS" BASIS,
+  ~ WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+  ~ See the License for the specific language governing permissions and
+  ~ limitations under the License.
+  -->
+<div class="chat-widget">
+  <div class="chat-bubble" id="chat-bubble">
+    <div class="chat-notification">1</div>
+    <svg
+      class="chat-icon"
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      stroke-width="2"
+      stroke-linecap="round"
+      stroke-linejoin="round"
+    >
+      <path
+        d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"
+      ></path>
+    </svg>
+  </div>
+
+  <div class="chat-popup" id="chat-popup">
+    <div class="chat-header">
+      <div class="chat-title">
+        <svg
+          class="chat-title-icon"
+          xmlns="http://www.w3.org/2000/svg"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        >
+          <circle cx="12" cy="12" r="10"></circle>
+          <line x1="12" y1="16" x2="12" y2="12"></line>
+          <line x1="12" y1="8" x2="12" y2="8"></line>
+        </svg>
+        Assistant IA
+      </div>
+      <svg
+        class="chat-close"
+        id="chat-close"
+        xmlns="http://www.w3.org/2000/svg"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+      >
+        <line x1="18" y1="6" x2="6" y2="18"></line>
+        <line x1="6" y1="6" x2="18" y2="18"></line>
+      </svg>
+    </div>
+
+    <div class="chat-body" id="chat-body">
+      <div class="chat-message message-bot chat-message-appear">
+        <div class="message-bubble">
+          <div class="message-avatar">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <circle cx="12" cy="12" r="10"></circle>
+              <line x1="12" y1="16" x2="12" y2="12"></line>
+              <line x1="12" y1="8" x2="12" y2="8"></line>
+            </svg>
+          </div>
+          <div class="message-content">
+            Hello! Do you have any questions about the risk analysis performed
+            on your claims?
+          </div>
+        </div>
+        <div class="chat-options">
+          <div
+            class="chat-option"
+            onclick="sendOption('How does risk analysis work?')"
+          >
+            How does risk analysis work?
+          </div>
+          <div
+            class="chat-option"
+            onclick="sendOption('What risk factors are detected?')"
+          >
+            What risk factors are detected?
+          </div>
+          <div
+            class="chat-option"
+            onclick="sendOption('How to handle a flagged case?')"
+          >
+            How to handle a flagged case?
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="chat-footer">
+      <input
+        type="text"
+        class="chat-input"
+        id="chat-input"
+        placeholder="Type your message..."
+      />
+      <div class="chat-send" id="chat-send">
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+        >
+          <line x1="22" y1="2" x2="11" y2="13"></line>
+          <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+        </svg>
+      </div>
+    </div>
+  </div>
+</div>
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <script type="module" src="/translations.js"></script>
+    <script type="module" src="/service.js"></script>
+    <link rel="stylesheet" href="style.css" />
+    <title>Mutuelle Santé AI Solutions - Claims Processing</title>
+  </head>
+  <body>
+    <div id="login-overlay" class="login-overlay">
+      <div class="login-card">
+        <h2>Insurance App Login</h2>
+        <form id="login-form" onsubmit="handleLogin(event)">
+          <div class="form-group">
+            <label>Username</label>
+            <input
+              type="text"
+              id="login-username"
+              required
+              autocomplete="username"
+            />
+          </div>
+          <div class="form-group">
+            <label>Password</label>
+            <input
+              type="password"
+              id="login-password"
+              required
+              autocomplete="current-password"
+            />
+          </div>
+          <div id="login-error" class="login-error hidden">
+            Invalid username or password
+          </div>
+          <button
+            type="submit"
+            class="btn-primary btn-analyze"
+            style="margin-top: 0.5rem"
+          >
+            Sign In
+          </button>
+        </form>
+      </div>
+    </div>
+
+    <header>
+      <div class="logo">Mutuelle Santé AI Solutions</div>
+      <div class="header-right">
+        <div class="tpc-badge">Cloud de Confiance</div>
+        <button
+          id="btn-logout"
+          class="btn-logout hidden"
+          onclick="handleLogout()"
+        >
+          Sign Out
+        </button>
+      </div>
+    </header>
+
+    <div class="tpc-info">
+      <svg
+        class="tpc-icon"
+        xmlns="http://www.w3.org/2000/svg"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        stroke-width="2"
+        stroke-linecap="round"
+        stroke-linejoin="round"
+      >
+        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+      </svg>
+      Powered by Cloud de Confiance by S3NS
+    </div>
+
+    <div class="container">
+      <div class="demo-tabs">
+        <div class="tab active">Claims Processing</div>
+      </div>
+
+      <div id="claims-container" class="demo-content">
+        <h2>AI-Powered Claims Processing</h2>
+        <p>
+          Our system processes health insurance claims with 65% faster
+          resolution times while improving accuracy and compliance.
+        </p>
+      </div>
+
+      <div class="dashboard">
+        <div class="dashboard-main">
+          <div class="stats-card">
+            <div class="stat-item">
+              <p class="stat-label">Claims Processed Today</p>
+              <h3 class="stat-value">1,247</h3>
+              <p class="stat-change change-positive">↑ 15% from yesterday</p>
+            </div>
+            <div class="stat-item">
+              <p class="stat-label">Average Processing Time</p>
+              <h3 class="stat-value">42 min</h3>
+              <p class="stat-change change-positive">↓ 65% from baseline</p>
+            </div>
+            <div class="stat-item">
+              <p class="stat-label">Fraud Detection Rate</p>
+              <h3 class="stat-value">3.8%</h3>
+              <p class="stat-change change-positive">↑ 2.1% from baseline</p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="footer">
+      <p>Demo for Next 2025 - Powered by Cloud de Confiance by S3NS</p>
+    </div>
+  </body>
+</html>

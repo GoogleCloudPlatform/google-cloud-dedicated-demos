@@ -1,0 +1,9 @@
+==================================================
+CLAIM ID: CL-10004
+DOCUMENT TYPE: TREATMENT RECORD
+Date of Service: 2025-01-18
+Patient: Isabelle Rousseau (ID: 7890123)
+DOB: 1972-01-01
+Provider: Clinique Fictive du Sport (Provider ID: 10)
+Service: Physiotherapy session for shoulder rehab
+Amount: 50.00 €

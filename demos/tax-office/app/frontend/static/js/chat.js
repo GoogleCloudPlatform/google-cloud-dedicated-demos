@@ -62,7 +62,11 @@
   document.addEventListener("click", (e) => {
     if (e.target.closest(".quick-question-btn")) {
       const button = e.target.closest(".quick-question-btn");
-      const question = button.getAttribute("data-question");
+      const i18nKey = button.getAttribute("data-i18n");
+      const question =
+        window.i18n && i18nKey
+          ? window.i18n.t(i18nKey)
+          : button.getAttribute("data-question");
       if (question) {
         chatInput.value = question;
         sendMessage();
@@ -99,6 +103,8 @@
         content: message,
       });
 
+      const currentLang = window.i18n ? window.i18n.currentLang : "en";
+
       // Send request to LLM service
       const response = await fetch("/api/llm/chat", {
         method: "POST",
@@ -109,6 +115,7 @@
           message: message,
           policy_context: context,
           history: conversationHistory,
+          language: currentLang,
         }),
       });
 

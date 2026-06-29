@@ -1,0 +1,127 @@
+#
+# Copyright 2026 Google LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: insurance-demo-showroom-app
+  labels:
+    app.kubernetes.io/name: insurance-demo-showroom-app
+spec:
+  selector:
+    matchLabels:
+      app: insurance-demo-showroom-app
+  template:
+    metadata:
+      labels:
+        app: insurance-demo-showroom-app
+    spec:
+      serviceAccountName: {{ .Values.insuranceApp.serviceAccount.name }}
+      dnsPolicy: {{ .Values.dnsPolicy | default "ClusterFirst" }}
+      {{- if .Values.dnsConfig }}
+      dnsConfig:
+        {{- toYaml .Values.dnsConfig | nindent 8 }}
+      {{- end }}
+      containers:
+        - name: insurance-demo-showroom-app
+          image: "{{ .Values.insuranceApp.image.repository }}:{{ .Values.insuranceApp.image.tag }}"
+          env:
+            - name: GOOGLE_CLOUD_UNIVERSE_DOMAIN
+              valueFrom:
+                secretKeyRef:
+                  name: insurance-demo-secrets
+                  key: UNIVERSE_DOMAIN
+            - name: MODEL_HOST
+              valueFrom:
+                secretKeyRef:
+                  name: insurance-demo-secrets
+                  key: MODEL_HOST
+            - name: MODEL_NAME
+              valueFrom:
+                secretKeyRef:
+                  name: insurance-demo-secrets
+                  key: MODEL_NAME
+            - name: CLAIMS_DATABASE_NAME
+              valueFrom:
+                secretKeyRef:
+                  name: insurance-demo-secrets
+                  key: CLAIMS_DATABASE_NAME
+            - name: DATABASE_USER_NAME
+              valueFrom:
+                secretKeyRef:
+                  name: insurance-db-secrets
+                  key: DATABASE_USER_NAME
+            - name: PROJECT
+              valueFrom:
+                secretKeyRef:
+                  name: insurance-demo-secrets
+                  key: PROJECT
+            - name: REGION
+              valueFrom:
+                secretKeyRef:
+                  name: insurance-demo-secrets
+                  key: REGION
+            - name: SQL_INSTANCE_NAME
+              valueFrom:
+                secretKeyRef:
+                  name: insurance-demo-secrets
+                  key: SQL_INSTANCE_NAME
+            - name: DATABASE_PORT
+              valueFrom:
+                secretKeyRef:
+                  name: insurance-demo-secrets
+                  key: DATABASE_PORT
+            - name: CLAIMS_DOCUMENTS_BUCKET
+              valueFrom:
+                secretKeyRef:
+                  name: insurance-demo-secrets
+                  key: CLAIMS_DOCUMENTS_BUCKET
+            - name: APP_LOGIN_USER
+              valueFrom:
+                secretKeyRef:
+                  name: insurance-db-secrets
+                  key: APP_LOGIN_USER
+            - name: APP_LOGIN_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: insurance-db-secrets
+                  key: APP_LOGIN_PASSWORD
+      initContainers:
+        - name: cloud-sql-proxy
+          restartPolicy: Always
+          image: {{ .Values.insuranceApp.proxyImage | quote }}
+          env:
+            - name: GOOGLE_CLOUD_UNIVERSE_DOMAIN
+              value: {{ .Values.global.universeDomain | quote }}
+          args:
+            - "--auto-iam-authn"
+            - "--structured-logs"
+            - "--port=5432"
+            - "--universe-domain={{ .Values.global.universeDomain }}"
+            - "--psc"
+            - "{{ .Values.global.projectId }}:{{ .Values.global.region }}:{{ .Values.global.sqlInstanceName }}"
+          securityContext:
+            runAsNonRoot: true
+          resources:
+            requests:
+              memory: "2Gi"
+              cpu: "1"
+      restartPolicy: Always
+      schedulerName: default-scheduler
+      securityContext:
+        seccompProfile:
+          type: RuntimeDefault
+      terminationGracePeriodSeconds: 30

@@ -18,8 +18,8 @@ import io
 import os
 # Set environment variables for testing before importing app
 os.environ['DEMO_USERNAME'] = 'test_demo_user'
-os.environ['DEMO_PASSWORD'] = 'test_demo_password'
-os.environ['FLASK_SECRET_KEY'] = 'test_flask_secret_key'
+os.environ['DEMO_PASSWORD'] = 'test_demo_password'  # pragma: allowlist secret
+os.environ['FLASK_SECRET_KEY'] = 'test_flask_secret_key'  # pragma: allowlist secret
 import unittest
 from unittest import mock
 import app
@@ -182,3 +182,16 @@ class AppTest(unittest.TestCase):
 
     # Assert
     self.assertIn('AI response from Fake API', resp_data['response'])
+
+  def test_i18n_languages(self):
+    # Arrange
+    client = app.app.test_client()
+    # Act
+    resp = client.get('/api/i18n/languages')
+    # Assert
+    self.assertEqual(resp.status_code, 200)
+    data = resp.get_json()
+    codes = [item['code'] for item in data]
+    self.assertIn('en', codes)
+    self.assertIn('fr', codes)
+    self.assertIn('de', codes)

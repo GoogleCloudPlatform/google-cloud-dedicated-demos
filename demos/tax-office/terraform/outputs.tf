@@ -76,7 +76,7 @@ resource "local_file" "helm_secrets" {
       demoUsername   = var.demo_username
     }
     jupyter = {
-      rawPassword    = var.demo_password
+      rawPassword = var.demo_password
     }
     vllm = {
       huggingFaceToken = var.hugging_face_token
