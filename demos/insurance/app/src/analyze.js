@@ -55,6 +55,19 @@ export async function analyzeClaimWithRetry(claimId) {
   }
 }
 
+function getTranslation(key, lang) {
+  try {
+    const filePath = path.join("./src/i18n", `${lang}.json`);
+    if (fs.existsSync(filePath)) {
+      const data = JSON.parse(fs.readFileSync(filePath, "utf-8"));
+      if (data[key]) return data[key];
+    }
+  } catch (e) {
+    console.error("Error loading translation", e);
+  }
+  return key;
+}
+
 export async function analyzeClaim(claimId, options = {}) {
   const claim = await Claim.findByPk(claimId, {
     include: [ServiceType, Customer, Provider],
@@ -63,8 +76,10 @@ export async function analyzeClaim(claimId, options = {}) {
   const hasDocs = docsText.trim().length > 0;
 
   if (!hasDocs) {
+    const lang = options.language || "en";
+    const msg = getTranslation("NO_DOCUMENTATION_PROVIDED", lang);
     return {
-      text: "No documentation provided. Recommended to ask for documents.\n\nDECISION: REJECT",
+      text: `${msg}\n\nDECISION: REJECT`,
       prompt: "LLM call skipped: No documents in GCS.",
       hasDocs: false,
     };
@@ -105,12 +120,18 @@ export async function analyzeClaim(claimId, options = {}) {
   };
 }
 
-function buildPrompt(claim, docsText, options) {
-  let languagePrompt = "";
-
-  if (options.language) {
-    languagePrompt = `Also give the response in the language- ${options.language}`;
+function getFullLanguageName(code) {
+  if (!code) return "English";
+  try {
+    const dn = new Intl.DisplayNames(["en"], { type: "language" });
+    return dn.of(code) || code;
+  } catch (e) {
+    return code;
   }
+}
+
+function buildPrompt(claim, docsText, options) {
+  const fullLanguage = getFullLanguageName(options.language);
 
   const promptPart1 = fs
     .readFileSync(path.join(BASE_SRC_DIR, PROMPT_FILE_NAME))
@@ -118,7 +139,6 @@ function buildPrompt(claim, docsText, options) {
 
   return `
 ${promptPart1}
-${languagePrompt}
 
 Name: ${claim.Customer.first_name} ${claim.Customer.last_name}
 ID: ${claim.Customer.customer_id}
@@ -130,6 +150,8 @@ Provider: ${claim.Provider.provider_name}
 Amount Billed: ${claim.amount_billed} €
 
 ${docsText}
+
+CRITICAL INSTRUCTION: Write your analysis summary in ${fullLanguage}. However, on the final line, you MUST write strictly in English: 'DECISION: APPROVE' or 'DECISION: REJECT'. Do not translate DECISION, APPROVE, or REJECT.
 `;
 }
 
@@ -180,7 +202,7 @@ Document ${idx + 1} ends here
 `;
 }
 
-export async function chatWithAssistant(userMessage) {
+export async function chatWithAssistant(userMessage, options = {}) {
   const claims = await Claim.findAll({
     include: [Provider, ServiceType, Customer],
   });
@@ -199,9 +221,11 @@ export async function chatWithAssistant(userMessage) {
     status: c.status,
   }));
 
+  const fullLanguage = getFullLanguageName(options.language);
+
   const prompt = `${sysPrompt}\n${JSON.stringify(
     compactClaims,
-  )}\n\nUser Question:\n${userMessage}`;
+  )}\n\nCRITICAL INSTRUCTION: You MUST answer the user question entirely in ${fullLanguage}.\n\nUser Question:\n${userMessage}`;
 
   const response = await fetch(`${MODEL_HOST}/v1/chat/completions`, {
     method: "POST",

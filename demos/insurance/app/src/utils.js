@@ -14,7 +14,22 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+// Extracts the explicit language code from URL query parameters
+export const requestedLanguage = (req) => {
+  if (req.query && req.query.lang) {
+    const lang = req.query.lang.toLowerCase();
+    if (["fr", "en", "de"].includes(lang)) {
+      return lang;
+    }
+  }
+};
+
+// It detects browser language and sets it as default if no explicit language is provided
 export const findTopLanguage = (req) => {
+  const lang = requestedLanguage(req);
+  if (lang) {
+    return lang;
+  }
   const accecptedLanguages = req.acceptsLanguages();
 
   if (accecptedLanguages.includes("fr")) {
@@ -23,6 +38,10 @@ export const findTopLanguage = (req) => {
 
   if (accecptedLanguages.includes("en")) {
     return "en";
+  }
+
+  if (accecptedLanguages.includes("de")) {
+    return "de";
   }
 
   return "fr";

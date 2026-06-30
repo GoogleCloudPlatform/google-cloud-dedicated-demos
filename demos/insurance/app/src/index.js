@@ -18,7 +18,6 @@ import express from "express";
 import { fileURLToPath } from "url";
 import { dirname } from "path";
 import { router as apiRouter } from "./api.js";
-import { findTopLanguage } from "./utils.js";
 
 import { connect } from "./database.js";
 
@@ -43,33 +42,23 @@ await connect({
   databasePort,
 });
 
-const sendFrench = (res) => res.sendFile(__dirname + "/index.html");
-const sendEnglish = (res) => res.sendFile(__dirname + "/en/index.html");
-
 app.get("/", (req, res) => {
-  const language = findTopLanguage(req);
-  if (language === "fr") {
-    return sendFrench(res);
-  }
-
-  if (language === "en") {
-    return sendEnglish(res);
-  }
-
-  return sendFrench(res);
+  res.sendFile(__dirname + "/index.html");
 });
 
 app.get("/service.js", (req, res) => {
   res.sendFile(__dirname + "/service.js");
 });
 
-app.get("/translations.js", (req, res) => {
-  res.sendFile(__dirname + "/translations.js");
+app.get("/i18n.js", (req, res) => {
+  res.sendFile(__dirname + "/i18n.js");
 });
 
 app.get("/style.css", (req, res) => {
   res.sendFile(__dirname + "/style.css");
 });
+
+app.use("/i18n", express.static(__dirname + "/i18n"));
 
 app.use(express.json());
 app.use("/api", apiRouter);

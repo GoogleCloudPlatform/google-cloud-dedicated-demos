@@ -50,6 +50,8 @@ insurance providers. It serves the following stakeholders:
 -   **Seamless JupyterLab Analytics**: Access a dedicated Jupyter environment
     preloaded with direct database connection variables and Workload Identity
     bindings.
+-   **Internationalization**: Instantly switch UI language between
+    English, French, and German.
 
 ### Components
 

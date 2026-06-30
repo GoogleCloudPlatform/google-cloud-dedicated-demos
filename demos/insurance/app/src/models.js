@@ -14,7 +14,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { Model } from "sequelize";
+import pkg from 'sequelize';
+const { Model } = pkg;
 
 export class RiskAnalysis extends Model {
   static init(sequelize, DataTypes) {

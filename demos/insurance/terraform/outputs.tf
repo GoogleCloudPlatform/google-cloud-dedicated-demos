@@ -83,7 +83,7 @@ output "artifact_repository_id" {
 resource "local_file" "secrets" {
   filename        = "${path.module}/../k8s/helm/deployment-secrets.yaml"
   file_permission = "0600"
-  content         = yamlencode({
+  content = yamlencode({
     global = {
       iamDatabaseUser = google_sql_user.iam_service_account_user.name
     }

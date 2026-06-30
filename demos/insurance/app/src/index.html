@@ -50,7 +50,7 @@
           <line x1="12" y1="16" x2="12" y2="12"></line>
           <line x1="12" y1="8" x2="12" y2="8"></line>
         </svg>
-        Assistant IA
+        <span data-type="CHAT_TITLE">Assistant IA</span>
       </div>
       <svg
         class="chat-close"
@@ -82,32 +82,23 @@
               stroke-linejoin="round"
             >
               <circle cx="12" cy="12" r="10"></circle>
-              <line x1="12" y1="16" x2="12" y2="12"></line>
-              <line x1="12" y1="8" x2="12" y2="8"></line>
+              <path d="M8 14s1.5 2 4 2 4-2 4-2"></path>
+              <line x1="9" y1="9" x2="9.01" y2="9"></line>
+              <line x1="15" y1="9" x2="15.01" y2="9"></line>
             </svg>
           </div>
-          <div class="message-content">
-            Bonjour ! Avez-vous des questions sur l'analyse de risque effectuée
-            sur vos demandes de remboursement ?
+          <div class="message-content" data-type="CHAT_GREETING">
+            Bonjour ! Avez-vous des questions sur l'analyse de risque effectuée sur vos demandes de remboursement ?
           </div>
         </div>
         <div class="chat-options">
-          <div
-            class="chat-option"
-            onclick="sendOption('Comment fonctionne l\'analyse de risque ?')"
-          >
+          <div class="chat-option" data-type="CHAT_OPTION_1" onclick="sendOption(this.textContent)">
             Comment fonctionne l'analyse de risque ?
           </div>
-          <div
-            class="chat-option"
-            onclick="sendOption('Quels facteurs de risque sont détectés ?')"
-          >
+          <div class="chat-option" data-type="CHAT_OPTION_2" onclick="sendOption(this.textContent)">
             Quels facteurs de risque sont détectés ?
           </div>
-          <div
-            class="chat-option"
-            onclick="sendOption('Comment traiter un cas signalé ?')"
-          >
+          <div class="chat-option" data-type="CHAT_OPTION_3" onclick="sendOption(this.textContent)">
             Comment traiter un cas signalé ?
           </div>
         </div>
@@ -119,6 +110,7 @@
         type="text"
         class="chat-input"
         id="chat-input"
+        data-type="CHAT_PLACEHOLDER"
         placeholder="Tapez votre message..."
       />
       <div class="chat-send" id="chat-send">
@@ -144,21 +136,30 @@
     <meta charset="UTF-8" />
     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <script type="module" src="/translations.js"></script>
+    <link
+      href="https://fonts.googleapis.com/css2?family=Google+Sans:wght@400;500;700&display=swap"
+      rel="stylesheet"
+    />
+    <link
+      href="https://fonts.googleapis.com/icon?family=Material+Icons"
+      rel="stylesheet"
+    />
+    <script src="/i18n.js"></script>
     <script type="module" src="/service.js"></script>
     <link rel="stylesheet" href="style.css" />
-    <title>
+    <title data-type="PAGE_TITLE">
       Mutuelle Santé AI Solutions - Traitement des demandes de remboursement
     </title>
   </head>
 
   <body>
-    <div id="login-overlay" class="login-overlay">
+    <!-- hidden to be removed -->
+    <div id="login-overlay" class="login-overlay hidden">
       <div class="login-card">
-        <h2>Connexion Application Assurance</h2>
+        <h2 data-type="LOGIN_TITLE">Connexion Application Assurance</h2>
         <form id="login-form" onsubmit="handleLogin(event)">
           <div class="form-group">
-            <label>Nom d'utilisateur</label>
+            <label data-type="LOGIN_USERNAME">Nom d'utilisateur</label>
             <input
               type="text"
               id="login-username"
@@ -167,7 +168,7 @@
             />
           </div>
           <div class="form-group">
-            <label>Mot de passe</label>
+            <label data-type="LOGIN_PASSWORD">Mot de passe</label>
             <input
               type="password"
               id="login-password"
@@ -175,13 +176,14 @@
               autocomplete="current-password"
             />
           </div>
-          <div id="login-error" class="login-error hidden">
+          <div id="login-error" class="login-error hidden" data-type="LOGIN_ERROR">
             Nom d'utilisateur ou mot de passe incorrect
           </div>
           <button
             type="submit"
             class="btn-primary btn-analyze"
             style="margin-top: 0.5rem"
+            data-type="LOGIN_SUBMIT"
           >
             Se connecter
           </button>
@@ -192,14 +194,19 @@
     <header>
       <div class="logo">Mutuelle Santé AI Solutions</div>
       <div class="header-right">
-        <div class="tpc-badge">Cloud de Confiance</div>
+        <div class="tpc-badge" data-type="TRUSTED_CLOUD">Cloud de Confiance</div>
         <button
           id="btn-logout"
           class="btn-logout hidden"
           onclick="handleLogout()"
+          data-type="LOGOUT"
         >
           Déconnexion
         </button>
+        <div class="language-switcher-wrapper">
+          <span class="material-icons">language</span>
+          <select class="ui-lang-switcher" aria-label="Select UI Language"></select>
+        </div>
       </div>
     </header>
 
@@ -216,17 +223,17 @@
       >
         <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
       </svg>
-      Propulsé par Cloud de Confiance par S3NS
+      <span data-type="POWERED_BY">Propulsé par Cloud de Confiance par S3NS</span>
     </div>
 
     <div class="container">
       <div class="demo-tabs">
-        <div class="tab active">Traitement des demandes de remboursement</div>
+        <div class="tab active" data-type="TAB_TITLE">Traitement des demandes de remboursement</div>
       </div>
 
       <div id="claims-container" class="demo-content">
-        <h2>Traitement des demandes de remboursement optimisé par l'IA</h2>
-        <p>
+        <h2 data-type="HERO_TITLE">Traitement des demandes de remboursement optimisé par l'IA</h2>
+        <p data-type="HERO_SUBTITLE">
           Notre système traite les demandes d'assurance maladie avec des délais
           de résolution 65 % plus rapides, tout en améliorant la précision et la
           conformité.
@@ -237,25 +244,25 @@
         <div class="dashboard-main">
           <div class="stats-card">
             <div class="stat-item">
-              <p class="stat-label">
+              <p class="stat-label" data-type="STAT_1_LABEL">
                 Demandes de remboursement traitées aujourd'hui
               </p>
               <h3 class="stat-value">1 247</h3>
-              <p class="stat-change change-positive">
+              <p class="stat-change change-positive" data-type="STAT_1_CHANGE">
                 ↑ 15 % par rapport à hier
               </p>
             </div>
             <div class="stat-item">
-              <p class="stat-label">Délai de traitement moyen</p>
+              <p class="stat-label" data-type="STAT_2_LABEL">Délai de traitement moyen</p>
               <h3 class="stat-value">42 min</h3>
-              <p class="stat-change change-positive">
+              <p class="stat-change change-positive" data-type="STAT_2_CHANGE">
                 ↓ 65 % par rapport à la base de référence
               </p>
             </div>
             <div class="stat-item">
-              <p class="stat-label">Taux de détection de la fraude</p>
+              <p class="stat-label" data-type="STAT_3_LABEL">Taux de détection de la fraude</p>
               <h3 class="stat-value">3,8 %</h3>
-              <p class="stat-change change-positive">
+              <p class="stat-change change-positive" data-type="STAT_3_CHANGE">
                 ↑ 2,1 % par rapport à la base de référence
               </p>
             </div>
@@ -265,7 +272,7 @@
     </div>
 
     <div class="footer">
-      <p>Démo pour Next 2025 - Propulsé par Cloud de Confiance par S3NS</p>
+      <p data-type="FOOTER_TEXT">Démo pour Next 2025 - Propulsé par Cloud de Confiance par S3NS</p>
     </div>
   </body>
 </html>

@@ -14,7 +14,18 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { currentLangText, TEXT_MAPS } from "./translations.js";
+function currentLanguage() {
+  return window.i18n ? window.i18n.currentLang : "en";
+}
+
+function currentLangText(key, replacementMap) {
+  const k = typeof key === "string" ? key : (key && key.key) || key;
+  return window.i18n ? window.i18n.t(k, replacementMap) : k;
+}
+
+const TEXT_MAPS = new Proxy({}, {
+  get: (target, prop) => prop
+});
 
 const RECOMMENDATION_CUT_OFF_SCORE = 40;
 
@@ -109,24 +120,37 @@ async function authenticatedFetch(url, options = {}) {
   return res;
 }
 
+let _cachedClaims = null;
+
 async function loadClaims() {
   const claimsContainer = document.querySelector("#claims-container");
   if (!claimsContainer) return;
-  claimsContainer.innerHTML = "";
+
   try {
-    const response = await authenticatedFetch("/api/claims");
-    const claims = await response.json();
+    if (!_cachedClaims) {
+      claimsContainer.innerHTML = "";
+      const response = await authenticatedFetch("/api/claims");
+      _cachedClaims = await response.json();
+    }
+
     hideLoginModal();
 
-    for (let i = 0; i < claims.length; i++) {
+    claimsContainer.innerHTML = "";
+    for (let i = 0; i < _cachedClaims.length; i++) {
       const el = document.createElement("div");
-      el.innerHTML = claimsCard(claims[i], i);
+      el.innerHTML = claimsCard(_cachedClaims[i], i);
       claimsContainer.appendChild(el);
     }
   } catch (e) {
     console.log("Not logged in or error loading claims", e);
   }
 }
+
+window.addEventListener("languageChanged", async function () {
+  if (getToken()) {
+    await loadClaims();
+  }
+});
 
 (async () => {
   window.analyzeClaim = analyzeClaim;
@@ -141,6 +165,12 @@ async function loadClaims() {
     await loadClaims();
   }
 })();
+
+function updateDOMTexts() {
+  if (window.i18n) {
+    window.i18n.applyTranslations();
+  }
+}
 
 async function delay(milis) {
   return new Promise((resolve) => setTimeout(resolve, milis));
@@ -184,7 +214,7 @@ export async function analyzeClaim(claimId, index) {
 
 async function analyzeClaimAndAppend(claimId, verificationList) {
   const claimAnalysisRes = await authenticatedFetch(
-    `/api/claims/${claimId}/analyze`,
+    `/api/claims/${claimId}/analyze?lang=` + currentLanguage(),
   );
   const responseData = await claimAnalysisRes.json();
   const fullText = responseData.text || "";
@@ -244,18 +274,18 @@ async function analyzeRiskScore(claimId, verificationList) {
 }
 
 function extractLastPara(text) {
-  if (!text) return "No response from AI.";
+  if (!text) return currentLangText(TEXT_MAPS.NO_RESPONSE_FROM_AI);
   const paras = text
     .split("\n\n")
     .map((p) => p.trim())
     .filter((p) => p.length > 0);
-  if (paras.length === 0) return "No response from AI.";
+  if (paras.length === 0) return currentLangText(TEXT_MAPS.NO_RESPONSE_FROM_AI);
   const lastPara = paras[paras.length - 1]
     .replace(/^Therefore,/, "")
     .replace(/^Therefore/, "")
     .trim();
 
-  if (lastPara.length === 0) return "No response from AI.";
+  if (lastPara.length === 0) return currentLangText(TEXT_MAPS.NO_RESPONSE_FROM_AI);
   return lastPara[0].toUpperCase() + lastPara.substring(1);
 }
 
@@ -471,16 +501,16 @@ async function askBackendChat(message) {
     const res = await authenticatedFetch("/api/chat", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ message }),
+      body: JSON.stringify({ message, lang: currentLanguage() }),
     });
     if (!res.ok) {
       throw new Error(await res.text());
     }
     const data = await res.json();
-    return data.reply || "Sorry, an error occurred / Une erreur est survenue.";
+    return data.reply || currentLangText(TEXT_MAPS.CHAT_ERROR_OCCURRED);
   } catch (e) {
     console.error(e);
-    return "Sorry, unable to reach AI Assistant / Impossible de joindre l'assistant IA.";
+    return currentLangText(TEXT_MAPS.CHAT_UNABLE_TO_REACH);
   }
 }
 

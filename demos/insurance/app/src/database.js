@@ -14,7 +14,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import { Sequelize, DataTypes } from "sequelize";
+import pkg from 'sequelize';
+const { Sequelize, DataTypes } = pkg;
+
 import { models } from "./models.js";
 
 export async function connect({

@@ -776,3 +776,30 @@ header {
   background-color: #e0e0e0;
   color: var(--dark);
 }
+
+.language-switcher-wrapper {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  background-color: #f1f3f4;
+  border: 1px solid #dadce0;
+  border-radius: 20px;
+  padding: 4px 12px;
+  color: var(--gray);
+}
+
+.language-switcher-wrapper .material-icons {
+  font-size: 18px;
+  color: var(--primary);
+}
+
+.ui-lang-switcher {
+  border: none;
+  background: transparent;
+  font-family: "Google Sans", sans-serif;
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--dark);
+  cursor: pointer;
+  outline: none;
+}

@@ -89,13 +89,13 @@ GCD environments, as compared to GCP. Please replace the placeholders in the
 commands and configurations given in each demo README with the values
 corresponding to your target universe.
 
-Variable              | Google Cloud (GCP) | GCD In France (GA)   | GCD In Germany (Preview)
---------------------- | ------------------ | -------------------- | ------------------------
+Variable | GCP | GCD France (GA) | GCD Germany (Preview)
+--- | --- | --- | ---
 `UNIVERSE_WEB_DOMAIN` | `cloud.google.com` | `cloud.s3nscloud.fr` | `cloud.berlin-build0.goog`
-`UNIVERSE_API_DOMAIN` | `googleapis.com`   | `s3nsapis.fr`        | `apis-berlin-build0.goog`
-`UNIVERSE_NAME`       | `google`           | `s3ns`               | `berlin`
-`UNIVERSE_PREFIX`     | n/a                | `s3ns`               | `eu0`
-`UNIVERSE_REGION`     | n/a                | `u-france-east1`     | `u-germany-northeast1`
+`UNIVERSE_API_DOMAIN` | `googleapis.com` | `s3nsapis.fr` | `apis-berlin-build0.goog`
+`UNIVERSE_NAME` | `google` | `s3ns` | `berlin`
+`UNIVERSE_PREFIX` | n/a | `s3ns` | `eu0`
+`UNIVERSE_REGION` | n/a | `u-france-east1` | `u-germany-northeast1`
 
 ### Google Cloud CLI
 

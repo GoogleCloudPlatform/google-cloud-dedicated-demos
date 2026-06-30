@@ -27,11 +27,40 @@ import { analyzeClaim, chatWithAssistant } from "./analyze.js";
 import { analyzeUsingBigQuery } from "./bigquery-analyze.js";
 import { findTopLanguage } from "./utils.js";
 
+import fs from "node:fs";
+import path from "node:path";
+import { fileURLToPath } from "url";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
 export const SESSION_TOKEN = crypto.randomUUID();
 const LOGIN_USER = process.env.APP_LOGIN_USER;
 const LOGIN_PASSWORD = process.env.APP_LOGIN_PASSWORD;
 
 export const router = express.Router();
+
+router.route("/i18n/languages").get((req, res) => {
+  const i18nDir = path.join(__dirname, "i18n");
+  const languages = [];
+  if (fs.existsSync(i18nDir)) {
+    const files = fs.readdirSync(i18nDir).sort();
+    for (const filename of files) {
+      if (filename.endsWith(".json")) {
+        try {
+          const content = fs.readFileSync(path.join(i18nDir, filename), "utf-8");
+          const data = JSON.parse(content);
+          if (data._meta) {
+            languages.push(data._meta);
+          }
+        } catch (e) {
+          console.error("Failed to read i18n file", filename, e);
+        }
+      }
+    }
+  }
+  return res.json(languages);
+});
 
 router.route("/login").post((req, res) => {
   const { username, password } = req.body ?? {};
@@ -42,7 +71,7 @@ router.route("/login").post((req, res) => {
 });
 
 const authMiddleware = (req, res, next) => {
-  if (req.path === "/login") return next();
+  if (req.path === "/login" || req.path === "/i18n/languages") return next();
   const authHeader = req.headers.authorization;
   if (authHeader === `Bearer ${SESSION_TOKEN}`) {
     return next();
@@ -89,7 +118,8 @@ router.route("/claims/:claimId/riskscore/analyze").get(async (req, res) => {
 
 router.route("/chat").post(async (req, res) => {
   try {
-    res.json(await chatWithAssistant(req.body.message));
+    const lang = req.body.lang || findTopLanguage(req);
+    res.json(await chatWithAssistant(req.body.message, { language: lang }));
   } catch (e) {
     console.error(e);
     res.status(500).send(e.message || "Error");
