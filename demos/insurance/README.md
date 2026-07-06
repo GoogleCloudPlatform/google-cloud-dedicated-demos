@@ -53,6 +53,10 @@ insurance providers. It serves the following stakeholders:
 -   **Internationalization**: Instantly switch UI language between
     English, French, and German.
 
+### Architecture
+
+![Insurance Architecture](docs/insurance_architecture.jpg)
+
 ### Components
 
 Component    | Tech       | Purpose
