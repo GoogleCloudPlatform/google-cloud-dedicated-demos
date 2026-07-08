@@ -46,6 +46,14 @@ export class RiskAnalysis extends Model {
           type: DataTypes.BOOLEAN,
           defaultValue: false,
         },
+        recommendation: {
+          type: DataTypes.STRING,
+          allowNull: true,
+        },
+        analysis_notes: {
+          type: DataTypes.TEXT,
+          allowNull: true,
+        },
       },
       {
         sequelize,

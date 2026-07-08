@@ -54,6 +54,12 @@ header {
   border-radius: 4px;
   font-size: 0.875rem;
   font-weight: 500;
+  cursor: pointer;
+  transition: opacity 0.2s ease;
+}
+
+.tpc-badge:hover {
+  opacity: 0.9;
 }
 
 .container {
@@ -125,6 +131,20 @@ header {
 .status-approved {
   background-color: #e8f5e9;
   color: var(--secondary);
+}
+
+.approval-success-message {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background-color: #e8f5e9;
+  color: #2e7d32;
+  border: 1px solid #c8e6c9;
+  padding: 0.75rem 1rem;
+  border-radius: 6px;
+  font-weight: 600;
+  font-size: 0.95rem;
+  margin-top: 0.5rem;
 }
 
 .status-paid {
@@ -310,6 +330,7 @@ header {
 .btn:disabled {
   opacity: 0.5;
   cursor: not-allowed;
+  transition: opacity 0.4s ease;
 }
 
 .btn-primary:disabled:hover {

@@ -56,5 +56,13 @@
   "STAT_2_CHANGE": "↓ 65% vs baseline",
   "STAT_3_LABEL": "Fraud Detection Rate",
   "STAT_3_CHANGE": "↑ 2.1% vs baseline",
+  "REQUEST_SENT_SUCCESSFULLY": "Request sent successfully!",
+  "OVERRIDE_APPROVE_SUCCESS_ALERT": "Claim overridden and approved.",
+  "APPROVE_SUCCESS_ALERT": "Claim approved successfully.",
+  "ESCALATED_TO_INVESTIGATOR_ALERT": "Escalated to investigator.",
+  "APPROVED_STATUS": "Approved",
+  "ESCALATED_STATUS": "Escalated",
+  "INFO_REQUESTED_STATUS": "Information Requested",
+  "DOCUMENTATION_REQUESTED_STATUS": "Documentation Requested",
   "FOOTER_TEXT": "Demo for Next 2025 - Powered by Trusted Cloud by S3NS"
 }

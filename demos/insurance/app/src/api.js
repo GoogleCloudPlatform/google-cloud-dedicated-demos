@@ -22,6 +22,7 @@ import {
   ServiceType,
   Customer,
   InsurancePlan,
+  RiskAnalysis,
 } from "./models.js";
 import { analyzeClaim, chatWithAssistant } from "./analyze.js";
 import { analyzeUsingBigQuery } from "./bigquery-analyze.js";
@@ -120,6 +121,39 @@ router.route("/chat").post(async (req, res) => {
   try {
     const lang = req.body.lang || findTopLanguage(req);
     res.json(await chatWithAssistant(req.body.message, { language: lang }));
+  } catch (e) {
+    console.error(e);
+    res.status(500).send(e.message || "Error");
+  }
+});
+
+router.route("/claims/:claimId/vllm").post(async (req, res) => {
+  try {
+    const { claimId } = req.params;
+    const { response } = req.body;
+    let analysis = await RiskAnalysis.findOne({ where: { claim_id: claimId } });
+    if (analysis) {
+      analysis.analysis_notes = response;
+      await analysis.save();
+    }
+    res.json({ data: analysis });
+  } catch (e) {
+    console.error(e);
+    res.status(500).send(e.message || "Error");
+  }
+});
+
+router.route("/claims/:claimId/recommendation").post(async (req, res) => {
+  try {
+    const { claimId } = req.params;
+    let { recommendation } = req.body;
+
+    let analysis = await RiskAnalysis.findOne({ where: { claim_id: claimId } });
+    if (analysis) {
+      analysis.recommendation = recommendation;
+      await analysis.save();
+    }
+    res.json({ data: analysis });
   } catch (e) {
     console.error(e);
     res.status(500).send(e.message || "Error");

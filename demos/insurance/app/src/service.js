@@ -60,6 +60,14 @@ function showLoginModal() {
   const logoutBtn = document.getElementById("btn-logout");
   if (overlay) overlay.classList.remove("hidden");
   if (logoutBtn) logoutBtn.classList.add("hidden");
+
+  const usernameInput = document.getElementById("login-username");
+  const passwordInput = document.getElementById("login-password");
+  if (usernameInput) usernameInput.value = "";
+  if (passwordInput) passwordInput.value = "";
+
+  const errorDiv = document.getElementById("login-error");
+  if (errorDiv) errorDiv.classList.add("hidden");
 }
 
 function hideLoginModal() {
@@ -102,7 +110,14 @@ export async function handleLogin(event) {
 
 export function handleLogout() {
   localStorage.removeItem("showroom_token");
+  _cachedClaims = null;
+  const claimsContainer = document.querySelector("#claims-container");
+  if (claimsContainer) claimsContainer.innerHTML = "";
   showLoginModal();
+}
+
+export function handleTrustedCloud() {
+  window.open("https://documentation.s3ns.fr", "_blank");
 }
 
 async function authenticatedFetch(url, options = {}) {
@@ -157,6 +172,11 @@ window.addEventListener("languageChanged", async function () {
   window.sendOption = sendOption;
   window.handleLogin = handleLogin;
   window.handleLogout = handleLogout;
+  window.handleTrustedCloud = handleTrustedCloud;
+  window.requestMoreInfo = requestMoreInfo;
+  window.requestDocumentation = requestDocumentation;
+  window.approveClaim = approveClaim;
+  window.escalateClaim = escalateClaim;
 
   const token = getToken();
   if (!token) {
@@ -203,7 +223,7 @@ export async function analyzeClaim(claimId, index) {
     const isLlmSafe = llmStatus === "success";
     const isOverallSafe = isRiskSafe && isLlmSafe;
 
-    actions.innerHTML = isOverallSafe ? successButtons() : errorButtons();
+    actions.innerHTML = isOverallSafe ? successButtons(claimId) : errorButtons(claimId);
 
     button.style.display = "none";
     actions.classList.add("show");
@@ -219,6 +239,11 @@ async function analyzeClaimAndAppend(claimId, verificationList) {
   const responseData = await claimAnalysisRes.json();
   const fullText = responseData.text || "";
   const hasDocs = responseData.hasDocs;
+
+  const card = verificationList.closest(".card");
+  if (card) {
+    card.dataset.vllmAnswer = fullText;
+  }
 
   const isSuccess = fullText.includes("DECISION: APPROVE");
 
@@ -356,26 +381,108 @@ function claimsCard(claim, index) {
                 <ul class="verification-list"></ul>
             </div>
 
-            <div class="action-buttons">
-                ${indexOddEven == 0 ? successButtons() : errorButtons()}
-            </div>
+            <div class="action-buttons"></div>
         </div>
     `;
 }
 
-function successButtons() {
+function successButtons(claimId) {
   return `
-        <button class="btn btn-outline" disabled>${currentLangText(TEXT_MAPS.REQUEST_MORE_INFO)}</button>
-        <button class="btn btn-primary" disabled>${currentLangText(TEXT_MAPS.APPROVE)}</button>
+        <button class="btn btn-outline" onclick="requestMoreInfo(this, '${claimId}', 'Request Information')">${currentLangText(TEXT_MAPS.REQUEST_MORE_INFO)}</button>
+        <button class="btn btn-primary" onclick="approveClaim(this, false, '${claimId}')">${currentLangText(TEXT_MAPS.APPROVE)}</button>
     `;
 }
 
-function errorButtons() {
+function errorButtons(claimId) {
   return `
-        <button class="btn btn-outline" disabled>${currentLangText(TEXT_MAPS.REQUEST_DOCUMENTATION)}</button>
-        <button class="btn btn-outline" disabled>${currentLangText(TEXT_MAPS.ESCALATE_TO_INVESTIGATOR)}</button>
-        <button class="btn btn-primary" disabled>${currentLangText(TEXT_MAPS.OVERRIDE_AND_APPROVE)}</button>
+        <button class="btn btn-outline" onclick="requestDocumentation(this, '${claimId}', 'Request Documentation')">${currentLangText(TEXT_MAPS.REQUEST_DOCUMENTATION)}</button>
+        <button class="btn btn-outline" onclick="escalateClaim(this, '${claimId}')">${currentLangText(TEXT_MAPS.ESCALATE_TO_INVESTIGATOR)}</button>
+        <button class="btn btn-primary" onclick="approveClaim(this, true, '${claimId}')">${currentLangText(TEXT_MAPS.OVERRIDE_AND_APPROVE)}</button>
     `;
+}
+
+
+function updateActionButtons(clickedButton, newTextKey) {
+  const container = clickedButton.closest('.action-buttons');
+  if (container) {
+    const buttons = container.querySelectorAll('button');
+    buttons.forEach(b => {
+      b.disabled = true;
+    });
+  }
+  clickedButton.textContent = currentLangText(newTextKey);
+}
+
+async function saveRecommendation(claimId, recommendationType) {
+  try {
+    await authenticatedFetch(`/api/claims/${claimId}/recommendation`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ recommendation: recommendationType })
+    });
+  } catch (err) {
+    console.error(err);
+  }
+}
+
+export async function requestMoreInfo(button, claimId, recommendationType) {
+  alert(currentLangText(TEXT_MAPS.REQUEST_SENT_SUCCESSFULLY));
+  updateActionButtons(button, TEXT_MAPS.INFO_REQUESTED_STATUS);
+
+  const card = button.closest(".card");
+  const statusBadge = card.querySelector(".card-status");
+  statusBadge.textContent = currentLangText(TEXT_MAPS.INFO_REQUESTED_STATUS);
+  statusBadge.className = "card-status status-under-review";
+
+  await saveRecommendation(claimId, recommendationType);
+}
+
+export async function requestDocumentation(button, claimId, recommendationType) {
+  alert(currentLangText(TEXT_MAPS.REQUEST_SENT_SUCCESSFULLY));
+  updateActionButtons(button, TEXT_MAPS.DOCUMENTATION_REQUESTED_STATUS);
+
+  const card = button.closest(".card");
+  const statusBadge = card.querySelector(".card-status");
+  statusBadge.textContent = currentLangText(TEXT_MAPS.DOCUMENTATION_REQUESTED_STATUS);
+  statusBadge.className = "card-status status-under-review";
+
+  await saveRecommendation(claimId, recommendationType);
+}
+
+export async function approveClaim(button, isOverride, claimId) {
+  const msg = isOverride ? TEXT_MAPS.OVERRIDE_APPROVE_SUCCESS_ALERT : TEXT_MAPS.APPROVE_SUCCESS_ALERT;
+  alert(currentLangText(msg));
+  updateActionButtons(button, TEXT_MAPS.APPROVED_STATUS);
+
+  const card = button.closest(".card");
+  const statusBadge = card.querySelector(".card-status");
+  statusBadge.textContent = currentLangText(TEXT_MAPS.APPROVED_STATUS);
+  statusBadge.className = "card-status status-approved";
+
+  const vllmAnswer = card.dataset.vllmAnswer;
+  try {
+    await authenticatedFetch(`/api/claims/${claimId}/vllm`, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ response: vllmAnswer })
+    });
+  } catch (err) {
+    console.error(err);
+  }
+}
+
+export async function escalateClaim(button, claimId) {
+  alert(currentLangText(TEXT_MAPS.ESCALATED_TO_INVESTIGATOR_ALERT));
+  updateActionButtons(button, TEXT_MAPS.ESCALATED_STATUS);
+
+  const card = button.closest(".card");
+  const statusBadge = card.querySelector(".card-status");
+  statusBadge.textContent = currentLangText(TEXT_MAPS.ESCALATED_STATUS);
+  statusBadge.className = "card-status status-flagged";
+
+  await saveRecommendation(claimId, "Investigate");
 }
 
 function replaceFinalAnalysisPrefix(text) {

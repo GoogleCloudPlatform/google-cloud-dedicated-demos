@@ -56,5 +56,13 @@
   "STAT_2_CHANGE": "↓ 65 % im Vergleich zum Basiswert",
   "STAT_3_LABEL": "Betrugserkennungsrate",
   "STAT_3_CHANGE": "↑ 2,1 % im Vergleich zum Basiswert",
+  "REQUEST_SENT_SUCCESSFULLY": "Anfrage erfolgreich gesendet!",
+  "OVERRIDE_APPROVE_SUCCESS_ALERT": "Anspruch überschrieben und genehmigt.",
+  "APPROVE_SUCCESS_ALERT": "Anspruch erfolgreich genehmigt.",
+  "ESCALATED_TO_INVESTIGATOR_ALERT": "An Prüfer weitergeleitet.",
+  "APPROVED_STATUS": "Genehmigt",
+  "ESCALATED_STATUS": "Weitergeleitet",
+  "INFO_REQUESTED_STATUS": "Informationen angefordert",
+  "DOCUMENTATION_REQUESTED_STATUS": "Dokumente angefordert",
   "FOOTER_TEXT": "Demo für Next 2025 - Bereitgestellt durch Vertrauenswürdige Cloud von S3NS"
 }

@@ -149,7 +149,7 @@ CREATE TABLE risk_analysis (
     is_provider_flagged BOOLEAN DEFAULT FALSE,
     is_amount_unusual BOOLEAN DEFAULT FALSE,
     is_service_unusual BOOLEAN DEFAULT FALSE,
-    recommendation VARCHAR(20) CHECK (recommendation IN ('Approve', 'Request Information', 'Investigate', 'Reject')) NOT NULL,
+    recommendation VARCHAR(30) CHECK (recommendation IN ('Approve', 'Request Information', 'Request Documentation', 'Investigate', 'Reject')) NOT NULL,
     analysis_notes TEXT,
     analyzed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (claim_id) REFERENCES claims(claim_id)

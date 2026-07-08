@@ -56,5 +56,13 @@
   "STAT_2_CHANGE": "↓ 65 % par rapport à la base de référence",
   "STAT_3_LABEL": "Taux de détection de la fraude",
   "STAT_3_CHANGE": "↑ 2,1 % par rapport à la base de référence",
+  "REQUEST_SENT_SUCCESSFULLY": "Demande envoyée avec succès !",
+  "OVERRIDE_APPROVE_SUCCESS_ALERT": "Demande outrepassée et approuvée.",
+  "APPROVE_SUCCESS_ALERT": "Demande approuvée avec succès.",
+  "ESCALATED_TO_INVESTIGATOR_ALERT": "Transféré à l'enquêteur.",
+  "APPROVED_STATUS": "Approuvé",
+  "ESCALATED_STATUS": "Transféré",
+  "INFO_REQUESTED_STATUS": "Information Demandée",
+  "DOCUMENTATION_REQUESTED_STATUS": "Documentation Demandée",
   "FOOTER_TEXT": "Démo pour Next 2025 - Propulsé par Cloud de Confiance par S3NS"
 }
