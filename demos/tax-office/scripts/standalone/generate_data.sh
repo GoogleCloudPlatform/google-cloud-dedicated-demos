@@ -60,7 +60,7 @@ fi
 source "$VENV_DIR/bin/activate"
 
 echo "Installing requirements..."
-pip install --no-cache-dir -r "$BASE_DIR/app/requirements.txt"
+pip install --no-cache-dir --require-hashes -r "$BASE_DIR/app/requirements.txt"
 
 # 4. Generate data
 echo "Generating data to: $DATA_FILE_PATH"
