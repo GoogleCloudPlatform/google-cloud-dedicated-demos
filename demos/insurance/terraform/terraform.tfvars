@@ -16,9 +16,9 @@
 #
 project_id                  = "REPLACE_ME" # Your full Sovereign Cloud project ID
 region                      = "REPLACE_ME" # Resource region
-universe_domain             = "REPLACE_ME" # GCP Universe Domain
+universe_api_domain         = "REPLACE_ME" # GCP Universe Domain
 claims_document_bucket_name = "REPLACE_ME" # Globally unique bucket name
-hugging_face_token          = "REPLACE_ME" # pragma: allowlist secret
+hugging_face_token          = "REPLACE_ME"
 jupyter_password            = "REPLACE_ME" # pragma: allowlist secret
 app_login_user              = "REPLACE_ME"
 app_login_password          = "REPLACE_ME" # pragma: allowlist secret

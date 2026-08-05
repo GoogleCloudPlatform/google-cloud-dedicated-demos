@@ -24,8 +24,8 @@ output "region" {
   description = "GCP Region"
 }
 
-output "universe_domain" {
-  value       = var.universe_domain
+output "universe_api_domain" {
+  value       = var.universe_api_domain
   description = "GCP Universe Domain"
 }
 

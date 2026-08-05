@@ -7,6 +7,7 @@
   "DUMMY_SUCCESS_ANALYSIS_ITEMS_LANG_MAP": "Patient eligibility confirmed and benefits are active",
   "DUMMY_ERROR_ANALYSIS_ITEMS_LANG_MAP": "Provider has high history of similar claims and duplicate service within 30-day period",
   "NO_DOCUMENTATION_PROVIDED": "No documentation provided. Recommended to ask for documents.",
+  "NO_DOCUMENTATION_TEXT": "No documentation provided",
   "NO_RESPONSE_FROM_AI": "No response from AI.",
   "CHAT_ERROR_OCCURRED": "Sorry, an error occurred.",
   "CHAT_UNABLE_TO_REACH": "Sorry, unable to reach AI Assistant.",
@@ -64,5 +65,9 @@
   "ESCALATED_STATUS": "Escalated",
   "INFO_REQUESTED_STATUS": "Information Requested",
   "DOCUMENTATION_REQUESTED_STATUS": "Documentation Requested",
-  "FOOTER_TEXT": "Demo for Next 2025 - Powered by Trusted Cloud by S3NS"
+  "FOOTER_TEXT": "Demo for Next 2025 - Powered by Trusted Cloud by S3NS",
+  "RECOMMENDATION": "Recommendation",
+  "NO_RECOMMENDATION": "No Recommendation",
+  "INVESTIGATE": "Investigate",
+  "ASK_FOR_DOCUMENTATION": "Ask for Documentation"
 }

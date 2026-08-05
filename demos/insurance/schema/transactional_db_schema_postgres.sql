@@ -111,12 +111,8 @@ CREATE TABLE claims (
     amount_billed DECIMAL(10, 2) NOT NULL,
     public_insurance_base DECIMAL(10, 2) NOT NULL,
     mutuelle_coverage DECIMAL(10, 2) NOT NULL,
-    status VARCHAR(15) DEFAULT 'Submitted' CHECK (status IN ('Submitted', 'Under Review', 'Approved', 'Flagged', 'Rejected', 'Paid')),
-    status_reason TEXT,
-    processed_by VARCHAR(50),
-    processed_at TIMESTAMP,
+    status VARCHAR(50) DEFAULT 'Under Review' CHECK (status IN ('Under Review', 'Approved', 'Escalated', 'Documentation Requested', 'Information Requested')),
     created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (customer_id) REFERENCES customers(customer_id),
     FOREIGN KEY (provider_id) REFERENCES providers(provider_id),
     FOREIGN KEY (service_type_id) REFERENCES service_types(service_type_id)
@@ -149,7 +145,7 @@ CREATE TABLE risk_analysis (
     is_provider_flagged BOOLEAN DEFAULT FALSE,
     is_amount_unusual BOOLEAN DEFAULT FALSE,
     is_service_unusual BOOLEAN DEFAULT FALSE,
-    recommendation VARCHAR(30) CHECK (recommendation IN ('Approve', 'Request Information', 'Request Documentation', 'Investigate', 'Reject')) NOT NULL,
+    recommendation VARCHAR(30) CHECK (recommendation IN ('Approve', 'Ask for Documentation', 'No Recommendation', 'Investigate')) NOT NULL,
     analysis_notes TEXT,
     analyzed_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     FOREIGN KEY (claim_id) REFERENCES claims(claim_id)

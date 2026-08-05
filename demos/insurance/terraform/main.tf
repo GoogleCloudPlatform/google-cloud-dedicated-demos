@@ -42,7 +42,7 @@ provider "google" {
   user_project_override = true
   billing_project       = var.project_id
   request_timeout       = "30m"
-  universe_domain       = var.universe_domain
+  universe_domain       = var.universe_api_domain
 }
 
 data "google_project" "this" {

@@ -31,7 +31,7 @@ export GCP_REGION=$(terraform output -raw region)
 export GKE_CLUSTER_NAME=$(terraform output -raw gke_cluster_name)
 export AR_REPO_NAME=$(terraform output -raw artifact_repository_id)
 export GCS_BUCKET_NAME=$(terraform output -raw claims_document_bucket)
-export UNIVERSE_DOMAIN=$(terraform output -raw universe_domain)
+export UNIVERSE_DOMAIN=$(terraform output -raw universe_api_domain)
 
 cd - >/dev/null
 echo "✅ Infrastructure deployment successful."

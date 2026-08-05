@@ -1,4 +1,4 @@
-## Licensing & Use
+# Licensing & Use
 
 Individual license headers are omitted from the data files in this directory.
 However, all files contained herein are fully covered by the repository's

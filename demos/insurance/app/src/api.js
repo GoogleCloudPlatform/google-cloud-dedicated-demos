@@ -49,7 +49,10 @@ router.route("/i18n/languages").get((req, res) => {
     for (const filename of files) {
       if (filename.endsWith(".json")) {
         try {
-          const content = fs.readFileSync(path.join(i18nDir, filename), "utf-8");
+          const content = fs.readFileSync(
+            path.join(i18nDir, filename),
+            "utf-8",
+          );
           const data = JSON.parse(content);
           if (data._meta) {
             languages.push(data._meta);
@@ -88,9 +91,24 @@ const timeLog = (req, res, next) => {
   next();
 };
 
+async function resetDatabaseInitialState() {
+  try {
+    await Claim.update({ status: "Under Review" }, { where: {} });
+    await RiskAnalysis.update(
+      { recommendation: "No Recommendation" },
+      { where: {} },
+    );
+  } catch (e) {
+    console.error(e);
+    res.status(500).send(e.message || "Error");
+  }
+}
+
 router.route("/claims").get(async (req, res) => {
+  await resetDatabaseInitialState();
   const claims = await Claim.findAll({
-    include: [Provider, ServiceType, Customer],
+    include: [Provider, ServiceType, Customer, RiskAnalysis],
+    order: [["claim_id", "ASC"]],
   });
   res.send(claims.map((c) => c.toJSON()));
 });
@@ -130,13 +148,18 @@ router.route("/chat").post(async (req, res) => {
 router.route("/claims/:claimId/vllm").post(async (req, res) => {
   try {
     const { claimId } = req.params;
-    const { response } = req.body;
+    const { response, status } = req.body;
     let analysis = await RiskAnalysis.findOne({ where: { claim_id: claimId } });
+    let claim = await Claim.findOne({ where: { claim_id: claimId } });
     if (analysis) {
       analysis.analysis_notes = response;
       await analysis.save();
     }
-    res.json({ data: analysis });
+    if (claim) {
+      claim.status = status;
+      await claim.save();
+    }
+    res.json({ data: analysis, claim });
   } catch (e) {
     console.error(e);
     res.status(500).send(e.message || "Error");
@@ -146,14 +169,19 @@ router.route("/claims/:claimId/vllm").post(async (req, res) => {
 router.route("/claims/:claimId/recommendation").post(async (req, res) => {
   try {
     const { claimId } = req.params;
-    let { recommendation } = req.body;
+    let { recommendation, status } = req.body;
 
     let analysis = await RiskAnalysis.findOne({ where: { claim_id: claimId } });
+    let claim = await Claim.findOne({ where: { claim_id: claimId } });
     if (analysis) {
       analysis.recommendation = recommendation;
       await analysis.save();
     }
-    res.json({ data: analysis });
+    if (claim && status) {
+      claim.status = status;
+      await claim.save();
+    }
+    res.json({ data: analysis, claim });
   } catch (e) {
     console.error(e);
     res.status(500).send(e.message || "Error");

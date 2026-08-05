@@ -19,7 +19,7 @@ variable "project_id" {
   description = "GCP Project ID"
 }
 
-variable "universe_domain" {
+variable "universe_api_domain" {
   type        = string
   description = "GCP Universe Domain"
   default     = "apis-berlin-build0.goog"

@@ -52,8 +52,8 @@ agencies. It serves the following stakeholders:
     database by indexing official regulations as vector embeddings for immediate
     use in RAG pipelines.
 - **Dynamic Internationalization**: Instantly switch UI language between
-    English, French, and German without reloads or restarts. The new languages 
-    can be added by including the dictionary at 
+    English, French, and German without reloads or restarts. The new languages
+    can be added by including the dictionary at
     `demos/tax-office/app/frontend/static/i18n/`.
 
 ### Architecture
@@ -72,7 +72,7 @@ Component    | Tech      | Purpose
 **Data**     | Python    | Generate tax data (TRAINING/NEW_FILING).
 **Infra**    | Terraform | Provision VPC, GKE, BQ, GCS, Registry.
 **Model**    | BQ ML     | Logistic Regression for anomaly detection.
-**LLM**      | Gemma     | Open-weight model providing context-aware insights grounded in official tax policy.
+**LLM**      | Gemma     | Open-weight model for policy-grounded insights.
 **RAG**      | BigQuery  | Vector Search for semantic matching and RAG grounding.
 **Analysis** | Jupyter   | Notebook for ML model training and analysis/validation.
 **App**      | Flask     | Web app for prediction visualization.

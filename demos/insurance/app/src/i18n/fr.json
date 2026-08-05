@@ -7,6 +7,7 @@
   "DUMMY_SUCCESS_ANALYSIS_ITEMS_LANG_MAP": "L'éligibilité du patient est confirmée et les avantages sont actifs",
   "DUMMY_ERROR_ANALYSIS_ITEMS_LANG_MAP": "Le fournisseur a un historique élevé de demandes de remboursement similaires et de services en double dans une période de 30 jours",
   "NO_DOCUMENTATION_PROVIDED": "Aucune documentation fournie. Il est recommandé de demander des documents.",
+  "NO_DOCUMENTATION_TEXT": "Aucune documentation fournie",
   "NO_RESPONSE_FROM_AI": "Aucune réponse de l'IA.",
   "CHAT_ERROR_OCCURRED": "Désolé, une erreur est survenue.",
   "CHAT_UNABLE_TO_REACH": "Désolé, impossible de contacter l'assistant IA.",
@@ -64,5 +65,9 @@
   "ESCALATED_STATUS": "Transféré",
   "INFO_REQUESTED_STATUS": "Information Demandée",
   "DOCUMENTATION_REQUESTED_STATUS": "Documentation Demandée",
-  "FOOTER_TEXT": "Démo pour Next 2025 - Propulsé par Cloud de Confiance par S3NS"
+  "FOOTER_TEXT": "Démo pour Next 2025 - Propulsé par Cloud de Confiance par S3NS",
+  "RECOMMENDATION": "Recommandation",
+  "NO_RECOMMENDATION": "Pas de recommandation",
+  "INVESTIGATE": "Enquêter",
+  "ASK_FOR_DOCUMENTATION": "Demander des documents"
 }

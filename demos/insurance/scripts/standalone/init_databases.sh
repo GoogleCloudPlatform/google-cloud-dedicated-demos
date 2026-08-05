@@ -22,7 +22,7 @@ TF_DIR="$BASE_DIR/terraform"
 
 GCP_PROJECT_ID="${GCP_PROJECT_ID:-$(terraform -chdir="$TF_DIR" output -raw project_id)}"
 GCS_BUCKET="${GCS_BUCKET_NAME:-$(terraform -chdir="$TF_DIR" output -raw claims_document_bucket)}"
-UNIVERSE_DOMAIN="${UNIVERSE_DOMAIN:-$(terraform -chdir="$TF_DIR" output -raw universe_domain)}"
+UNIVERSE_DOMAIN="${UNIVERSE_DOMAIN:-$(terraform -chdir="$TF_DIR" output -raw universe_api_domain)}"
 GKE_CLUSTER_NAME="${GKE_CLUSTER_NAME:-$(terraform -chdir="$TF_DIR" output -raw gke_cluster_name)}"
 GCP_REGION="${GCP_REGION:-$(terraform -chdir="$TF_DIR" output -raw region)}"
 

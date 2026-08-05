@@ -17,7 +17,13 @@
 import fs from "node:fs";
 import path from "node:path";
 
-import { Claim, ServiceType, Customer, Provider } from "./models.js";
+import {
+  Claim,
+  ServiceType,
+  Customer,
+  Provider,
+  RiskAnalysis,
+} from "./models.js";
 import { initializeStorage } from "./gcp-storage.js";
 
 const MODEL_HOST = process.env.MODEL_HOST;
@@ -204,7 +210,7 @@ Document ${idx + 1} ends here
 
 export async function chatWithAssistant(userMessage, options = {}) {
   const claims = await Claim.findAll({
-    include: [Provider, ServiceType, Customer],
+    include: [Provider, ServiceType, Customer, RiskAnalysis],
   });
 
   const sysPrompt = fs
@@ -219,6 +225,7 @@ export async function chatWithAssistant(userMessage, options = {}) {
     provider: c.Provider?.provider_name || "",
     amount: `${c.amount_billed} €`,
     status: c.status,
+    recommendation: c.RiskAnalysis?.recommendation || "",
   }));
 
   const fullLanguage = getFullLanguageName(options.language);

@@ -23,7 +23,7 @@ TF_DIR="$BASE_DIR/terraform"
 GCP_PROJECT_ID="${GCP_PROJECT_ID:-$(terraform -chdir="$TF_DIR" output -raw project_id)}"
 GCP_REGION="${GCP_REGION:-$(terraform -chdir="$TF_DIR" output -raw region)}"
 GKE_CLUSTER_NAME="${GKE_CLUSTER_NAME:-$(terraform -chdir="$TF_DIR" output -raw gke_cluster_name)}"
-UNIVERSE_DOMAIN="${UNIVERSE_DOMAIN:-$(terraform -chdir="$TF_DIR" output -raw universe_domain)}"
+UNIVERSE_DOMAIN="${UNIVERSE_DOMAIN:-$(terraform -chdir="$TF_DIR" output -raw universe_api_domain)}"
 
 gcloud container clusters get-credentials "$GKE_CLUSTER_NAME" --dns-endpoint --region "$GCP_REGION" --project "$GCP_PROJECT_ID" >/dev/null 2>&1
 
@@ -80,10 +80,9 @@ echo "Waiting for services to receive LoadBalancer IPs..."
 while :; do
     APP_IP=$(kubectl get service insurance-demo-showroom-service -n insurance-ns -o=jsonpath='{.status.loadBalancer.ingress[0].ip}' 2>/dev/null || true)
     JUPYTER_IP=$(kubectl get service insurance-demo-jupyter-service -n insurance-ns -o=jsonpath='{.status.loadBalancer.ingress[0].ip}' 2>/dev/null || true)
-    LLM_IP=$(kubectl get service llm-service -n insurance-ns -o=jsonpath='{.status.loadBalancer.ingress[0].ip}' 2>/dev/null || true)
 
-    if [[ -n $APP_IP && -n $JUPYTER_IP && -n $LLM_IP ]]; then
-        printf "\n🚀 Web Showroom Dashboard: http://%s:8080\n🪐 JupyterLab Platform:    http://%s\n🧠 vLLM Gemma Service:     http://%s:8000\n" "$APP_IP" "$JUPYTER_IP" "$LLM_IP"
+    if [[ -n $APP_IP && -n $JUPYTER_IP ]]; then
+        printf "\n🚀 Web Showroom Dashboard: http://%s:8080\n🪐 JupyterLab Platform:    http://%s\n" "$APP_IP" "$JUPYTER_IP"
         break
     fi
     sleep 10

@@ -18,14 +18,25 @@ function currentLanguage() {
   return window.i18n ? window.i18n.currentLang : "en";
 }
 
+const RECOMMENDATION_MAP = {
+  "No Recommendation": "NO_RECOMMENDATION",
+  Investigate: "INVESTIGATE",
+  "Ask for Documentation": "ASK_FOR_DOCUMENTATION",
+  Approve: "APPROVE",
+};
+
 function currentLangText(key, replacementMap) {
   const k = typeof key === "string" ? key : (key && key.key) || key;
-  return window.i18n ? window.i18n.t(k, replacementMap) : k;
+  const mappedKey = RECOMMENDATION_MAP[k] || k;
+  return window.i18n ? window.i18n.t(mappedKey, replacementMap) : mappedKey;
 }
 
-const TEXT_MAPS = new Proxy({}, {
-  get: (target, prop) => prop
-});
+const TEXT_MAPS = new Proxy(
+  {},
+  {
+    get: (target, prop) => prop,
+  },
+);
 
 const RECOMMENDATION_CUT_OFF_SCORE = 40;
 
@@ -142,11 +153,10 @@ async function loadClaims() {
   if (!claimsContainer) return;
 
   try {
-    if (!_cachedClaims) {
-      claimsContainer.innerHTML = "";
-      const response = await authenticatedFetch("/api/claims");
-      _cachedClaims = await response.json();
-    }
+    _cachedClaims = null;
+    claimsContainer.innerHTML = "";
+    const response = await authenticatedFetch("/api/claims");
+    _cachedClaims = await response.json();
 
     hideLoginModal();
 
@@ -210,7 +220,7 @@ function getCardElements(index) {
 }
 
 export async function analyzeClaim(claimId, index) {
-  const { button, analysis, actions, verificationList } =
+  const { card, button, analysis, actions, verificationList } =
     getCardElements(index);
 
   button.classList.add("loading");
@@ -223,7 +233,24 @@ export async function analyzeClaim(claimId, index) {
     const isLlmSafe = llmStatus === "success";
     const isOverallSafe = isRiskSafe && isLlmSafe;
 
-    actions.innerHTML = isOverallSafe ? successButtons(claimId) : errorButtons(claimId);
+    let computedRecommendation = "No Recommendation";
+    if (llmStatus === "missing") {
+      computedRecommendation = "Ask for Documentation";
+    } else if (isOverallSafe) {
+      computedRecommendation = "Approve";
+    } else {
+      computedRecommendation = "Investigate";
+    }
+
+    if (card) {
+      card.dataset.computedRecommendation = computedRecommendation;
+    }
+
+    await saveRecommendation(claimId, computedRecommendation, null, card);
+
+    actions.innerHTML = isOverallSafe
+      ? successButtons(claimId)
+      : errorButtons(claimId);
 
     button.style.display = "none";
     actions.classList.add("show");
@@ -240,11 +267,6 @@ async function analyzeClaimAndAppend(claimId, verificationList) {
   const fullText = responseData.text || "";
   const hasDocs = responseData.hasDocs;
 
-  const card = verificationList.closest(".card");
-  if (card) {
-    card.dataset.vllmAnswer = fullText;
-  }
-
   const isSuccess = fullText.includes("DECISION: APPROVE");
 
   const cleanedText = fullText
@@ -258,7 +280,15 @@ async function analyzeClaimAndAppend(claimId, verificationList) {
 
   let status = "success";
   if (!isSuccess) {
-    status = hasDocs ? "mismatch" : "missing";
+    const isMissingDocs =
+      !hasDocs ||
+      fullText.includes(currentLangText(TEXT_MAPS.NO_DOCUMENTATION_TEXT));
+    status = isMissingDocs ? "missing" : "mismatch";
+  }
+
+  const card = verificationList.closest(".card");
+  if (card) {
+    card.dataset.vllmAnswer = fullText;
   }
 
   verificationList.appendChild(analysisItem(lastPara, status, "show"));
@@ -310,13 +340,16 @@ function extractLastPara(text) {
     .replace(/^Therefore/, "")
     .trim();
 
-  if (lastPara.length === 0) return currentLangText(TEXT_MAPS.NO_RESPONSE_FROM_AI);
+  if (lastPara.length === 0)
+    return currentLangText(TEXT_MAPS.NO_RESPONSE_FROM_AI);
   return lastPara[0].toUpperCase() + lastPara.substring(1);
 }
 
 function claimsCard(claim, index) {
   const statusClassName = claim.status.replaceAll(" ", "-").toLowerCase();
   const indexOddEven = index % 2;
+  const recommendation =
+    claim.RiskAnalysis?.recommendation || "No Recommendation";
   return `
         <div class="card card-${index}">
             <div class="card-header">
@@ -357,6 +390,10 @@ function claimsCard(claim, index) {
                     <span class="claim-label">${currentLangText(TEXT_MAPS.MUTUAL_COVERAGE)}:</span>
                     <span class="claim-value">${claim.mutuelle_coverage} €</span>
                 </div>
+                <div class="claim-item">
+                    <span class="claim-label">${currentLangText(TEXT_MAPS.RECOMMENDATION)}:</span>
+                    <span class="claim-value card-recommendation" data-recommendation="${recommendation}">${currentLangText(recommendation)}</span>
+                </div>
             </div>
 
             <button class="btn btn-analyze" onclick="analyzeClaim('${claim.claim_id}', ${index})">
@@ -388,73 +425,106 @@ function claimsCard(claim, index) {
 
 function successButtons(claimId) {
   return `
-        <button class="btn btn-outline" onclick="requestMoreInfo(this, '${claimId}', 'Request Information')">${currentLangText(TEXT_MAPS.REQUEST_MORE_INFO)}</button>
+        <button class="btn btn-outline" onclick="requestMoreInfo(this, '${claimId}', 'Approve')">${currentLangText(TEXT_MAPS.REQUEST_MORE_INFO)}</button>
         <button class="btn btn-primary" onclick="approveClaim(this, false, '${claimId}')">${currentLangText(TEXT_MAPS.APPROVE)}</button>
     `;
 }
 
 function errorButtons(claimId) {
   return `
-        <button class="btn btn-outline" onclick="requestDocumentation(this, '${claimId}', 'Request Documentation')">${currentLangText(TEXT_MAPS.REQUEST_DOCUMENTATION)}</button>
+        <button class="btn btn-outline" onclick="requestDocumentation(this, '${claimId}', 'Ask for Documentation')">${currentLangText(TEXT_MAPS.REQUEST_DOCUMENTATION)}</button>
         <button class="btn btn-outline" onclick="escalateClaim(this, '${claimId}')">${currentLangText(TEXT_MAPS.ESCALATE_TO_INVESTIGATOR)}</button>
         <button class="btn btn-primary" onclick="approveClaim(this, true, '${claimId}')">${currentLangText(TEXT_MAPS.OVERRIDE_AND_APPROVE)}</button>
     `;
 }
 
-
 function updateActionButtons(clickedButton, newTextKey) {
-  const container = clickedButton.closest('.action-buttons');
+  const container = clickedButton.closest(".action-buttons");
   if (container) {
-    const buttons = container.querySelectorAll('button');
-    buttons.forEach(b => {
+    const buttons = container.querySelectorAll("button");
+    buttons.forEach((b) => {
       b.disabled = true;
     });
   }
   clickedButton.textContent = currentLangText(newTextKey);
 }
 
-async function saveRecommendation(claimId, recommendationType) {
+async function saveRecommendation(claimId, recommendationType, status, card) {
   try {
+    let finalRecommendation = recommendationType;
+    if (card && card.dataset.computedRecommendation) {
+      finalRecommendation = card.dataset.computedRecommendation;
+    }
+
+    const body = { recommendation: finalRecommendation };
+    if (status) {
+      body.status = status;
+    }
     await authenticatedFetch(`/api/claims/${claimId}/recommendation`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ recommendation: recommendationType })
+      body: JSON.stringify(body),
     });
+    if (card) {
+      const recElement = card.querySelector(".card-recommendation");
+      if (recElement) {
+        recElement.dataset.recommendation = finalRecommendation;
+        recElement.textContent = currentLangText(finalRecommendation);
+      }
+    }
   } catch (err) {
     console.error(err);
   }
 }
 
 export async function requestMoreInfo(button, claimId, recommendationType) {
+  const card = button.closest(".card");
   alert(currentLangText(TEXT_MAPS.REQUEST_SENT_SUCCESSFULLY));
   updateActionButtons(button, TEXT_MAPS.INFO_REQUESTED_STATUS);
 
-  const card = button.closest(".card");
   const statusBadge = card.querySelector(".card-status");
   statusBadge.textContent = currentLangText(TEXT_MAPS.INFO_REQUESTED_STATUS);
   statusBadge.className = "card-status status-under-review";
 
-  await saveRecommendation(claimId, recommendationType);
+  await saveRecommendation(
+    claimId,
+    recommendationType,
+    "Information Requested",
+    card,
+  );
 }
 
-export async function requestDocumentation(button, claimId, recommendationType) {
+export async function requestDocumentation(
+  button,
+  claimId,
+  recommendationType,
+) {
+  const card = button.closest(".card");
   alert(currentLangText(TEXT_MAPS.REQUEST_SENT_SUCCESSFULLY));
   updateActionButtons(button, TEXT_MAPS.DOCUMENTATION_REQUESTED_STATUS);
 
-  const card = button.closest(".card");
   const statusBadge = card.querySelector(".card-status");
-  statusBadge.textContent = currentLangText(TEXT_MAPS.DOCUMENTATION_REQUESTED_STATUS);
+  statusBadge.textContent = currentLangText(
+    TEXT_MAPS.DOCUMENTATION_REQUESTED_STATUS,
+  );
   statusBadge.className = "card-status status-under-review";
 
-  await saveRecommendation(claimId, recommendationType);
+  await saveRecommendation(
+    claimId,
+    recommendationType,
+    "Documentation Requested",
+    card,
+  );
 }
 
 export async function approveClaim(button, isOverride, claimId) {
-  const msg = isOverride ? TEXT_MAPS.OVERRIDE_APPROVE_SUCCESS_ALERT : TEXT_MAPS.APPROVE_SUCCESS_ALERT;
+  const card = button.closest(".card");
+  const msg = isOverride
+    ? TEXT_MAPS.OVERRIDE_APPROVE_SUCCESS_ALERT
+    : TEXT_MAPS.APPROVE_SUCCESS_ALERT;
   alert(currentLangText(msg));
   updateActionButtons(button, TEXT_MAPS.APPROVED_STATUS);
 
-  const card = button.closest(".card");
   const statusBadge = card.querySelector(".card-status");
   statusBadge.textContent = currentLangText(TEXT_MAPS.APPROVED_STATUS);
   statusBadge.className = "card-status status-approved";
@@ -466,23 +536,29 @@ export async function approveClaim(button, isOverride, claimId) {
       headers: {
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({ response: vllmAnswer })
+      body: JSON.stringify({ response: vllmAnswer, status: "Approved" }),
     });
+    await saveRecommendation(
+      claimId,
+      isOverride ? "Investigate" : "Approve",
+      "Approved",
+      card,
+    );
   } catch (err) {
     console.error(err);
   }
 }
 
 export async function escalateClaim(button, claimId) {
+  const card = button.closest(".card");
   alert(currentLangText(TEXT_MAPS.ESCALATED_TO_INVESTIGATOR_ALERT));
   updateActionButtons(button, TEXT_MAPS.ESCALATED_STATUS);
 
-  const card = button.closest(".card");
   const statusBadge = card.querySelector(".card-status");
   statusBadge.textContent = currentLangText(TEXT_MAPS.ESCALATED_STATUS);
   statusBadge.className = "card-status status-flagged";
 
-  await saveRecommendation(claimId, "Investigate");
+  await saveRecommendation(claimId, "Investigate", "Escalated", card);
 }
 
 function replaceFinalAnalysisPrefix(text) {

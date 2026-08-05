@@ -14,7 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import pkg from 'sequelize';
+import pkg from "sequelize";
 const { Model } = pkg;
 
 export class RiskAnalysis extends Model {
@@ -22,8 +22,8 @@ export class RiskAnalysis extends Model {
     return super.init(
       {
         analysis_id: {
-          type: DataTypes.STRING,
-          allowNull: false,
+          type: DataTypes.INTEGER,
+          autoIncrement: true,
           primaryKey: true,
         },
         claim_id: {
@@ -102,10 +102,6 @@ export class Claim extends Model {
           type: DataTypes.DECIMAL,
           allowNull: false,
         },
-        processed_at: {
-          type: DataTypes.DATE,
-          allowNull: false,
-        },
       },
       {
         sequelize,
@@ -113,7 +109,7 @@ export class Claim extends Model {
         tableName: "claims",
         timestamps: true,
         createdAt: "created_at",
-        updatedAt: "updated_at",
+        updatedAt: false,
       },
     );
 

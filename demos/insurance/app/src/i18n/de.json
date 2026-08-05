@@ -7,6 +7,7 @@
   "DUMMY_SUCCESS_ANALYSIS_ITEMS_LANG_MAP": "Patientenberechtigung bestätigt und Leistungen sind aktiv",
   "DUMMY_ERROR_ANALYSIS_ITEMS_LANG_MAP": "Der Anbieter hat eine auffällige Historie ähnlicher Ansprüche und doppelter Leistungen innerhalb von 30 Tagen",
   "NO_DOCUMENTATION_PROVIDED": "Keine Dokumentation bereitgestellt. Es wird empfohlen, Dokumente anzufordern.",
+  "NO_DOCUMENTATION_TEXT": "Keine Dokumentation bereitgestellt",
   "NO_RESPONSE_FROM_AI": "Keine Antwort von der KI.",
   "CHAT_ERROR_OCCURRED": "Entschuldigung, ein Fehler ist aufgetreten.",
   "CHAT_UNABLE_TO_REACH": "Entschuldigung, der KI-Assistent ist nicht erreichbar.",
@@ -64,5 +65,9 @@
   "ESCALATED_STATUS": "Weitergeleitet",
   "INFO_REQUESTED_STATUS": "Informationen angefordert",
   "DOCUMENTATION_REQUESTED_STATUS": "Dokumente angefordert",
-  "FOOTER_TEXT": "Demo für Next 2025 - Bereitgestellt durch Vertrauenswürdige Cloud von S3NS"
+  "FOOTER_TEXT": "Demo für Next 2025 - Bereitgestellt durch Vertrauenswürdige Cloud von S3NS",
+  "RECOMMENDATION": "Empfehlung",
+  "NO_RECOMMENDATION": "Keine Empfehlung",
+  "INVESTIGATE": "Untersuchen",
+  "ASK_FOR_DOCUMENTATION": "Unterlagen anfordern"
 }

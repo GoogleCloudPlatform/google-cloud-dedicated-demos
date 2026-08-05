@@ -88,17 +88,30 @@
             </svg>
           </div>
           <div class="message-content" data-type="CHAT_GREETING">
-            Bonjour ! Avez-vous des questions sur l'analyse de risque effectuée sur vos demandes de remboursement ?
+            Bonjour ! Avez-vous des questions sur l'analyse de risque effectuée
+            sur vos demandes de remboursement ?
           </div>
         </div>
         <div class="chat-options">
-          <div class="chat-option" data-type="CHAT_OPTION_1" onclick="sendOption(this.textContent)">
+          <div
+            class="chat-option"
+            data-type="CHAT_OPTION_1"
+            onclick="sendOption(this.textContent)"
+          >
             Comment fonctionne l'analyse de risque ?
           </div>
-          <div class="chat-option" data-type="CHAT_OPTION_2" onclick="sendOption(this.textContent)">
+          <div
+            class="chat-option"
+            data-type="CHAT_OPTION_2"
+            onclick="sendOption(this.textContent)"
+          >
             Quels facteurs de risque sont détectés ?
           </div>
-          <div class="chat-option" data-type="CHAT_OPTION_3" onclick="sendOption(this.textContent)">
+          <div
+            class="chat-option"
+            data-type="CHAT_OPTION_3"
+            onclick="sendOption(this.textContent)"
+          >
             Comment traiter un cas signalé ?
           </div>
         </div>
@@ -176,7 +189,11 @@
               autocomplete="current-password"
             />
           </div>
-          <div id="login-error" class="login-error hidden" data-type="LOGIN_ERROR">
+          <div
+            id="login-error"
+            class="login-error hidden"
+            data-type="LOGIN_ERROR"
+          >
             Nom d'utilisateur ou mot de passe incorrect
           </div>
           <button
@@ -194,7 +211,13 @@
     <header>
       <div class="logo">Mutuelle Santé AI Solutions</div>
       <div class="header-right">
-        <div class="tpc-badge" onclick="handleTrustedCloud()" data-type="TRUSTED_CLOUD">Cloud de Confiance</div>
+        <div
+          class="tpc-badge"
+          onclick="handleTrustedCloud()"
+          data-type="TRUSTED_CLOUD"
+        >
+          Cloud de Confiance
+        </div>
         <button
           id="btn-logout"
           class="btn-logout hidden"
@@ -205,7 +228,10 @@
         </button>
         <div class="language-switcher-wrapper">
           <span class="material-icons">language</span>
-          <select class="ui-lang-switcher" aria-label="Select UI Language"></select>
+          <select
+            class="ui-lang-switcher"
+            aria-label="Select UI Language"
+          ></select>
         </div>
       </div>
     </header>
@@ -223,16 +249,22 @@
       >
         <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
       </svg>
-      <span data-type="POWERED_BY">Propulsé par Cloud de Confiance par S3NS</span>
+      <span data-type="POWERED_BY"
+        >Propulsé par Cloud de Confiance par S3NS</span
+      >
     </div>
 
     <div class="container">
       <div class="demo-tabs">
-        <div class="tab active" data-type="TAB_TITLE">Traitement des demandes de remboursement</div>
+        <div class="tab active" data-type="TAB_TITLE">
+          Traitement des demandes de remboursement
+        </div>
       </div>
 
       <div id="claims-container" class="demo-content">
-        <h2 data-type="HERO_TITLE">Traitement des demandes de remboursement optimisé par l'IA</h2>
+        <h2 data-type="HERO_TITLE">
+          Traitement des demandes de remboursement optimisé par l'IA
+        </h2>
         <p data-type="HERO_SUBTITLE">
           Notre système traite les demandes d'assurance maladie avec des délais
           de résolution 65 % plus rapides, tout en améliorant la précision et la
@@ -253,14 +285,18 @@
               </p>
             </div>
             <div class="stat-item">
-              <p class="stat-label" data-type="STAT_2_LABEL">Délai de traitement moyen</p>
+              <p class="stat-label" data-type="STAT_2_LABEL">
+                Délai de traitement moyen
+              </p>
               <h3 class="stat-value">42 min</h3>
               <p class="stat-change change-positive" data-type="STAT_2_CHANGE">
                 ↓ 65 % par rapport à la base de référence
               </p>
             </div>
             <div class="stat-item">
-              <p class="stat-label" data-type="STAT_3_LABEL">Taux de détection de la fraude</p>
+              <p class="stat-label" data-type="STAT_3_LABEL">
+                Taux de détection de la fraude
+              </p>
               <h3 class="stat-value">3,8 %</h3>
               <p class="stat-change change-positive" data-type="STAT_3_CHANGE">
                 ↑ 2,1 % par rapport à la base de référence
@@ -272,7 +308,9 @@
     </div>
 
     <div class="footer">
-      <p data-type="FOOTER_TEXT">Démo pour Next 2025 - Propulsé par Cloud de Confiance par S3NS</p>
+      <p data-type="FOOTER_TEXT">
+        Démo pour Next 2025 - Propulsé par Cloud de Confiance par S3NS
+      </p>
     </div>
   </body>
 </html>

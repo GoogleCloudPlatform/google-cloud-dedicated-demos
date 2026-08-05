@@ -23,7 +23,6 @@ metadata:
 spec:
   selector:
     app: gemma-server
-  type: {{ .Values.vllm.service.type | default "LoadBalancer" }}
   ports:
     - protocol: TCP
       port: 8000

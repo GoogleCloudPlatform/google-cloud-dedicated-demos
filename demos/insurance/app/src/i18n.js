@@ -61,7 +61,9 @@ document.addEventListener("DOMContentLoaded", async function () {
     lang = localStorage.getItem("ui_lang");
   }
   if (!lang) {
-    const browserLang = (navigator.language || "fr").substring(0, 2).toLowerCase();
+    const browserLang = (navigator.language || "fr")
+      .substring(0, 2)
+      .toLowerCase();
     const supportedLangs = ["en", "fr", "de"];
     lang = supportedLangs.includes(browserLang) ? browserLang : "fr";
   }

@@ -22,8 +22,8 @@ locals {
   wif_name_for_universe = "${local.project_name_id}.${local.project_prefix}"
 
   # Base derivations for Shell Scripts & Helm deployment configuration
-  registry_host       = "docker.${replace(var.universe_domain, "apis-", "pkg-")}"
+  registry_host       = "docker.${replace(var.universe_api_domain, "apis-", "pkg-")}"
   docker_project_path = replace(var.project_id, ":", "/")
   docker_repo_prefix  = "${local.registry_host}/${local.docker_project_path}/${var.artifact_repository_id}"
-  model_host          = "https://llm.${var.universe_domain}"
+  model_host          = "https://llm.${var.universe_api_domain}"
 }
