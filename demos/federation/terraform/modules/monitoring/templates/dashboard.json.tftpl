@@ -1,0 +1,273 @@
+{
+  "displayName": "${prefix}Traffic Dashboard (VPN & GKE LoadBalancer)",
+  "dashboardFilters": [],
+  "description": "",
+  "labels": {},
+  "mosaicLayout": {
+    "columns": 48,
+    "tiles": [
+      {
+        "xPos": 0,
+        "yPos": 0,
+        "width": 16,
+        "height": 16,
+        "widget": {
+          "title": "Tunnel established",
+          "id": "",
+          "scorecard": {
+            "breakdowns": [],
+            "dimensions": [],
+            "measures": [],
+            "sparkChartView": {
+              "sparkChartType": "SPARK_LINE"
+            },
+            "thresholds": [
+              {
+                "color": "YELLOW",
+                "direction": "BELOW",
+                "label": "",
+                "targetAxis": "TARGET_AXIS_UNSPECIFIED",
+                "value": 2
+              },
+              {
+                "color": "RED",
+                "direction": "BELOW",
+                "label": "",
+                "targetAxis": "TARGET_AXIS_UNSPECIFIED",
+                "value": 1
+              }
+            ],
+            "timeSeriesQuery": {
+              "outputFullDuration": false,
+              "prometheusQuery": "sum(vpn_googleapis_com:tunnel_established%{ if prefix != "" }{gateway_name=~\"${prefix}.*\"}%{ endif }) or vector(0)",
+              "unitOverride": ""
+            }
+          }
+        }
+      },
+      {
+        "xPos": 16,
+        "yPos": 0,
+        "width": 16,
+        "height": 16,
+        "widget": {
+          "title": "Number of connections",
+          "id": "",
+          "scorecard": {
+            "breakdowns": [],
+            "dimensions": [],
+            "measures": [],
+            "sparkChartView": {
+              "sparkChartType": "SPARK_LINE"
+            },
+            "thresholds": [
+              {
+                "color": "YELLOW",
+                "direction": "BELOW",
+                "label": "",
+                "targetAxis": "TARGET_AXIS_UNSPECIFIED",
+                "value": 2
+              },
+              {
+                "color": "RED",
+                "direction": "BELOW",
+                "label": "",
+                "targetAxis": "TARGET_AXIS_UNSPECIFIED",
+                "value": 1
+              }
+            ],
+            "timeSeriesQuery": {
+              "outputFullDuration": false,
+              "prometheusQuery": "min(min_over_time({\"__name__\"=\"vpn.googleapis.com/gateway/connections\",\"monitored_resource\"=\"vpn_gateway\",\"metadata_system_name\"=\"${prefix}federation-ha-vpn\"}[$${__interval}])) or vector(0)\n#This promql query was automatically converted from a builder query, and it may not be fully equivalent to the builder query. Manually verify the promql query before using it and edit as needed.",
+              "unitOverride": ""
+            }
+          }
+        }
+      },
+      {
+        "xPos": 32,
+        "yPos": 0,
+        "width": 16,
+        "height": 16,
+        "widget": {
+          "title": "BGP sessions up count",
+          "id": "",
+          "scorecard": {
+            "breakdowns": [],
+            "dimensions": [],
+            "measures": [],
+            "thresholds": [
+              {
+                "color": "YELLOW",
+                "direction": "BELOW",
+                "label": "",
+                "targetAxis": "TARGET_AXIS_UNSPECIFIED",
+                "value": 2
+              },
+              {
+                "color": "RED",
+                "direction": "BELOW",
+                "label": "",
+                "targetAxis": "TARGET_AXIS_UNSPECIFIED",
+                "value": 1
+              }
+            ],
+            "timeSeriesQuery": {
+              "outputFullDuration": false,
+              "prometheusQuery": "min(min_over_time({\"__name__\"=\"router.googleapis.com/bgp_sessions_up_count\",\"monitored_resource\"=\"gce_router\",\"metadata_system_name\"=\"${prefix}federation-router\"}[$${__interval}]))\n#This promql query was automatically converted from a builder query, and it may not be fully equivalent to the builder query. Manually verify the promql query before using it and edit as needed.",
+              "unitOverride": ""
+            }
+          }
+        }
+      },
+      {
+        "xPos": 0,
+        "yPos": 16,
+        "width": 16,
+        "height": 16,
+        "widget": {
+          "title": "Ingress bytes count",
+          "id": "",
+          "xyChart": {
+            "chartOptions": {
+              "displayHorizontal": false,
+              "mode": "COLOR",
+              "showLegend": false
+            },
+            "dataSets": [
+              {
+                "breakdowns": [],
+                "dimensions": [],
+                "legendTemplate": "",
+                "measures": [],
+                "plotType": "LINE",
+                "sort": [],
+                "targetAxis": "Y1",
+                "timeSeriesQuery": {
+                  "outputFullDuration": false,
+                  "prometheusQuery": "sum(rate({\"__name__\"=\"loadbalancing.googleapis.com/l3/external/ingress_bytes_count\",\"monitored_resource\"=\"tcp_lb_rule\"}[$${__interval}])) or vector(0)\n#This promql query was automatically converted from a builder query, and it may not be fully equivalent to the builder query. Manually verify the promql query before using it and edit as needed.",
+                  "unitOverride": ""
+                }
+              }
+            ],
+            "thresholds": [],
+            "yAxis": {
+              "label": "",
+              "scale": "LINEAR"
+            }
+          }
+        }
+      },
+      {
+        "xPos": 16,
+        "yPos": 16,
+        "width": 16,
+        "height": 16,
+        "widget": {
+          "title": "HA VPN Received Traffic (Bytes/sec)",
+          "id": "",
+          "xyChart": {
+            "chartOptions": {
+              "displayHorizontal": false,
+              "mode": "COLOR",
+              "showLegend": false
+            },
+            "dataSets": [
+              {
+                "breakdowns": [],
+                "dimensions": [],
+                "legendTemplate": "VPN Received Bytes/s",
+                "measures": [],
+                "minAlignmentPeriod": "60s",
+                "plotType": "LINE",
+                "sort": [],
+                "targetAxis": "Y1",
+                "timeSeriesQuery": {
+                  "outputFullDuration": false,
+                  "timeSeriesFilter": {
+                    "aggregation": {
+                      "alignmentPeriod": "60s",
+                      "crossSeriesReducer": "REDUCE_SUM",
+                      "groupByFields": [],
+                      "perSeriesAligner": "ALIGN_RATE"
+                    },
+                    "filter": "metric.type=\"vpn.googleapis.com/network/received_bytes_count\"%{ if prefix != "" } AND metric.label.\"gateway_name\"=starts_with(\"${prefix}\")%{ endif }"
+                  },
+                  "unitOverride": ""
+                }
+              }
+            ],
+            "thresholds": [],
+            "yAxis": {
+              "label": "Bytes/sec",
+              "scale": "LINEAR"
+            }
+          }
+        }
+      },
+      {
+        "xPos": 32,
+        "yPos": 16,
+        "width": 16,
+        "height": 16,
+        "widget": {
+          "title": "HA VPN Sent Traffic (Bytes/sec)",
+          "id": "",
+          "xyChart": {
+            "chartOptions": {
+              "displayHorizontal": false,
+              "mode": "COLOR",
+              "showLegend": false
+            },
+            "dataSets": [
+              {
+                "breakdowns": [],
+                "dimensions": [],
+                "legendTemplate": "VPN Sent Bytes/s",
+                "measures": [],
+                "minAlignmentPeriod": "60s",
+                "plotType": "LINE",
+                "sort": [],
+                "targetAxis": "Y1",
+                "timeSeriesQuery": {
+                  "outputFullDuration": false,
+                  "timeSeriesFilter": {
+                    "aggregation": {
+                      "alignmentPeriod": "60s",
+                      "crossSeriesReducer": "REDUCE_SUM",
+                      "groupByFields": [],
+                      "perSeriesAligner": "ALIGN_RATE"
+                    },
+                    "filter": "metric.type=\"vpn.googleapis.com/network/sent_bytes_count\"%{ if prefix != "" } AND metric.label.\"gateway_name\"=starts_with(\"${prefix}\")%{ endif }"
+                  },
+                  "unitOverride": ""
+                }
+              }
+            ],
+            "thresholds": [],
+            "yAxis": {
+              "label": "Bytes/sec",
+              "scale": "LINEAR"
+            }
+          }
+        }
+      },
+      {
+        "xPos": 0,
+        "yPos": 32,
+        "width": 48,
+        "height": 12,
+        "widget": {
+          "title": "VPN Gateway Logs",
+          "id": "",
+          "logsPanel": {
+            "filter": "resource.type=\"vpn_gateway\"\n(\"established between\" OR \"deleting IKE_SA\")",
+            "resourceNames": [
+              "projects/${project_id}/locations/global/logScopes/_Default"
+            ]
+          }
+        }
+      }
+    ]
+  }
+}

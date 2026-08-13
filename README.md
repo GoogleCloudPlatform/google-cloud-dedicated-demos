@@ -74,6 +74,26 @@ Follow the
 [Health Insurance Risk Analysis - User Guide](./demos/insurance/README.md) for a
 step-by-step walkthrough to deploy the infrastructure and verification workflow.
 
+### Sovereign Multi-Universe Federation with Bank of Anthos
+
+This [Multi-Universe Federation](./demos/federation) sample application
+demonstrates how highly regulated organizations, such as retail banks and
+financial institutions, can achieve multi-universe digital resilience and data
+sovereignty by federating workloads across standard Google Cloud Platform (GCP)
+and Google Cloud Dedicated (GCD) environments. By leveraging continuous database
+replication, Workforce Identity Federation (WIF), and Storage Transfer Service
+(STS) object sync, the architecture maintains a near-real-time "Sovereign
+Standby" mirror of a core retail banking stack (Bank of Anthos).
+
+As a reference architecture for disaster recovery and operational continuity,
+this application provides a blueprint for deterministic emergency failover,
+ensuring core operations can run completely isolated on GCD when needed.
+
+Follow the
+[Multi-Universe Federation - User Guide](./demos/federation/README.md) for a
+step-by-step walkthrough to deploy the cross-universe infrastructure, database
+replication, and failover workflow.
+
 ## General Prerequisites & Setup
 
 Before starting, you must be onboarded on Google Cloud Dedicated (GCD) by your
@@ -89,13 +109,13 @@ GCD environments, as compared to GCP. Please replace the placeholders in the
 commands and configurations given in each demo README with the values
 corresponding to your target universe.
 
-Variable | GCP | GCD France (GA) | GCD Germany (Preview)
---- | --- | --- | ---
+Variable              | GCP                | GCD France (GA)      | GCD Germany (Preview)
+--------------------- | ------------------ | -------------------- | ---------------------
 `UNIVERSE_WEB_DOMAIN` | `cloud.google.com` | `cloud.s3nscloud.fr` | `cloud.berlin-build0.goog`
-`UNIVERSE_API_DOMAIN` | `googleapis.com` | `s3nsapis.fr` | `apis-berlin-build0.goog`
-`UNIVERSE_NAME` | `google` | `s3ns` | `berlin`
-`UNIVERSE_PREFIX` | n/a | `s3ns` | `eu0`
-`UNIVERSE_REGION` | n/a | `u-france-east1` | `u-germany-northeast1`
+`UNIVERSE_API_DOMAIN` | `googleapis.com`   | `s3nsapis.fr`        | `apis-berlin-build0.goog`
+`UNIVERSE_NAME`       | `google`           | `s3ns`               | `berlin`
+`UNIVERSE_PREFIX`     | n/a                | `s3ns`               | `eu0`
+`UNIVERSE_REGION`     | n/a                | `u-france-east1`     | `u-germany-northeast1`
 
 ### Google Cloud CLI
 

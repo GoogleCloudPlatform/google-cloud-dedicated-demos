@@ -1,0 +1,67 @@
+enable_auth: false
+enable_network: true
+enable_sts: false
+enable_cloudsql: true
+enable_app: true
+enable_monitoring: false
+enable_psc_outbound: false # [STEP 2] Set to true to enable database replication outbound connectivity
+
+
+
+general:
+  universe_domain: "googleapis.com"
+  org_id: ""
+  project_id: ""
+  prefix: ""
+  is_gcp: true
+
+auth:
+  pool_id: "federation-demo-pool"
+  provider_id: "keycloak-provider"
+  federated_user_email: "myuser@federationtesting.com"
+  idp_metadata_xml_file: ""
+
+network:
+  region: "europe-west1"
+  zone: "europe-west1-b"
+  local_subnet_cidr: "10.0.1.0/24"
+  remote_subnet_cidr: "10.0.2.0/24"
+  local_asn: 64514
+  remote_asn: 64515
+  shared_ike_key: "REPLACE_ME"
+  create_test_vm: false
+  vm_machine_type: "n1-standard-1"
+  vm_image: "debian-cloud/debian-12"
+  allowed_ssh_source_ip: "REPLACE_ME"
+  google_apis_psc_ip: "10.100.100.1"
+  bgp_cr_interface_0_ip: "169.254.1.1"
+  bgp_peer_interface_0_ip: "169.254.1.2"
+  bgp_cr_interface_1_ip: "169.254.2.1"
+  bgp_peer_interface_1_ip: "169.254.2.2"
+  # [STEP 2] Fill these with outputs from the GCD deployment
+  remote_vpn_interface_0_ip: ""
+  remote_vpn_interface_1_ip: ""
+  secondary_ip_ranges:
+    - range_name: pods
+      ip_cidr_range: 10.101.0.0/16
+    - range_name: services
+      ip_cidr_range: 10.102.0.0/20
+  google_apis_psc_ip: 10.100.100.1
+
+gcs:
+  source_bucket_name: "source-bucket"
+  agent_pool_name: "sts-agent-pool"
+  transfer_job_name: "gcs-to-gcs-over-posix-on-demand"
+
+cloudsql_db:
+  admin_password: "REPLACE_ME" # pragma: allowlist secret
+
+  db_name: "bankofanthos"
+  db_role: "primary"
+  db_tier: "db-custom-2-7680"
+  db_user: "bankuser"
+  psc_ip: "10.0.1.100"
+  repl_password: "REPLACE_ME" # pragma: allowlist secret
+
+gke:
+  cluster_name: "federation-gke-cluster"

@@ -1,0 +1,66 @@
+#
+# Copyright 2026 Google LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+# This pod serves as a bastion host for administrative database tasks.
+# It is used during the database promotion procedure.
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cloudsql-admin
+  labels:
+    application: bank-of-anthos
+    tier: cloudsql-admin
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      application: bank-of-anthos
+      tier: cloudsql-admin
+  template:
+    metadata:
+      labels:
+        application: bank-of-anthos
+        tier: cloudsql-admin
+    spec:
+      containers:
+        - name: cloudsql-admin
+          image: postgres:15-alpine
+          command: ["sleep", "infinity"]
+          env:
+            - name: DB_HOST
+              value: {{ .Values.database.host | quote }}
+            - name: PRIMARY_DB_HOST
+              value: {{ .Values.database.primaryHost | quote }}
+            - name: DB_ADMIN_USER
+              value: {{ .Values.database.adminUser | quote }}
+            - name: DB_ADMIN_PASSWORD
+              value: {{ .Values.database.adminPassword | quote }}
+            - name: DB_NAME
+              value: {{ .Values.database.name | quote }}
+            - name: DB_USER
+              value: {{ .Values.database.user | quote }}
+            - name: DB_PASSWORD
+              value: {{ .Values.database.password | quote }}
+            - name: IS_PRIMARY
+              value: {{ .Values.database.isPrimary | quote }}
+          volumeMounts:
+            - name: scripts-volume
+              mountPath: /scripts
+      volumes:
+        - name: scripts-volume
+          configMap:
+            name: cloudsql-setup-scripts
+            defaultMode: 0755

@@ -1,0 +1,6 @@
+dependencies:
+- name: alloydbomni-operator
+  repository: oci://gcr.io/alloydb-omni
+  version: 1.7.0
+digest: sha256:f1593a5635a88354bb284d8b048a619dee04b7c7aafba49f72ab29ce8d4bd015
+generated: "2026-06-08T22:35:20.827160053Z"

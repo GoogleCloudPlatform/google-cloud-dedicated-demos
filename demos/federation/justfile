@@ -1,0 +1,31 @@
+set shell := ["bash", "-euo", "pipefail", "-c"]
+
+default:
+    @just --list
+
+# Interactively configure environment directories and defaults.yaml files
+configure:
+    python3 scripts/configure.py
+
+# Validate environment configurations and cross-network matching
+check-config:
+    python3 scripts/check_config.py
+
+# Promote replica database to standalone primary (autodetects cloudsql/alloydb)
+promote:
+    python3 scripts/promote.py
+
+# Cleanly destroy resources for a specified environment (gcd or gcp). Pass --k8s-only to keep Terraform infrastructure.
+destroy *args:
+    python3 scripts/destroy.py {{args}}
+
+# Reset/destroy only Kubernetes workloads and namespaces (AlloyDB, cert-manager, Bank of Anthos) keeping Terraform infrastructure
+destroy-k8s *args:
+    python3 scripts/destroy.py {{args}} --k8s-only
+
+# Lint Helm charts in k8s/helm/
+helm-lint:
+    @for chart in k8s/helm/*/; do echo "== Linting $chart =="; helm lint "$chart"; done
+
+lint: helm-lint
+    pre-commit run --all-files --show-diff-on-failure

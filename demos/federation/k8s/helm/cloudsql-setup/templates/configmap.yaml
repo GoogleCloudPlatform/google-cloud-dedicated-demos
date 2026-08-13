@@ -1,0 +1,208 @@
+#
+# Copyright 2026 Google LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: cloudsql-setup-scripts
+  labels:
+    application: bank-of-anthos
+data:
+  setup.sh: |
+    #!/bin/sh
+    set -e
+
+    echo "========================================================================="
+    echo "=== Starting CloudSQL Database Setup & Replication Configuration ==="
+    echo "========================================================================="
+
+    echo "[*] Target DB Host: $DB_HOST"
+    echo "[*] Is Primary DB : $IS_PRIMARY"
+
+    # Step 1: Wait for local database to be ready
+    until pg_isready -h "$DB_HOST" -p 5432 -U "$DB_ADMIN_USER"; do
+      echo "Waiting for PostgreSQL ($DB_HOST) to be ready..."
+      sleep 2
+    done
+    echo "[+] PostgreSQL at $DB_HOST is ready."
+
+    # Step 2: Create Database and Application User
+    export PGPASSWORD="$DB_ADMIN_PASSWORD"
+
+    if ! psql -h "$DB_HOST" -U "$DB_ADMIN_USER" -d postgres -tAc "SELECT 1 FROM pg_database WHERE datname='$DB_NAME'" | grep -q 1; then
+      echo "Creating database $DB_NAME on $DB_HOST..."
+      psql -h "$DB_HOST" -U "$DB_ADMIN_USER" -d postgres -c "CREATE DATABASE $DB_NAME;"
+    fi
+
+    echo "Creating user $DB_USER..."
+    psql -h "$DB_HOST" -U "$DB_ADMIN_USER" -d postgres -c "DO \$\$ BEGIN IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname = '$DB_USER') THEN CREATE USER $DB_USER WITH PASSWORD '$DB_PASSWORD'; ELSE ALTER USER $DB_USER WITH PASSWORD '$DB_PASSWORD'; END IF; END \$\$;"
+
+    echo "Granting privileges..."
+    psql -h "$DB_HOST" -U "$DB_ADMIN_USER" -d postgres -c "GRANT ALL PRIVILEGES ON DATABASE $DB_NAME TO $DB_USER;"
+    psql -h "$DB_HOST" -U "$DB_ADMIN_USER" -d postgres -c "GRANT $DB_USER TO $DB_ADMIN_USER;"
+    psql -h "$DB_HOST" -U "$DB_ADMIN_USER" -d postgres -c "ALTER DATABASE $DB_NAME OWNER TO $DB_USER;"
+
+    # Step 3: Initialize Database Schema
+    export PGPASSWORD="$DB_PASSWORD"
+    echo "Initializing database schema..."
+    psql -h "$DB_HOST" -U "$DB_USER" -d "$DB_NAME" -X -v ON_ERROR_STOP=1 -f /scripts/0-accounts-schema.sql
+    psql -h "$DB_HOST" -U "$DB_USER" -d "$DB_NAME" -X -v ON_ERROR_STOP=1 -f /scripts/0_init_tables.sql
+    psql -h "$DB_HOST" -U "$DB_USER" -d "$DB_NAME" -X -v ON_ERROR_STOP=1 -c "ALTER TABLE contacts ADD COLUMN IF NOT EXISTS id SERIAL PRIMARY KEY;"
+    psql -h "$DB_HOST" -U "$DB_USER" -d "$DB_NAME" -X -v ON_ERROR_STOP=1 -c "ALTER TABLE contacts REPLICA IDENTITY DEFAULT;"
+
+    # Step 4: Primary-only setup (Test data, transaction history, pglogical provider)
+    if [ "$IS_PRIMARY" = "true" ]; then
+      echo "Loading mock test data (Primary only)..."
+      psql -h "$DB_HOST" -U "$DB_USER" -d "$DB_NAME" -X -v ON_ERROR_STOP=1 -f /scripts/1-load-testdata.sql
+
+      echo "Generating initial transaction history (Primary only)..."
+      export POSTGRES_DB="$DB_NAME"
+      export POSTGRES_USER="$DB_USER"
+      export POSTGRES_PASSWORD="$DB_PASSWORD"
+      export LOCAL_ROUTING_NUM="${LOCAL_ROUTING_NUM:-883745000}"
+      export USE_DEMO_DATA="True"
+      export DB_HOST
+      bash /scripts/1_create_transactions.sh
+
+      export PGPASSWORD="$DB_ADMIN_PASSWORD"
+      echo "Enabling pglogical extension (Primary)..."
+      psql -h "$DB_HOST" -U "$DB_ADMIN_USER" -d "$DB_NAME" -c "CREATE EXTENSION IF NOT EXISTS pglogical;"
+      psql -h "$DB_HOST" -U "$DB_ADMIN_USER" -d "$DB_NAME" -c "ALTER USER $DB_USER WITH REPLICATION;"
+      psql -h "$DB_HOST" -U "$DB_ADMIN_USER" -d "$DB_NAME" -c "GRANT cloudsqlsuperuser TO $DB_USER;"
+      psql -h "$DB_HOST" -U "$DB_ADMIN_USER" -d "$DB_NAME" -c "GRANT USAGE ON SCHEMA pglogical TO $DB_USER;"
+      psql -h "$DB_HOST" -U "$DB_ADMIN_USER" -d "$DB_NAME" -c "GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA pglogical TO $DB_USER;"
+      psql -h "$DB_HOST" -U "$DB_ADMIN_USER" -d "$DB_NAME" -c "GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA pglogical TO $DB_USER;"
+
+      export PGPASSWORD="$DB_PASSWORD"
+      echo "Configuring pglogical Provider Node..."
+      NODE_EXISTS=$(psql -h "$DB_HOST" -U "$DB_USER" -d "$DB_NAME" -t -A -c "SELECT 1 FROM pglogical.node WHERE node_name = 'provider';")
+      if [ "$NODE_EXISTS" != "1" ]; then
+        psql -h "$DB_HOST" -U "$DB_USER" -d "$DB_NAME" -c "
+          SELECT pglogical.create_node(
+            node_name := 'provider',
+            dsn := 'host=${DB_HOST} port=5432 dbname=${DB_NAME} user=${DB_USER} password=${DB_PASSWORD}'
+          );
+        "
+      fi
+
+      echo "Adding tables to replication set on Primary..."
+      for table in users contacts transactions; do
+        IN_SET=$(psql -h "$DB_HOST" -U "$DB_USER" -d "$DB_NAME" -t -A -c "
+          SELECT 1 FROM pglogical.replication_set_table
+          WHERE set_id = (SELECT set_id FROM pglogical.replication_set WHERE set_name = 'default')
+            AND set_reloid = '${table}'::regclass;
+        ")
+        if [ "$IN_SET" != "1" ]; then
+          echo "Adding table ${table} to replication set..."
+          psql -h "$DB_HOST" -U "$DB_USER" -d "$DB_NAME" -c "SELECT pglogical.replication_set_add_table('default', '${table}', true);"
+        fi
+      done
+    else
+      # Step 5: Replica-only setup (pglogical subscriber & subscription)
+      export PGPASSWORD="$DB_ADMIN_PASSWORD"
+      echo "Enabling pglogical extension (Replica)..."
+      psql -h "$DB_HOST" -U "$DB_ADMIN_USER" -d "$DB_NAME" -c "CREATE EXTENSION IF NOT EXISTS pglogical;"
+      psql -h "$DB_HOST" -U "$DB_ADMIN_USER" -d "$DB_NAME" -c "ALTER USER $DB_USER WITH REPLICATION;"
+      psql -h "$DB_HOST" -U "$DB_ADMIN_USER" -d "$DB_NAME" -c "GRANT cloudsqlsuperuser TO $DB_USER;"
+      psql -h "$DB_HOST" -U "$DB_ADMIN_USER" -d "$DB_NAME" -c "GRANT USAGE ON SCHEMA pglogical TO $DB_USER;"
+      psql -h "$DB_HOST" -U "$DB_ADMIN_USER" -d "$DB_NAME" -c "GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA pglogical TO $DB_USER;"
+      psql -h "$DB_HOST" -U "$DB_ADMIN_USER" -d "$DB_NAME" -c "GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA pglogical TO $DB_USER;"
+
+      export PGPASSWORD="$DB_PASSWORD"
+      echo "Configuring pglogical Subscriber Node..."
+      NODE_EXISTS=$(psql -h "$DB_HOST" -U "$DB_USER" -d "$DB_NAME" -t -A -c "SELECT 1 FROM pglogical.node WHERE node_name = 'subscriber';")
+      if [ "$NODE_EXISTS" != "1" ]; then
+        psql -h "$DB_HOST" -U "$DB_USER" -d "$DB_NAME" -c "
+          SELECT pglogical.create_node(
+            node_name := 'subscriber',
+            dsn := 'host=${DB_HOST} port=5432 dbname=${DB_NAME} user=${DB_USER} password=${DB_PASSWORD}'
+          );
+        "
+      fi
+
+      if [ -n "$PRIMARY_DB_HOST" ]; then
+        SUB_EXISTS=$(psql -h "$DB_HOST" -U "$DB_USER" -d "$DB_NAME" -t -A -c "SELECT 1 FROM pglogical.subscription WHERE sub_name = 'subscription_from_primary';")
+        if [ "$SUB_EXISTS" != "1" ]; then
+          echo "Creating subscription to primary (host: $PRIMARY_DB_HOST)..."
+          psql -h "$DB_HOST" -U "$DB_USER" -d "$DB_NAME" -c "
+            SELECT pglogical.create_subscription(
+              subscription_name := 'subscription_from_primary',
+              provider_dsn := 'host=${PRIMARY_DB_HOST} port=5432 dbname=${DB_NAME} user=${DB_USER} password=${DB_PASSWORD}'
+            );
+          "
+        fi
+      else
+        echo "[-] Warning: PRIMARY_DB_HOST not provided. Subscription not created."
+      fi
+    fi
+
+    echo "========================================================================="
+    echo "=== CloudSQL Setup & Configuration Completed Successfully! ==="
+    echo "========================================================================="
+
+  promote.sh: |
+    #!/bin/sh
+    set -e
+
+    echo "========================================================================="
+    echo "=== Promoting CloudSQL Replica to Standalone Primary ==="
+    echo "========================================================================="
+    echo "[*] Connecting to PostgreSQL at $DB_HOST..."
+
+    export PGPASSWORD="$DB_ADMIN_PASSWORD"
+
+    psql -h "$DB_HOST" -U "$DB_ADMIN_USER" -d "$DB_NAME" -c "
+      DO \$\$
+      BEGIN
+          IF EXISTS (SELECT 1 FROM pglogical.subscription WHERE sub_name = 'subscription_from_primary') THEN
+              PERFORM pglogical.drop_subscription(subscription_name := 'subscription_from_primary');
+              RAISE NOTICE 'Subscription dropped successfully.';
+          END IF;
+          IF EXISTS (SELECT 1 FROM pglogical.node WHERE node_name = 'subscriber') THEN
+              PERFORM pglogical.drop_node('subscriber', true);
+              RAISE NOTICE 'Subscriber node dropped successfully.';
+          END IF;
+      END \$\$;
+
+      DO \$\$
+      DECLARE
+          rec RECORD;
+      BEGIN
+          FOR rec IN
+              SELECT table_name, column_name, pg_get_serial_sequence(table_name, column_name) AS seq_name
+              FROM information_schema.columns
+              WHERE table_schema = 'public' AND pg_get_serial_sequence(table_name, column_name) IS NOT NULL
+          LOOP
+              EXECUTE format('SELECT setval(%L, COALESCE((SELECT MAX(%I) FROM %I), 1))', rec.seq_name, rec.column_name, rec.table_name);
+          END LOOP;
+      END \$\$;
+    "
+
+    echo "========================================================================="
+    echo "=== CloudSQL Replica Promotion Completed Successfully! ==="
+    echo "========================================================================="
+
+  0-accounts-schema.sql: |-
+{{ .Files.Get "files/0-accounts-schema.sql" | indent 4 }}
+
+  0_init_tables.sql: |-
+{{ .Files.Get "files/0_init_tables.sql" | indent 4 }}
+
+  1-load-testdata.sql: |-
+{{ .Files.Get "files/1-load-testdata.sql" | indent 4 }}
+
+  1_create_transactions.sh: |-
+{{ .Files.Get "files/1_create_transactions.sh" | indent 4 }}

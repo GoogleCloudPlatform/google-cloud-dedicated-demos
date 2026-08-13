@@ -1,0 +1,70 @@
+#
+# Copyright 2026 Google LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: environment-config
+data:
+  LOCAL_ROUTING_NUM: {{ .Values.environment.localRoutingNum | quote }}
+  PUB_KEY_PATH: "/tmp/.ssh/publickey"
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: service-api-config
+data:
+  TRANSACTIONS_API_ADDR: "ledgerwriter:8080"
+  BALANCES_API_ADDR: "balancereader:8080"
+  HISTORY_API_ADDR: "transactionhistory:8080"
+  CONTACTS_API_ADDR: "contacts:8080"
+  USERSERVICE_API_ADDR: "userservice:8080"
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: demo-data-config
+data:
+  USE_DEMO_DATA: "True"
+  DEMO_LOGIN_USERNAME: "testuser"
+  DEMO_LOGIN_PASSWORD: "bankofanthos" # pragma: allowlist secret
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: bank-of-anthos
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: accounts-db-config
+data:
+  ACCOUNTS_DB_URI: "postgresql://{{ .Values.database.user }}:{{ .Values.database.password }}@{{ .Values.database.host }}:{{ .Values.database.port }}/{{ .Values.database.name }}?sslmode=require"
+  POSTGRES_DB: {{ .Values.database.name | quote }}
+  POSTGRES_PASSWORD: {{ .Values.database.password | quote }}
+  POSTGRES_USER: {{ .Values.database.user | quote }}
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: ledger-db-config
+data:
+  POSTGRES_DB: {{ .Values.database.name | quote }}
+  POSTGRES_PASSWORD: {{ .Values.database.password | quote }}
+  POSTGRES_USER: {{ .Values.database.user | quote }}
+  SPRING_DATASOURCE_URL: "jdbc:postgresql://{{ .Values.database.host }}:{{ .Values.database.port }}/{{ .Values.database.name }}?sslmode=require"
+  SPRING_DATASOURCE_USERNAME: {{ .Values.database.user | quote }}
+  SPRING_DATASOURCE_PASSWORD: {{ .Values.database.password | quote }}

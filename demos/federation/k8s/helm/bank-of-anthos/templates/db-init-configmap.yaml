@@ -1,0 +1,114 @@
+#
+# Copyright 2026 Google LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+{{- if .Values.database.init.enabled }}
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: db-init-scripts
+  labels:
+    application: bank-of-anthos
+    environment: development
+  annotations:
+    "helm.sh/hook": pre-install,pre-upgrade
+    "helm.sh/hook-weight": "1"
+    "helm.sh/hook-delete-policy": before-hook-creation,hook-succeeded
+data:
+  0-accounts-schema.sql: |
+{{ .Files.Get "files/0-accounts-schema.sql" | indent 4 }}
+
+  0_init_tables.sql: |
+{{ .Files.Get "files/0_init_tables.sql" | indent 4 }}
+
+  1-load-testdata.sql: |
+{{ .Files.Get "files/1-load-testdata.sql" | indent 4 }}
+
+  1_create_transactions.sh: |
+{{ .Files.Get "files/1_create_transactions.sh" | indent 4 }}
+
+  init.sh: |
+    #!/bin/bash
+    set -euo pipefail
+
+    export PGSSLMODE="${PGSSLMODE:-require}"
+
+    echo "Starting database initialization..."
+    echo "DB_HOST: $DB_HOST"
+    echo "DB_NAME: $DB_NAME"
+    echo "DB_USER: $DB_USER"
+
+    # Wait for database to be ready
+    until pg_isready -h "$DB_HOST" -p 5432 -U "$DB_ADMIN_USER"; do
+      echo "Waiting for PostgreSQL to be ready..."
+      sleep 2
+    done
+    echo "PostgreSQL is ready."
+
+    # Connect as admin to create DB and User
+    export PGPASSWORD="$DB_ADMIN_PASSWORD"
+
+    if ! psql -h "$DB_HOST" -U "$DB_ADMIN_USER" -d postgres -tAc "SELECT 1 FROM pg_database WHERE datname='$DB_NAME'" | grep -q 1; then
+      echo "Creating database $DB_NAME..."
+      psql -h "$DB_HOST" -U "$DB_ADMIN_USER" -d postgres -c "CREATE DATABASE $DB_NAME;"
+    fi
+
+    echo "Creating user $DB_USER..."
+    psql -h "$DB_HOST" -U "$DB_ADMIN_USER" -d postgres -c "DO \$\$ BEGIN IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname = '$DB_USER') THEN CREATE USER $DB_USER WITH PASSWORD '$DB_PASSWORD'; ELSE ALTER USER $DB_USER WITH PASSWORD '$DB_PASSWORD'; END IF; END \$\$;"
+
+    echo "Granting privileges..."
+    psql -h "$DB_HOST" -U "$DB_ADMIN_USER" -d postgres -c "GRANT ALL PRIVILEGES ON DATABASE $DB_NAME TO $DB_USER;"
+    psql -h "$DB_HOST" -U "$DB_ADMIN_USER" -d postgres -c "GRANT $DB_USER TO $DB_ADMIN_USER;"
+    psql -h "$DB_HOST" -U "$DB_ADMIN_USER" -d postgres -c "ALTER DATABASE $DB_NAME OWNER TO $DB_USER;"
+
+    echo "Granting pglogical schema privileges if extension exists..."
+    psql -h "$DB_HOST" -U "$DB_ADMIN_USER" -d "$DB_NAME" -c "
+      DO \$\$
+      BEGIN
+        IF EXISTS (SELECT 1 FROM pg_namespace WHERE nspname = 'pglogical') THEN
+          EXECUTE 'GRANT USAGE ON SCHEMA pglogical TO ' || quote_ident('$DB_USER');
+          EXECUTE 'GRANT ALL PRIVILEGES ON ALL TABLES IN SCHEMA pglogical TO ' || quote_ident('$DB_USER');
+          EXECUTE 'GRANT ALL PRIVILEGES ON ALL SEQUENCES IN SCHEMA pglogical TO ' || quote_ident('$DB_USER');
+        END IF;
+      END \$\$;
+    "
+
+    # Connect as the new user to the new database
+    export PGPASSWORD="$DB_PASSWORD"
+
+    echo "Initializing schema..."
+    psql -h "$DB_HOST" -U "$DB_USER" -d "$DB_NAME" -X -v ON_ERROR_STOP=1 -f /scripts/0-accounts-schema.sql
+    psql -h "$DB_HOST" -U "$DB_USER" -d "$DB_NAME" -X -v ON_ERROR_STOP=1 -f /scripts/0_init_tables.sql
+
+    echo "Adding Primary Key to contacts table (required for pglogical)..."
+    psql -h "$DB_HOST" -U "$DB_USER" -d "$DB_NAME" -X -v ON_ERROR_STOP=1 -c "ALTER TABLE contacts ADD COLUMN IF NOT EXISTS id SERIAL PRIMARY KEY;"
+    psql -h "$DB_HOST" -U "$DB_USER" -d "$DB_NAME" -X -v ON_ERROR_STOP=1 -c "ALTER TABLE contacts REPLICA IDENTITY DEFAULT;"
+
+    if [ "$IS_PRIMARY" = "true" ]; then
+      echo "Loading mock test data (Primary only)..."
+      psql -h "$DB_HOST" -U "$DB_USER" -d "$DB_NAME" -X -v ON_ERROR_STOP=1 -f /scripts/1-load-testdata.sql
+
+      echo "Generating initial transaction history (Primary only)..."
+      export POSTGRES_DB="$DB_NAME"
+      export POSTGRES_USER="$DB_USER"
+      export POSTGRES_PASSWORD="$DB_PASSWORD"
+      export LOCAL_ROUTING_NUM="${LOCAL_ROUTING_NUM:-883745000}"
+      export USE_DEMO_DATA="True"
+      export DB_HOST
+      bash /scripts/1_create_transactions.sh
+    fi
+
+    echo "Database initialization completed successfully!"
+{{- end }}
