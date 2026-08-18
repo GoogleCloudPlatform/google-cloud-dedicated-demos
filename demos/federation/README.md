@@ -65,6 +65,8 @@ This solution is designed for cloud architects, platform engineers, and executiv
 
 This architecture connects a primary GCP production universe with a sovereign GCD standby universe via an encrypted HA VPN bridge. Data and microservices are synchronized continuously to guarantee zero data loss and immediate failover readiness.
 
+![Federation HL Overview](docs/federation_HL_overview.jpg)
+
 ### Components
 
 Component | Tech | Purpose
