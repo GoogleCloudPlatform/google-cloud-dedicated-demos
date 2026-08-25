@@ -1,0 +1,99 @@
+#
+# Copyright 2026 Google LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+grafana:
+  alerting:
+    contactpoints.yaml:
+      apiVersion: 1
+      contactPoints:
+        - name: EmailDevOps
+          receivers:
+            - uid: email_receiver_exemplar
+              type: email
+              settings:
+                addresses: "alerts@monitoring.demo"
+                singleEmail: true
+
+    policies.yaml:
+      apiVersion: 1
+      policies:
+        - receiver: EmailDevOps
+          group_by: ['alertname', 'severity']
+          group_wait: 30s
+          group_interval: 5m
+          repeat_interval: 4h
+
+    rules.yaml:
+      apiVersion: 1
+      groups:
+        - name: ExemplarAlertGroup
+          folder: SovereignMonitoring
+          interval: 1m
+          rules:
+            - uid: high_cpu_usage_exemplar
+              title: "[Exemplar] High Container CPU Utilization"
+              condition: B
+              data:
+                - refId: A
+                  datasourceUid: mimir-datasource
+                  relativeTimeRange:
+                    from: 300
+                    to: 0
+                  model:
+                    datasource:
+                      type: prometheus
+                      uid: mimir-datasource
+                    editorMode: code
+                    expr: sum(rate(container_cpu_usage_seconds_total{container!=""}[5m])) by (pod) > 0.8
+                    instant: true
+                    intervalMs: 1000
+                    maxDataPoints: 43200
+                    refId: A
+                - refId: B
+                  datasourceUid: __expr__
+                  relativeTimeRange:
+                    from: 300
+                    to: 0
+                  model:
+                    conditions:
+                      - evaluator:
+                          params:
+                            - 0
+                          type: gt
+                        operator:
+                          type: and
+                        query:
+                          params:
+                            - A
+                        reducer:
+                          params: []
+                          type: last
+                        type: query
+                    datasource:
+                      type: __expr__
+                      uid: __expr__
+                    expression: A
+                    type: threshold
+                    refId: B
+              noDataState: OK
+              execErrState: Alerting
+              for: 1m
+              annotations:
+                summary: "High CPU utilization detected on pod"
+                description: "Pod CPU utilization exceeds 80% threshold."
+              labels:
+                severity: warning
+                team: devops

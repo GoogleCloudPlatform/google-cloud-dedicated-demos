@@ -1,0 +1,32 @@
+set shell := ["bash", "-euo", "pipefail", "-c"]
+
+default:
+    @just --list
+
+# Build Helm chart dependencies for all wrapper charts
+deps:
+    @for chart in k8s/helm/*/; do if [ -f "$chart/Chart.yaml" ]; then echo "== Building dependencies for $chart =="; helm dependency build "$chart"; fi; done
+
+# Lint Helm charts in k8s/helm/
+helm-lint: deps
+    @for chart in k8s/helm/*/ k8s/helm/apps/*/; do if [ -f "$chart/Chart.yaml" ]; then echo "== Linting $chart =="; helm lint "$chart"; fi; done
+
+# Lint Helm charts and run repository pre-commit checks
+lint: helm-lint
+    pre-commit run --all-files --show-diff-on-failure
+
+# Validate Terraform syntax and configuration
+validate:
+    terraform -chdir=terraform validate
+
+# Generate and display Terraform execution plan
+plan:
+    terraform -chdir=terraform plan
+
+# Deploy infrastructure and Kubernetes monitoring stack
+install:
+    ./scripts/install.sh
+
+# Destroy infrastructure and remove monitoring stack
+uninstall:
+    ./scripts/uninstall.sh

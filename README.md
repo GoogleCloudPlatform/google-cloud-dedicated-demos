@@ -94,6 +94,25 @@ Follow the
 step-by-step walkthrough to deploy the cross-universe infrastructure, database
 replication, and failover workflow.
 
+### Sovereign Observability & Monitoring with Grafana & OpenTelemetry
+
+This [Observability & Monitoring](./demos/monitoring) sample application
+demonstrates how to deploy an open-source (OSS) observability stack—utilizing
+OpenTelemetry, Grafana Mimir (backed by GCS), Grafana, and Fluent Bit—on Google
+Cloud Dedicated (GCD) to bridge the operational gap until native 1P Cloud
+Monitoring capabilities arrive.
+
+As a reference architecture for sovereign telemetry, this application provides
+a blueprint for collecting custom metrics, ingesting GCE/GKE logs, and enabling
+alerting within local region boundaries. Built on OpenTelemetry standards, it
+ensures a 100% standardized metrics ingestion protocol for a smooth,
+zero-refactoring transition to native 1P Cloud Monitoring in 2027.
+
+Follow the
+[Observability & Monitoring - User Guide](./demos/monitoring/README.md) for a
+step-by-step walkthrough to deploy the infrastructure, metrics storage, and log
+collection pipelines.
+
 ## General Prerequisites & Setup
 
 Before starting, you must be onboarded on Google Cloud Dedicated (GCD) by your

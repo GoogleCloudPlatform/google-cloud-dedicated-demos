@@ -1,0 +1,14 @@
+# defaults.yaml sample
+# Configuration parameters for Sovereign Monitoring Demo
+terraform:
+  project_id: "replaceme"
+  region: "u-france-east1"
+  universe_api_domain: "s3nsapis.fr"
+
+grafana:
+  admin_user: "replaceme"
+  admin_password: "replaceme"
+  oauth:
+    client_id: "iam-client-id"
+    client_secret: "iam-client-secret"
+    provider_url: "iam-oauth-provider-url"

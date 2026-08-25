@@ -1,0 +1,150 @@
+#
+# Copyright 2026 Google LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+gateway:
+  enabled: true
+  className: "gke-l7-regional-external-managed"
+  httpPort: 80
+  httpsPort: 443
+  backendPort: 80
+
+healthCheck:
+  enabled: true
+  port: 3000
+
+grafana:
+  enabled: true
+  replicas: 1
+
+  grafana.ini:
+    auth.generic_oauth:
+      name: "Workforce Identity"
+      allow_sign_up: true
+      use_refresh_token: true
+      scopes: "openid email offline_access roles"
+      use_pkce: true
+      pkce_code_challenge_method: "S256"
+    log:
+      mode: console
+    smtp:
+      enabled: true
+      host: "smtp.example.com:587"
+      user: "notifications@example.com"
+      from_address: "grafana-alerts@monitoring.demo"
+      from_name: "Grafana Sovereign Monitoring"
+
+  plugins:
+    - googlecloud-logging-datasource
+
+  adminUser: replaceme
+  adminPassword: replaceme
+
+  persistence:
+    enabled: true
+
+  deploymentStrategy:
+    type: Recreate
+
+  serviceAccount:
+    name: grafana-ksa
+    autoMount: true
+    annotations:
+      iam.gke.io/gcp-service-account: replaceme
+
+  service:
+    type: ClusterIP
+
+  resources:
+    requests:
+      cpu: 250m
+      memory: 512Mi
+    limits:
+      cpu: 500m
+      memory: 1Gi
+
+  readinessProbe:
+    httpGet:
+      path: /api/health
+      port: 3000
+    initialDelaySeconds: 30
+    periodSeconds: 10
+    timeoutSeconds: 5
+    failureThreshold: 10
+
+  extraSecretMounts:
+    - name: grafana-tls-mount
+      secretName: grafana-tls-secret
+      defaultMode: 0444
+      mountPath: /etc/grafana/certs
+      readOnly: true
+
+  datasources:
+    datasources.yaml:
+      apiVersion: 1
+      datasources:
+        - name: Mimir
+          uid: mimir-datasource
+          orgId: 1
+          type: prometheus
+          access: proxy
+          url: "$__env{GRAFANA_MIMIR_URL}"
+          isDefault: true
+          jsonData:
+            httpHeaderName1: "X-Scope-OrgID"
+            tlsAuth: true
+            tlsAuthWithCACert: true
+            tlsSkipVerify: false
+            serverName: "$__env{GRAFANA_MIMIR_SERVER_NAME}"
+          secureJsonData:
+            httpHeaderValue1: "demo"
+            tlsCACert: "$__file{/etc/grafana/certs/ca.crt}"
+            tlsClientCert: "$__file{/etc/grafana/certs/tls.crt}"
+            tlsClientKey: "$__file{/etc/grafana/certs/tls.key}"
+        - name: Google Cloud Monitoring
+          uid: google-cloud-monitoring
+          orgId: 1
+          type: stackdriver
+          access: proxy
+          jsonData:
+            authenticationType: gce
+            defaultProject: "$__env{GCP_PROJECT_ID}"
+            universeDomain: "$__env{GOOGLE_CLOUD_UNIVERSE_DOMAIN}"
+        - name: Google Cloud Logging
+          uid: google-cloud-logging
+          orgId: 1
+          type: googlecloud-logging-datasource
+          access: proxy
+          jsonData:
+            authenticationType: gce
+            defaultProject: "$__env{GCP_PROJECT_ID}"
+            universeDomain: "$__env{GOOGLE_CLOUD_UNIVERSE_DOMAIN}"
+
+  env:
+    GOOGLE_CLOUD_UNIVERSE_DOMAIN: replaceme
+    GCP_PROJECT_ID: replaceme
+    GRAFANA_MIMIR_URL: replaceme
+    GRAFANA_MIMIR_SERVER_NAME: replaceme
+    GF_SERVER_ROOT_URL: replaceme
+    GF_AUTH_DISABLE_LOGIN_FORM: false
+    GF_AUTH_GENERIC_OAUTH_ENABLED: true
+    GF_AUTH_GENERIC_OAUTH_CLIENT_ID: replaceme
+    GF_AUTH_GENERIC_OAUTH_CLIENT_SECRET: replaceme
+    GF_AUTH_GENERIC_OAUTH_AUTH_URL: replaceme
+    GF_AUTH_GENERIC_OAUTH_TOKEN_URL: replaceme
+    GF_AUTH_GENERIC_OAUTH_API_URL: replaceme
+    GF_SECURITY_ALLOW_EMBEDDING: true
+    GF_SECURITY_COOKIE_SECURE: true
+    GF_SECURITY_COOKIE_SAMESITE: disabled
