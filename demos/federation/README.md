@@ -1,9 +1,8 @@
-# Sovereign Multi-Universe Federation with Bank of Anthos
+# "Sovereign standby" with multiple universes
 
 ## Table of Contents
 
 - [Overview](#overview)
-  - [Business Use Case: Multi-Universe Federation & Sovereign Resilience](#business-use-case-multi-universe-federation--sovereign-resilience)
   - [Target Audience](#target-audience)
   - [Core Capabilities](#core-capabilities)
   - [Architecture](#architecture)
@@ -33,37 +32,33 @@
 
 ## Overview
 
-This sample application demonstrates how highly regulated organizations, such as retail banks and financial institutions, can achieve multi-universe digital resilience and data sovereignty by federating workloads across standard Google Cloud Platform (GCP) and Google Cloud Dedicated (GCD) environments.
+In today's cloud environment, large regulated organizations can face multi-layered risks to operational continuity: severe technical outages, evolving regulatory landscapes such as the EU Digital Operational Resilience Act (DORA) and General Data Protection Regulation (GDPR) mandates, and macroeconomic pressures.
+
+This guide provides a blueprint for a "sovereign standby" architecture that addresses those challenges. In this example, the core retail banking application runs primarily on Google Cloud to leverage public cloud scale and global infrastructure. Simultaneously, a synchronized, near-real-time mirror environment is maintained on Google Cloud Dedicated.
+
+If primary global cloud connectivity is severed, whether due to a regional blackout, unexpected macroeconomic shifts, or strict data sovereignty mandates, organizations can invoke a planned failover protocol. All live production traffic can be diverted to Google Cloud Dedicated enabling core banking operations to run isolated without losing data or dropping customer sessions.
 
 **Please note that this is a proof-of-concept prototype built for demonstration purposes, and the implementation is not audited, hardened, or secured for production use cases.**
 
-### Business Use Case: Multi-Universe Federation & Sovereign Resilience
-
-In modern cloud landscapes, mission-critical organizations face multi-layered risks to operational continuity: severe technical outages, evolving regulatory landscapes (such as EU DORA and GDPR mandates), and macroeconomic pressures.
-
-This application provides a blueprint for a **"Sovereign Standby"** architecture that solves these challenges. The Bank of Anthos core retail banking application runs primarily on GCP to leverage public cloud scale and global infrastructure. Simultaneously, a synchronized, near-real-time mirror environment is maintained on GCD.
-
-If primary global cloud connectivity is severed, whether due to a regional blackout, unexpected macroeconomic shifts, or strict data sovereignty mandates, organizations can invoke a controlled, deterministic failover protocol. All live production traffic is seamlessly diverted to the sovereign GCD environment, enabling core banking operations to run completely isolated without losing data or dropping customer sessions.
-
 ### Target Audience
 
-This solution is designed for cloud architects, platform engineers, and executive leaders in regulated financial services. It serves the following stakeholders:
+Although this example uses a banking app, this solution is designed for cloud architects, platform engineers, and executive leaders in any regulated industries. It serves the following stakeholders:
 
-- **Lead Cloud Security Architect / Head of IAM**: Enforces federated identity and security policies across administrative boundaries using Workforce Identity Federation (WIF) and identity providers, ensuring user access persists seamlessly without duplicated identities.
-- **Lead SRE / Banking Platform Architect**: Configures automated cross-universe database replication, sets up Storage Transfer Service for background asset sync, and maintains GitOps templates to guarantee complete infrastructure parity.
-- **Director of Core Banking Operations**: Monitors global operational health, tracks Recovery Time Objectives and Recovery Point Objectives, and holds ultimate authority to trigger the Failover during disruptions.
+- **Lead cloud security architects / Heads of Identity and Access Management** who enforce federated identity and security policies across administrative boundaries using Workforce Identity Federation and identity providers, ensuring user access persists seamlessly between universes without duplicated identities.
+- **Lead SRE / Platform Architects** who configure automated cross-universe database replication, set up Storage Transfer Service for background asset sync, and maintain GitOps templates to ensure complete infrastructure parity.
+- **Director of Core Operations** who monitor global operational health, track Recovery Time Objectives and Recovery Point Objectives, and hold ultimate authority to trigger the failover during disruptions.
 
 ### Core Capabilities
 
-- **Multi-Universe Database Synchronization**: Real-time cross-universe database replication supporting both Cloud SQL and AlloyDB Omni between GCP and GCD.
-- **Infrastructure & Storage Parity**: Automated GitOps deployment templates and Storage Transfer Service (STS) agents maintain identical containerized banking microservices and GCS bucket assets across environments.
-- **Federated Workforce Identity**: Single sign-on and role-based access control across independent administrative domains via Workforce Identity Federation (WIF) and external identity provider.
-- **Deterministic Sovereign Failover**: One-step database promotion (`just promote`) transitions the read-only replica on GCD into an independent standalone primary during a simulated cloud outage.
-- **Bi-Directional Secure Network Bridge**: Encrypted HA VPN connectivity and Private Service Connect (PSC) endpoints linking cross-universe GKE clusters and databases.
+- **Multi-Universe Database Synchronization**: Real-time cross-universe database replication supporting both Cloud SQL and AlloyDB Omni between Google Cloud and Google Cloud Dedicated.
+- **Infrastructure & Storage Parity**: Automated GitOps deployment templates and Storage Transfer Service agents maintain identical containerized banking microservices and Cloud Storage bucket assets across environments.
+- **Federated Workforce Identity**: Single sign-on and role-based access control across independent administrative domains using Workforce Identity Federation and an external identity provider.
+- **Deterministic Sovereign Database Failover**: One-step database promotion transitions the read-only replica on Google Cloud Dedicated into an independent standalone primary during an outage.
+- **Bi-Directional Secure Network Bridge**: Encrypted HA VPN connectivity and Private Service Connect endpoints linking cross-universe Google Kubernetes Engine (GKE) clusters and databases.
 
 ### Architecture
 
-This architecture connects a primary GCP production universe with a sovereign GCD standby universe via an encrypted HA VPN bridge. Data and microservices are synchronized continuously to guarantee zero data loss and immediate failover readiness.
+This architecture connects a primary Google Cloud production universe with a Google Cloud Dedicated standby universe by using an encrypted HA VPN bridge. The solution synchronizes data and microservices continuously to ensure zero data loss and immediate failover readiness.
 
 ![Federation HL Overview](docs/federation_HL_overview.jpg)
 
@@ -71,12 +66,11 @@ This architecture connects a primary GCP production universe with a sovereign GC
 
 Component | Tech | Purpose
 :--- | :--- | :---
-**Microservices** | GKE | Runs identical Bank of Anthos containerized banking applications across GCP and GCD via GitOps.
-**Database (Option 1)** | AlloyDB Omni | High-performance PostgreSQL ledger utilizing WAL streaming for cross-universe transaction synchronization.
-**Database (Option 2)** | Cloud SQL | Managed PostgreSQL database utilizing pglogical replication for transaction ledger mirroring.
-**Storage & Sync** | GCS & STS | Secure object storage repositories and automated background transfer agent for assets and backups.
-**Networking** | HA VPN & PSC | Encrypted cross-universe network bridge and Private Service Connect outbound endpoints.
-**Identity** | WIF & Keycloak | Federated identity provider integration enabling unified single sign-on across universes.
+**Microservices** | GKE | Identical "Bank of Anthos" containerized banking applications running in the two universes.
+**Database** | AlloyDB Omni **or** Cloud SQL | High-performance PostgreSQL ledger using Write Ahead Log (WAL) streaming for cross-universe transaction synchronization **or** Managed PostgreSQL database using pglogical replication for transaction ledger mirroring.
+**Storage & Sync** | Cloud Storage Transfer Service running in Google Cloud | Secure object storage repositories and automated background transfer agent for assets and backups.
+**Networking** | HA VPN and Private Service Connect | Encrypted cross-universe network bridge and Private Service Connect outbound endpoints.
+**Identity** | Workforce Identity Federation and an external identity provider | Federated identity provider integration enabling unified single sign-on across universes.
 **Orchestration** | Terraform & Helm | Automated infrastructure provisioning scripts and Kubernetes Helm chart packaging.
 
 ### Project Structure Overview

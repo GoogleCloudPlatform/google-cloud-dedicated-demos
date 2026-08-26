@@ -1,4 +1,4 @@
-# Sovereign Observability & Monitoring with Grafana & OpenTelemetry
+# OSS-based Monitoring Solution
 
 ## Overview
 
@@ -12,28 +12,10 @@ visualization, and alerting within sovereign cloud perimeters.
 purposes, and the implementation is not audited, hardened, or secured for
 production use cases.**
 
-### Business Use Case: Sovereign Observability & Signal Bridging
-
-In highly regulated cloud environments, the absence of native 1P Cloud
-Monitoring stacks creates a critical operational "blind spot" for enterprise
-customers in sectors like public finance, defense, healthcare, and critical
-infrastructure. Standard 1P monitoring agents (such as the Google Ops Agent) do
-not operate in sovereign GCD universes, forcing organizations to manage
-fragmented telemetry or delay cloud migrations.
-
-This application provides a blueprint for an open-source 3P observability
-solution that resolves these challenges. By utilizing standard OpenTelemetry
-(OTel) Collectors, Grafana Mimir, and Fluent Bit, organizations can ingest
-custom application metrics, collect GCE VM logs, store Prometheus metric blocks
-long-term in GCS, and visualize telemetry in Grafana, all without sending data
-outside sovereign region boundaries or incurring third-party SaaS licensing
-fees.
-
 ### Target Audience
 
 This solution is designed for cloud SREs, observability engineers, security
-officers, and enterprise architects operating in Google Cloud Dedicated
-environments. It serves the following stakeholders:
+officers, and enterprise architects. It serves the following stakeholders:
 
 -   **Site Reliability Engineers (SREs) & DevOps Leaders**: Provisions
     automated, scalable metrics storage (Mimir + GCS) and log pipelines (Fluent

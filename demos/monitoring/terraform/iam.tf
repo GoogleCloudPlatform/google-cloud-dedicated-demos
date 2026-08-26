@@ -95,6 +95,13 @@ resource "google_service_account" "monitoring_node_sa" {
   display_name = "Monitoring GKE Node SA"
 }
 
+resource "google_project_iam_member" "monitoring_node_sa" {
+  count   = local.config.enable_gke == true ? 1 : 0
+  project = data.google_client_config.default.project
+  role    = "roles/container.defaultNodeServiceAccount"
+  member  = "serviceAccount:${google_service_account.monitoring_node_sa[0].email}"
+}
+
 resource "google_project_iam_member" "artifact_registry_reader" {
   count   = local.config.enable_gke == true ? 1 : 0
   project = data.google_client_config.default.project

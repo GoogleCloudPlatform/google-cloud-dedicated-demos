@@ -1,4 +1,4 @@
-# Sovereign AI Reference Architectures for Google Cloud Dedicated
+# Solutions for Google Cloud Dedicated
 
 ## What is Google Cloud Dedicated?
 
@@ -38,80 +38,8 @@ key questions such as: how can I innovate with my data?
 **Please note that these examples are provided as educational demos; they are
 not audited, optimized, or intended for production deployment.**
 
-We are actively working to expand this repository with additional examples over
-the next couple of months. Stay tuned.
-
-### Sovereign Tax Anomaly Detection with BigQuery ML & Gemma
-
-This [Tax Anomaly Detection](./demos/tax-office) sample application leverages
-BigQuery ML and a RAG pipeline with Google’s open-weight Gemma LLM to optimize
-tax enforcement while ensuring data sovereignty. Built for regulated industries
-and the public financial sector, the architecture guarantees local data
-residency by running all operations within Google Cloud Dedicated
-infrastructure.
-
-As the first in a series of reference architectures for regulated public
-sectors, this application provides a blueprint for secure, localized AI
-innovation.
-
-Follow the [Tax Anomaly Detection - User Guide](./demos/tax-office/README.md)
-for a step-by-step walkthrough to deploy the infrastructure and workflow.
-
-### Sovereign Health Insurance Risk Analysis with BigQuery ML & Gemma
-
-This [Health Insurance Risk Analysis](./demos/insurance) sample application
-demonstrates how to optimize health insurance risk analysis and claims
-verification while ensuring data sovereignty. By leveraging BigQuery ML for
-health risk modeling and a regional open-weight Gemma LLM for claims document
-verification, the architecture guarantees local data residency within Google
-Cloud Dedicated infrastructure.
-
-As another key reference architecture for highly regulated sectors, this
-application provides a blueprint for secure, localized data modeling and
-automated claim checks.
-
-Follow the
-[Health Insurance Risk Analysis - User Guide](./demos/insurance/README.md) for a
-step-by-step walkthrough to deploy the infrastructure and verification workflow.
-
-### Sovereign Multi-Universe Federation with Bank of Anthos
-
-This [Multi-Universe Federation](./demos/federation) sample application
-demonstrates how highly regulated organizations, such as retail banks and
-financial institutions, can achieve multi-universe digital resilience and data
-sovereignty by federating workloads across standard Google Cloud Platform (GCP)
-and Google Cloud Dedicated (GCD) environments. By leveraging continuous database
-replication, Workforce Identity Federation (WIF), and Storage Transfer Service
-(STS) object sync, the architecture maintains a near-real-time "Sovereign
-Standby" mirror of a core retail banking stack (Bank of Anthos).
-
-As a reference architecture for disaster recovery and operational continuity,
-this application provides a blueprint for deterministic emergency failover,
-ensuring core operations can run completely isolated on GCD when needed.
-
-Follow the
-[Multi-Universe Federation - User Guide](./demos/federation/README.md) for a
-step-by-step walkthrough to deploy the cross-universe infrastructure, database
-replication, and failover workflow.
-
-### Sovereign Observability & Monitoring with Grafana & OpenTelemetry
-
-This [Observability & Monitoring](./demos/monitoring) sample application
-demonstrates how to deploy an open-source (OSS) observability stack—utilizing
-OpenTelemetry, Grafana Mimir (backed by GCS), Grafana, and Fluent Bit—on Google
-Cloud Dedicated (GCD) to bridge the operational gap until native 1P Cloud
-Monitoring capabilities arrive.
-
-As a reference architecture for sovereign telemetry, this application provides
-a blueprint for collecting custom metrics, ingesting GCE/GKE logs, and enabling
-alerting within local region boundaries. Built on OpenTelemetry standards, it
-ensures a 100% standardized metrics ingestion protocol for a smooth,
-zero-refactoring transition to native 1P Cloud Monitoring in 2027.
-
-Follow the
-[Observability & Monitoring - User Guide](./demos/monitoring/README.md) for a
-step-by-step walkthrough to deploy the infrastructure, metrics storage, and log
-collection pipelines.
+To explore our full suite of architecture blueprints and technical assets, visit
+the [Solutions folder](./demos/).
 
 ## General Prerequisites & Setup
 

@@ -1,11 +1,18 @@
-# Sovereign Health Insurance Risk Analysis with BigQuery ML & Gemma
+# Health insurance risk analysis with BigQuery ML and Gemma
 
 ## Overview
 
-This sample application demonstrates how to optimize health insurance risk
-analysis and data sovereignty by leveraging BigQuery ML as a unified machine
-learning platform, integrated with an AI verification pipeline utilizing
-Google’s open-weight Gemma LLM.
+In highly regulated environments such as the healthcare and insurance sectors,
+providers often need to perform tasks like analyzing health risks and verifying
+customer claims, while keeping data strictly within the relevant jurisdiction.
+
+The solution described in this document provides a blueprint for solving these
+challenges with Google Cloud Dedicated. Insurance providers can deploy BigQuery
+ML on Google Cloud Dedicated to analyze health risk scores, model plans, and
+claims databases in real time. Simultaneously, a local, open-weight Gemma LLM
+system performs verification on claim documentation stored in Cloud Storage.
+This approach ensures context-aware compliance and full auditability, without
+ever making external API calls or moving data outside the sovereign boundary.
 
 **Please note that this is a proof-of-concept prototype built for demonstration
 purposes, and the implementation is not audited or secured for production use
@@ -14,50 +21,40 @@ billing amounts, and insurance plans—is entirely fictional and generated
 programmatically. Any resemblance to real persons, entities, or actual policies
 is purely coincidental.**
 
-### Business Use Case: Sovereign Health Insurance Risk Analysis
-
-In highly regulated environments, such as the healthcare and insurance sectors,
-the ability to analyze health risks and verify customer claims while keeping
-data strictly in-country is a mission-critical requirement.
-
-This application provides a blueprint for solving these challenges. Insurance
-providers can deploy BigQuery ML on GCD to analyze health risk scores, model
-plans, and claims databases in real time. Simultaneously, a local, open-weight
-Gemma LLM system performs verification on claim documentation stored in GCS.
-This ensures context-aware compliance and full auditability — all without ever
-making external API calls or moving data outside the sovereign boundary.
-
 ### Target Audience
 
 This solution is designed for national healthcare agencies or regulated
 insurance providers. It serves the following stakeholders:
 
-- **Auditors & Claims Investigators**: Review showroom dashboards to verify
-    submitted claim documents, audit flagged cases, and interact with the AI
-    assistant.
-- **Data Scientists**: Securely access raw data via JupyterLab environments to
-    build, validate, and run native health risk analysis models.
+- **Auditors & Claims Investigators** who review showroom dashboards to verify
+  submitted claim documents, audit flagged cases, and interact with the AI
+  assistant.
+- **Data Scientists** who securely access raw data using JupyterLab environments
+  to build, validate, and run health risk analysis models.
 
 ### Core Capabilities
 
-- **Sovereign Health Modeling**: Utilize native BigQuery ML to screen claims
-    and customer datasets to identify health risk factors without moving data
-    outside the sovereign boundary.
-- **AI Claim Verification**: Execute localized document checks using
-    open-weight Gemma LLM to verify claim details against database records.
+- **Sovereign Health Modeling**: Use BigQuery ML to screen claims and customer
+  datasets to identify health risk factors without moving data outside the
+  sovereign boundary.
+- **AI Claim Verification**: Run localized document checks using open-weight
+  Gemma LLM to verify claim details against database records.
 - **Interactive Chatbot Widget**: Query active database claims and receive
-    real-time, context-aware answers using the AI assistant chatbot.
+  real-time, context-aware answers using the AI assistant chatbot.
 - **Seamless JupyterLab Analytics**: Access a dedicated Jupyter environment
-    preloaded with direct database connection variables and Workload Identity
-    bindings.
-- **Internationalization**: Instantly switch UI language between
-    English, French, and German.
+  preloaded with direct database connection variables and Workload Identity
+  bindings.
+- **Internationalization**: Instantly switch UI language between English,
+  French, and German.
 
 ### Architecture
 
 ![Insurance Architecture](docs/insurance_architecture.jpg)
 
 ### Components
+
+The following technologies and Google Cloud Dedicated services are used in this
+solution:
 
 Component    | Tech       | Purpose
 :----------- | :--------- | :------
@@ -88,11 +85,11 @@ Folder        | Description
 ### Prerequisites
 
 1. **Google Cloud Project:** A Sovereign Dedicated Cloud project with billing
-    enabled.
+   enabled.
 2. **gcloud CLI:** The Google Cloud SDK installed and authenticated.
 3. **Terraform:** Terraform CLI (v1.5+) installed.
 4. **Docker:** Docker daemon running for internal Artifact Registry image
-    mirroring.
+   mirroring.
 5. **Kubernetes Tools:** `kubectl` and `helm` binaries installed.
 
 ### Deployment Configuration
@@ -102,30 +99,30 @@ critical configurations to ensure proper authentication and resource linking
 within your Google Cloud Project.
 
 1. Initialize the gcloud CLI for your GCD universe using Workforce Identity
-    Federation by following the
-    [Google Cloud CLI instructions](../../README.md#google-cloud-cli).
+   Federation by following the
+   [Google Cloud CLI instructions](../../README.md#google-cloud-cli).
 
 2. Enable Cloud Resource Manager API. Ensure the Cloud Resource Manager API is
-    explicitly enabled within your GCD Project's console. This is necessary for
-    managing project resources.
+   explicitly enabled within your GCD Project's console. This is necessary for
+   managing project resources.
 
 3. Provide Hugging Face token:
 
-    - The Gemma LLM model is hosted on
-        [Hugging Face](https://huggingface.co/), a community platform for
-        sharing machine learning models, datasets, and applications. To download
-        the model during deployment, you need an access token.
+    - The Gemma LLM model is hosted on [Hugging Face](https://huggingface.co/),
+      a community platform for sharing machine learning models, datasets, and
+      applications. To download the model during deployment, you need an access
+      token.
     - **Where to get a token:** Create a free account at
-        [huggingface.co](https://huggingface.co/) and generate a **Read** access
-        token in your
-        [Settings > Tokens](https://huggingface.co/settings/tokens) page.
-    - **Model Access:** Before deploying, make sure you have requested and
-        been granted access to the
-        [Gemma model](https://huggingface.co/google/gemma-3-27b-it) on Hugging
-        Face (this typically requires accepting Google's license terms).
+      [huggingface.co](https://huggingface.co/) and generate a **Read** access
+      token in your [Settings > Tokens](https://huggingface.co/settings/tokens)
+      page.
+    - **Model Access:** Before deploying, make sure you have requested and been
+      granted access to the
+      [Gemma model](https://huggingface.co/google/gemma-3-27b-it) on Hugging
+      Face (this typically requires accepting Google's license terms).
     - Once you have the token, update the `hugging_face_token` parameter value
-        in the `terraform.tfvars` file with your newly created token in the next
-        step.
+      in the `terraform.tfvars` file with your newly created token in the next
+      step.
 
 4. **Update `terraform.tfvars`:**
 
@@ -187,7 +184,7 @@ Upon completion, the script will output the external IP addresses for the **Web
 Showroom Dashboard** and the **JupyterLab Platform**.
 
 > IMPORTANT:
->
+> 
 > **Wait for Deployment:** It may take **~20 minutes** for all pods to be fully
 > deployed and ready. The Gemma LLM model deployment, in particular, requires
 > significant time to pull and initialize.
@@ -211,9 +208,9 @@ If you plan to leave this demo running long-term, please secure your environment
 using one of the following methods:
 
 - **IP Restriction**: Limit incoming traffic exclusively to your internal IP
-    subnets.
+  subnets.
 - **Private Endpoints**: Reconfigure the GKE services to disable public IP
-    exposure entirely.
+  exposure entirely.
 
 ### JupyterLab Platform
 
@@ -235,18 +232,18 @@ interactive dashboard using the provided external IP address. Follow this
 step-by-step flow to navigate the application and simulate an auditor workflow:
 
 1. **Access the Dashboard**: Click the provided IP address to open the Web
-    Showroom Dashboard. Authenticate in the **Insurance App Login** modal
-    using your credentials provided in `terraform.tfvars` to unlock the platform.
+   Showroom Dashboard. Authenticate in the **Insurance App Login** modal using
+   your credentials provided in `terraform.tfvars` to unlock the platform.
 2. **Review Real-Time Claims**: The main dashboard displays claims data,
-    customer records, and health risk scores.
+   customer records, and health risk scores.
 3. **Analyze Claim Verification**: Click on a specific claim row (e.g.,
-    `9375-21` or `9381-04`) to trigger the AI Claim Verification engine. The
-    system automatically pulls the document stored in GCS and uses the Gemma LLM
-    to verify patient and service details.
-4. **Interact with the AI Assistant**: Click the Assistant IA chat window in
-    the dashboard to interact with the Gemma LLM chatbot. You can ask it to
-    filter claims, summarize flagged cases, explain vocabulary, or translate
-    terms in real time.
+   `9375-21` or `9381-04`) to trigger the AI Claim Verification engine. The
+   system automatically pulls the document stored in GCS and uses the Gemma LLM
+   to verify patient and service details.
+4. **Interact with the AI Assistant**: Click the Assistant IA chat window in the
+   dashboard to interact with the Gemma LLM chatbot. You can ask it to filter
+   claims, summarize flagged cases, explain vocabulary, or translate terms in
+   real time.
 
 ## Testing with Sample Documents & AI Chatbot
 
@@ -262,31 +259,30 @@ The platform uses an LLM (`google/gemma-3-27b-it`) to verify if the submitted
 claim documentation matches the claim details (such as Patient Name, Date of
 Service, Provider, and Amount).
 
-- **Verification**: The LLM performs verification using documents stored in
-    GCS. Sample documents are provided in the `samples/claims/` folder and
-    uploaded to GCS during deployment.
+- **Verification**: The LLM performs verification using documents stored in GCS.
+  Sample documents are provided in the `samples/claims/` folder and uploaded to
+  GCS during deployment.
 - **Seeded Claims**: Sample documents are provided for:
   - **Passing Claims (Matching Docs)**:
-  - `9375-21` -> Matches cardiology consultation (accepted as Health
-        specialist consultation).
+  - `9375-21` -> Matches cardiology consultation (accepted as Health specialist
+    consultation).
   - `CL-10001` -> Matches GP visit.
   - `CL-10002` -> Matches orthopedic consultation.
   - `CL-10003` -> Matches hospitalization.
   - `CL-10004` -> Matches physiotherapy.
   - `CL-10005` -> Matches GP visit.
   - **Failing Claims (Mismatching/Missing Docs)**:
-  - `9381-04` -> Mismatch (Missing Cost Verification): Imaging Report does
-        not list the billed amount (450€); BigQuery also flags due to high risk
-        score.
+  - `9381-04` -> Mismatch (Missing Cost Verification): Imaging Report does not
+    list the billed amount (450€); BigQuery also flags due to high risk score.
   - `CL-10006` -> Mismatch in Patient Name & Amount (claims Sophie Bernard,
-        450€).
+    450€).
   - `CL-10007` -> Mismatch in Provider & Service (claims Dr. Marie Exemple,
-        Cardiology).
+    Cardiology).
   - `CL-10008` -> Mismatch in Date of Service (claims 2025-02-20 instead of
-        2025-01-20).
+    2025-01-20).
 - **Missing Documentation**: Any other claim clicked in the dashboard will not
-    have documents in GCS, and the LLM will correctly flag them as "Missing
-    documentation" and recommend rejection.
+  have documents in GCS, and the LLM will correctly flag them as "Missing
+  documentation" and recommend rejection.
 
 ### 2. Assistant IA Chatbot (Live RAG & LLM Examples)
 
@@ -299,30 +295,30 @@ contextual answers.
 
 Here are the 4 main ways to use your assistant on a daily basis:
 
-1. **Inspect a Specific Claim:** *"Can you give me the summary and billed
-    amount for Jean Petit (claim 9375-21)?"*
+1. **Inspect a Specific Claim:** *"Can you give me the summary and billed amount
+   for Jean Petit (claim 9375-21)?"*
 2. **Filter & Scan Claims in One Second:** *"List all visible claims where the
-    billed amount exceeds 1,000 €."* or *"Which patients had a cardiology
-    consultation?"*
+   billed amount exceeds 1,000 €."* or *"Which patients had a cardiology
+   consultation?"*
 3. **Understand Flags & Warnings:** *"Why is claim CL-10020 marked as
-    'Flagged'?"* or *"What do you recommend I check regarding Catherine Martin's
-    submission?"*
+   'Flagged'?"* or *"What do you recommend I check regarding Catherine Martin's
+   submission?"*
 4. **Explain Vocabulary or Translate:** *"What is the exact difference between
-    Régime Obligatoire (Base) and Mutuelle coverage?"* or *"Peux-tu traduire ta
-    dernière réponse en français ?"*
+   Régime Obligatoire (Base) and Mutuelle coverage?"* or *"Peux-tu traduire ta
+   dernière réponse en français ?"*
 
 #### Chat Prompts to Test
 
 Here are 4 usage examples you can test directly in the chat popup:
 
 1. **Exact Claim & Patient Lookup:** > *"What is the billed amount and status
-    for claim 9381-04 (Sophie Bernard)?"*
+   for claim 9381-04 (Sophie Bernard)?"*
 2. **Threshold Aggregation & Filtering:** > *"List all visible reimbursement
-    claims exceeding 1,000 €."*
-3. **Auditing Flagged Discrepancies:** > *"Can you explain why claim CL-10020
-    is marked as flagged?"*
+   claims exceeding 1,000 €."*
+3. **Auditing Flagged Discrepancies:** > *"Can you explain why claim CL-10020 is
+   marked as flagged?"*
 4. **Bilingual Insurance Terminology:** > *"What is the difference between
-    Régime Obligatoire and Mutuelle?"*
+   Régime Obligatoire and Mutuelle?"*
 
 ## Cleanup
 
