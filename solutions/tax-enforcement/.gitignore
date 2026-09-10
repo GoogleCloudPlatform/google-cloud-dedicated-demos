@@ -1,0 +1,3 @@
+deployment-secrets.yaml
+app/data_generator/*.csv
+terraform/terraform.tfvars

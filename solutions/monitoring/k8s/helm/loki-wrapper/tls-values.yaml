@@ -1,0 +1,112 @@
+#
+# Copyright 2026 Google LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+loki:
+  gateway:
+    readinessProbe:
+      httpGet:
+        path: /ready
+        port: http-metrics
+        scheme: HTTPS
+      initialDelaySeconds: 15
+      timeoutSeconds: 3
+    extraVolumes:
+      - name: loki-tls
+        secret:
+          secretName: loki-gateway-tls-secret
+    extraVolumeMounts:
+      - name: loki-tls
+        mountPath: /etc/loki/certs
+        readOnly: true
+    nginxConfig:
+      file: |
+        worker_processes  5;
+        error_log  /dev/stderr;
+        pid        /tmp/nginx.pid;
+        worker_rlimit_nofile 8192;
+
+        events {
+          worker_connections  4096;
+        }
+
+        http {
+          client_body_temp_path /tmp/client_temp;
+          proxy_temp_path       /tmp/proxy_temp_path;
+          fastcgi_temp_path     /tmp/fastcgi_temp;
+          uwsgi_temp_path       /tmp/uwsgi_temp;
+          scgi_temp_path        /tmp/scgi_temp;
+
+          client_max_body_size  50M;
+          proxy_read_timeout    300;
+
+          default_type application/octet-stream;
+          log_format   main '$remote_addr - $remote_user [$time_local] "$request" $status $body_bytes_sent';
+          access_log   /dev/stderr  main;
+
+          sendfile     on;
+          tcp_nopush   on;
+          resolver kube-dns.kube-system.svc.cluster.local.;
+
+          map $http_x_scope_orgid $ensured_x_scope_orgid {
+            default $http_x_scope_orgid;
+            "" "demo";
+          }
+
+          server {
+            listen 8080 ssl;
+            listen [::]:8080 ssl;
+
+            ssl_certificate /etc/loki/certs/tls.crt;
+            ssl_certificate_key /etc/loki/certs/tls.key;
+            ssl_client_certificate /etc/loki/certs/ca.crt;
+            ssl_verify_client optional;
+
+            error_page 497 =301 https://$http_host$request_uri;
+
+            location = / {
+              return 200 'OK';
+              auth_basic off;
+            }
+
+            location = /ready {
+              return 200 'OK';
+              auth_basic off;
+            }
+
+            proxy_set_header X-Scope-OrgID $ensured_x_scope_orgid;
+
+            # OTLP logs ingestion
+            location /otlp/v1/logs {
+              proxy_pass http://loki-write.{{ .Release.Namespace }}.svc.cluster.local:3100$request_uri;
+            }
+
+            # Standard Loki push
+            location = /loki/api/v1/push {
+              proxy_pass http://loki-write.{{ .Release.Namespace }}.svc.cluster.local:3100$request_uri;
+            }
+
+            # Query and tail endpoints
+            location /loki/api/v1/tail {
+              proxy_set_header Upgrade $http_upgrade;
+              proxy_set_header Connection "upgrade";
+              proxy_pass http://loki-read.{{ .Release.Namespace }}.svc.cluster.local:3100$request_uri;
+            }
+
+            location /loki/api/v1/ {
+              proxy_pass http://loki-read.{{ .Release.Namespace }}.svc.cluster.local:3100$request_uri;
+            }
+          }
+        }

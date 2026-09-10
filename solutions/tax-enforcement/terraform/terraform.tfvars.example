@@ -1,0 +1,7 @@
+project_id          = "REPLACE_ME"
+region              = "REPLACE_ME"
+universe_api_domain = "REPLACE_ME"
+data_bucket_name    = "REPLACE_ME"
+hugging_face_token  = "REPLACE_ME" # pragma: allowlist secret
+demo_username       = "REPLACE_ME"
+demo_password       = "REPLACE_ME" # pragma: allowlist secret

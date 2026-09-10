@@ -39,7 +39,7 @@ key questions such as: how can I innovate with my data?
 not audited, optimized, or intended for production deployment.**
 
 To explore our full suite of architecture blueprints and technical assets, visit
-the [Solutions folder](./demos/).
+the [Solutions folder](./solutions/).
 
 ## General Prerequisites & Setup
 

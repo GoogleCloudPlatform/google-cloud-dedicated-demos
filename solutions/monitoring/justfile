@@ -1,0 +1,54 @@
+set shell := ["bash", "-euo", "pipefail", "-c"]
+
+default:
+    @just --list
+
+# Build Helm chart dependencies for all wrapper charts
+deps:
+    @for chart in k8s/helm/*/; do if [ -f "$chart/Chart.yaml" ]; then echo "== Building dependencies for $chart =="; helm dependency build "$chart"; fi; done
+
+# Lint Helm charts in k8s/helm/
+helm-lint: deps
+    @for chart in k8s/helm/*/ k8s/helm/apps/*/; do if [ -f "$chart/Chart.yaml" ]; then echo "== Linting $chart =="; helm lint "$chart"; fi; done
+
+# Lint Helm charts and run repository pre-commit checks
+lint: helm-lint
+    pre-commit run --all-files --show-diff-on-failure
+
+# Validate Terraform syntax and configuration
+validate:
+    terraform -chdir=terraform validate
+
+# Generate and display Terraform execution plan
+plan:
+    terraform -chdir=terraform plan
+
+# Deploy infrastructure and Kubernetes monitoring stack
+install:
+    ./scripts/full_deploy.sh
+
+# Deploy Terraform infrastructure only
+deploy-infra:
+    ./scripts/standalone/deploy_infra.sh
+
+# Build and push application container images only
+deploy-images:
+    ./scripts/standalone/deploy_images.sh
+
+# Deploy Helm charts and applications to GKE only
+deploy-app-gke:
+    ./scripts/standalone/deploy_app_gke.sh
+
+# Destroy infrastructure and remove monitoring stack
+uninstall:
+    ./scripts/full_destroy.sh
+
+# Destroy GKE monitoring stack and applications only
+destroy-app-gke:
+    ./scripts/standalone/destroy_app_gke.sh
+
+# Destroy Terraform infrastructure only
+destroy-infra:
+    ./scripts/standalone/destroy_infra.sh
+
+
