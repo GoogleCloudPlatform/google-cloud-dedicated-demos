@@ -60,7 +60,7 @@ Although this example uses a banking app, this solution is designed for cloud ar
 
 This architecture connects a primary Google Cloud production universe with a Google Cloud Dedicated standby universe by using an encrypted HA VPN bridge. The solution synchronizes data and microservices continuously to ensure zero data loss and immediate failover readiness.
 
-![Federation HL Overview](docs/federation_HL_overview.jpg)
+![Sovereign Standby Architecture](docs/sovereign_standby_architecture.png)
 
 ### Components
 

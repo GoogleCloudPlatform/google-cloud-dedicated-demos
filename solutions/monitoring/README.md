@@ -55,7 +55,7 @@ This architecture deploys OpenTelemetry Collectors, Grafana Mimir, Grafana Loki,
 on GKE, backed by Google Cloud Storage for metric and log retention and Cloud Logging
 for centralized log management.
 
-![Monitoring Architecture](docs/monitoring_architecture.jpg)
+![Monitoring Architecture](docs/monitoring_architecture.png)
 
 ### Components
 
