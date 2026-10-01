@@ -47,6 +47,8 @@ locals {
     # Reusable Resources (Optional custom overrides when enable_* = false)
     enable_storage_bucket = try(local.tf_cfg.enable_storage_bucket, true)
     storage_bucket_name   = try(local.tf_cfg.storage_bucket_name, "${local.resources_prefix}-storage")
+    mimir_bucket_name     = try(local.tf_cfg.mimir_bucket_name, "${local.resources_prefix}-mimir-storage")
+    loki_bucket_name      = try(local.tf_cfg.loki_bucket_name, "${local.resources_prefix}-loki-storage")
 
     enable_gke  = try(local.tf_cfg.enable_gke, true)
     gke_name    = try(local.tf_cfg.gke_name, "${local.resources_prefix}-cluster")
@@ -77,11 +79,18 @@ locals {
     ])
 
     # Compute Engine (GCE)
-    gce_enabled                   = try(local.gce_cfg.enabled, true)
-    gce_instance_name             = "${local.resources_prefix}-vm"
-    gce_machine_type              = try(local.gce_cfg.machine_type, length(local.project_prefix) > 0 ? "c3-standard-4" : "e2-medium")
-    gce_image                     = try(local.gce_cfg.image, length(local.project_prefix) > 0 ? "${local.project_prefix}-system:debian-cloud/debian-13" : "debian-cloud/debian-13")
-    gce_enable_demo_log_generator = try(local.gce_cfg.enable_demo_log_generator, true)
+    gce_enabled                      = try(local.gce_cfg.enabled, true)
+    gce_instance_name                = "${local.resources_prefix}-vm"
+    gce_machine_type                 = try(local.gce_cfg.machine_type, length(local.project_prefix) > 0 ? "c3-standard-4" : "e2-medium")
+    gce_image                        = try(local.gce_cfg.image, length(local.project_prefix) > 0 ? "${local.project_prefix}-system:debian-cloud/debian-13" : "debian-cloud/debian-13")
+    gce_enable_demo_log_generator    = try(local.gce_cfg.enable_demo_log_generator, true)
+    gce_enable_demo_metric_generator = try(local.gce_cfg.enable_demo_metric_generator, true)
+    gce_logs_storage                 = try(local.gce_cfg.logs_storage, "loki")
+  }
+  gce_logs_exporter = {
+    loki        = "otlphttp/loki"
+    googlecloud = "googlecloud"
+    both        = "otlphttp/loki, googlecloud"
   }
 
   # Standard FinOps and Sovereign governance metadata labels

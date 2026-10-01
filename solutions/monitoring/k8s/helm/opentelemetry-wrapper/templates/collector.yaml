@@ -18,7 +18,7 @@
 apiVersion: opentelemetry.io/v1beta1
 kind: OpenTelemetryCollector
 metadata:
-  name: collector-with-ta
+  name: otel
   namespace: {{ .Release.Namespace }}
 spec:
   mode: statefulset
@@ -33,8 +33,19 @@ spec:
       cpu: 500m
       memory: 512Mi
 
+  observability:
+    metrics:
+      enableMetrics: true
+      extraLabels:
+        release: monitoring
+
   targetAllocator:
     enabled: true
+    observability:
+      metrics:
+        enableMetrics: true
+        extraLabels:
+          release: monitoring
     prometheusCR:
       enabled: true
       serviceMonitorSelector:
@@ -170,6 +181,14 @@ spec:
     service:
       extensions:
         - health_check
+      telemetry:
+        metrics:
+          readers:
+            - pull:
+                exporter:
+                  prometheus:
+                    host: 0.0.0.0
+                    port: 8888
       pipelines:
         logs:
           receivers:

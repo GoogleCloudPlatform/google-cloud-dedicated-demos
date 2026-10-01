@@ -15,402 +15,319 @@
 # limitations under the License.
 #
 #!/usr/bin/env python3
-"""Interactive configurator for GCP and GCD defaults.yaml files."""
+"""Interactively generate terraform/envs/{gcp,gcd}/defaults.yaml.
 
-from pathlib import Path
+Usage: just init-config [--dry]
+
+With --dry the generated YAML is printed instead of written to disk.
+"""
+
+import argparse
+import getpass
+import sys
+
 import yaml
 
-ENVS_DIR = Path(__file__).resolve().parent.parent / "terraform" / "envs"
+from check_config import validate
+from env_utils import ENV_NAMES, ENVS_DIR, ROOT_DIR, add_dry_run_flag, banner, confirm, die
+
+# Per-universe defaults. The "gcd" side is the Google Cloud Dedicated (Berlin) test universe.
+UNIVERSE_DEFAULTS = {
+    "gcp": {
+        "universe_domain": "googleapis.com",
+        "region": "europe-west1",
+        "zone": "europe-west1-b",
+        "subnet_cidr": "10.0.1.0/24",
+        "asn": 64514,
+        "bgp_cr_0": "169.254.1.1",
+        "bgp_cr_1": "169.254.2.1",
+        "psc_ip": "10.0.1.100",
+        "vm_machine_type": "n1-standard-1",
+        "vm_image": "debian-cloud/debian-12",
+        "pods_cidr": "10.101.0.0/16",
+        "services_cidr": "10.102.0.0/20",
+        "db_tier": "db-custom-2-7680",
+        "db_role": "primary",
+    },
+    "gcd": {
+        "universe_domain": "apis-berlin-build0.goog",
+        "region": "u-germany-northeast1",
+        "zone": "u-germany-northeast1-a",
+        "subnet_cidr": "10.0.2.0/24",
+        "asn": 64515,
+        "bgp_cr_0": "169.254.1.2",
+        "bgp_cr_1": "169.254.2.2",
+        "psc_ip": "10.0.2.100",
+        "vm_machine_type": "c3-standard-4",
+        "vm_image": "eu0-system:debian-cloud/debian-12",
+        "pods_cidr": "10.105.0.0/16",
+        "services_cidr": "10.103.0.0/20",
+        "db_tier": "db-perf-optimized-C-4",
+        "db_role": "replica",
+    },
+}
+
+
+def peer_of(env: str) -> str:
+    return "gcd" if env == "gcp" else "gcp"
+
+
+# --------------------------------------------------------------------------- #
+# Prompts                                                                     #
+# --------------------------------------------------------------------------- #
+
+
+def _ask(label: str, secret: bool = False) -> str:
+    try:
+        if secret and sys.stdin.isatty():
+            return getpass.getpass(label).strip()
+        return input(label).strip()
+    except EOFError:
+        die("Input aborted.")
 
 
 def prompt_str(text: str, default: str = "") -> str:
-    res = input(f"{text} [{default}]: ").strip()
-    return res if res else default
+    return _ask(f"{text} [{default}]: ") or default
 
 
-def prompt_bool(text: str, default: bool = True) -> bool:
-    default_str = "yes" if default else "no"
-    res = input(f"{text} (yes/no) [default: {default_str}]: ").strip().lower()
-    if not res:
-        return default
-    return res in ("y", "yes", "true", "1")
+def prompt_secret(text: str, default: str = "") -> str:
+    return _ask(f"{text} [{'****' if default else ''}]: ", secret=True) or default
 
 
-def create_env_config(
-    universe_domain: str,
-    org_id: str,
-    project_id: str,
-    prefix: str,
-    region: str,
-    zone: str,
-    local_subnet_cidr: str,
-    remote_subnet_cidr: str,
-    local_asn: int,
-    remote_asn: int,
-    shared_ike_key: str,
-    bgp_cr_0: str,
-    bgp_peer_0: str,
-    bgp_cr_1: str,
-    bgp_peer_1: str,
-    allowed_ssh_source_ip: str,
-    psc_ip: str,
-    admin_password: str,
-    repl_password: str,
-    db_role: str,
-    create_test_vm: bool,
-    federated_user_email: str,
-    idp_metadata_xml_file: str,
-    source_bucket_name: str,
-    dest_bucket_name: str,
-    agent_pool_name: str,
-    transfer_job_name: str,
-    sts_agent_vm_name: str,
-    google_apis_psc_ip: str,
-    gcp_project_id: str = "",
-    enable_auth: bool = False,
-    enable_network: bool = True,
-    enable_sts: bool = False,
-    enable_cloudsql: bool = True,
-    enable_app: bool = True,
-    enable_monitoring: bool = False,
-    enable_psc_outbound: bool = False,
-) -> dict:
-    is_gcp = "googleapis" in universe_domain
+def prompt_bool(text: str, default: bool) -> bool:
+    while True:
+        answer = _ask(f"{text} (yes/no) [{'yes' if default else 'no'}]: ").lower()
+        if not answer:
+            return default
+        if answer in ("y", "yes", "true", "1"):
+            return True
+        if answer in ("n", "no", "false", "0"):
+            return False
+        print("  Please answer 'yes' or 'no'.")
+
+
+def prompt_int(text: str, default: int) -> int:
+    while True:
+        answer = prompt_str(text, str(default))
+        try:
+            return int(answer)
+        except ValueError:
+            print(f"  '{answer}' is not a number.")
+
+
+# --------------------------------------------------------------------------- #
+# Interview                                                                   #
+# --------------------------------------------------------------------------- #
+
+
+def ask_modules() -> dict:
+    print("--- Step 1: Modules ---")
+    modules = {"network": prompt_bool("Enable networking (VPC, HA VPN)", True)}
+    modules["app"] = prompt_bool("Enable application (GKE + Bank of Anthos)", True)
+    modules["cloudsql"] = modules["app"] and (
+        prompt_str("Database flavor (cloudsql/alloydb)", "cloudsql").lower() != "alloydb"
+    )
+    modules["auth"] = prompt_bool("Enable WIF auth", False)
+    modules["sts"] = prompt_bool("Enable STS storage transfer", False)
+    modules["monitoring"] = prompt_bool("Enable monitoring dashboard (GCP only)", False)
+
+    if not modules["network"] and (modules["app"] or modules["sts"]):
+        print("[NOTE] App, Cloud SQL and STS require networking - enabling it.")
+        modules["network"] = True
+    return modules
+
+
+def ask_shared(modules: dict) -> dict:
+    print("\n--- Step 2: Shared parameters ---")
+    shared = {"prefix": prompt_str("Resource prefix (e.g. 'alice-')", "")}
+
+    if modules["auth"]:
+        shared["federated_user_email"] = prompt_str("Federated user email", "myuser@federationtesting.com")
+        shared["idp_metadata_xml_file"] = prompt_str("IdP metadata XML filename", "descriptor.xml")
+
+    if modules["cloudsql"]:
+        shared["admin_password"] = prompt_secret("Cloud SQL admin password", "REPLACE_ME")
+        shared["repl_password"] = prompt_secret("Cloud SQL replication password", "REPLACE_ME")
+
+    if modules["sts"]:
+        shared["source_bucket_name"] = prompt_str("GCS source bucket (GCP)", "source-bucket")
+        shared["dest_bucket_name"] = prompt_str("GCS destination bucket (GCD)", "destination-bucket")
+        shared["agent_pool_name"] = prompt_str("STS agent pool name", "sts-agent-pool")
+        shared["transfer_job_name"] = prompt_str("STS transfer job name", "gcs-to-gcs-over-posix-on-demand")
+        shared["sts_agent_vm_name"] = prompt_str("STS agent VM name (GCD)", "sts-agent-vm")
+
+    if modules["network"]:
+        shared["shared_ike_key"] = prompt_secret("Shared IKE key for HA VPN", "REPLACE_ME")
+        shared["allowed_ssh_source_ip"] = prompt_str("Allowed SSH source IP for test VM", "REPLACE_ME")
+        shared["create_test_vm"] = prompt_bool("Create ping test VMs (requires external IP)", False)
+        shared["google_apis_psc_ip"] = prompt_str("Google APIs PSC IP (outside subnets)", "10.100.100.1")
+    return shared
+
+
+def ask_universe(env: str, step: int, modules: dict) -> dict:
+    defaults = UNIVERSE_DEFAULTS[env]
+    banner(f"Step {step}: {env.upper()} environment")
+    u = {"universe_domain": defaults["universe_domain"]}
+    if env != "gcp":
+        u["universe_domain"] = prompt_str(f"Universe domain for {env}", defaults["universe_domain"])
+    u["project_id"] = prompt_str(f"Project ID for {env}", "")
+    u["org_id"] = prompt_str(f"Organization ID for {env}", "")
+
+    if modules["network"]:
+        for key, label in [("region", "Region"), ("zone", "Zone"), ("subnet_cidr", "Subnet CIDR")]:
+            u[key] = prompt_str(f"{label} for {env}", defaults[key])
+        u["asn"] = prompt_int(f"BGP ASN for {env}", defaults["asn"])
+        u["bgp_cr_0"] = prompt_str(f"BGP Cloud Router interface 0 IP for {env}", defaults["bgp_cr_0"])
+        u["bgp_cr_1"] = prompt_str(f"BGP Cloud Router interface 1 IP for {env}", defaults["bgp_cr_1"])
+
+    if modules["cloudsql"]:
+        u["psc_ip"] = prompt_str(f"Cloud SQL PSC IP for {env}", defaults["psc_ip"])
+    return u
+
+
+# --------------------------------------------------------------------------- #
+# defaults.yaml builder                                                       #
+# --------------------------------------------------------------------------- #
+
+
+def build_env_config(env: str, universes: dict, shared: dict, modules: dict) -> dict:
+    """Build defaults.yaml content for `env`; peer values come from the other universe."""
+    is_gcp = env == "gcp"
+    me, peer = universes[env], universes[peer_of(env)]
+    defaults = UNIVERSE_DEFAULTS[env]
+
     config = {
-        "enable_auth": enable_auth,
-        "enable_network": enable_network,
-        "enable_sts": enable_sts,
-        "enable_cloudsql": enable_cloudsql,
-        "enable_app": enable_app,
-        "enable_monitoring": enable_monitoring,
-        "enable_psc_outbound": enable_psc_outbound,
+        "enable_auth": modules["auth"],
+        "enable_network": modules["network"],
+        "enable_sts": modules["sts"],
+        "enable_cloudsql": modules["cloudsql"],
+        "enable_app": modules["app"],
+        "enable_monitoring": modules["monitoring"] and is_gcp,
+        "enable_psc_outbound": False,  # switched on in deployment step 2 (see README)
         "general": {
-            "universe_domain": universe_domain,
-            "org_id": org_id,
-            "project_id": project_id,
-            "prefix": prefix,
+            "universe_domain": me["universe_domain"],
+            "org_id": me["org_id"],
+            "project_id": me["project_id"],
+            "prefix": shared["prefix"],
             "is_gcp": is_gcp,
         },
     }
-    if enable_auth:
+
+    if modules["auth"]:
         config["auth"] = {
             "pool_id": "federation-demo-pool",
             "provider_id": "keycloak-provider",
-            "federated_user_email": federated_user_email,
-            "idp_metadata_xml_file": idp_metadata_xml_file,
+            "federated_user_email": shared["federated_user_email"],
+            "idp_metadata_xml_file": shared["idp_metadata_xml_file"],
         }
-    config["network"] = {
-        "region": region,
-        "zone": zone,
-        "local_subnet_cidr": local_subnet_cidr,
-        "remote_subnet_cidr": remote_subnet_cidr,
-        "local_asn": local_asn,
-        "remote_asn": remote_asn,
-        "shared_ike_key": shared_ike_key,
-        "create_test_vm": create_test_vm,
-        "vm_machine_type": (
-            "n1-standard-1" if is_gcp else "c3-standard-4"
-        ),
-        "vm_image": (
-            "debian-cloud/debian-12"
-            if is_gcp
-            else "eu0-system:debian-cloud/debian-12"
-        ),
-        "bgp_cr_interface_0_ip": bgp_cr_0,
-        "bgp_peer_interface_0_ip": bgp_peer_0,
-        "bgp_cr_interface_1_ip": bgp_cr_1,
-        "bgp_peer_interface_1_ip": bgp_peer_1,
-        "allowed_ssh_source_ip": allowed_ssh_source_ip,
-        "google_apis_psc_ip": google_apis_psc_ip,
-        "remote_vpn_interface_0_ip": "",
-        "remote_vpn_interface_1_ip": "",
-        "secondary_ip_ranges": [
-            {
-                "range_name": "pods",
-                "ip_cidr_range": "10.101.0.0/16" if is_gcp else "10.105.0.0/16",
-            },
-            {
-                "range_name": "services",
-                "ip_cidr_range": "10.102.0.0/20" if is_gcp else "10.103.0.0/20",
-            },
-        ],
-    }
-    if enable_sts:
+
+    if modules["network"]:
+        config["network"] = {
+            "region": me["region"],
+            "zone": me["zone"],
+            "local_subnet_cidr": me["subnet_cidr"],
+            "remote_subnet_cidr": peer["subnet_cidr"],
+            "local_asn": me["asn"],
+            "remote_asn": peer["asn"],
+            "shared_ike_key": shared["shared_ike_key"],
+            "create_test_vm": shared["create_test_vm"],
+            "vm_machine_type": defaults["vm_machine_type"],
+            "vm_image": defaults["vm_image"],
+            "bgp_cr_interface_0_ip": me["bgp_cr_0"],
+            "bgp_peer_interface_0_ip": peer["bgp_cr_0"],
+            "bgp_cr_interface_1_ip": me["bgp_cr_1"],
+            "bgp_peer_interface_1_ip": peer["bgp_cr_1"],
+            "allowed_ssh_source_ip": shared["allowed_ssh_source_ip"],
+            "google_apis_psc_ip": shared["google_apis_psc_ip"],
+            # Filled in after the peer's baseline `terraform apply` (README step 2).
+            "remote_vpn_interface_0_ip": "",
+            "remote_vpn_interface_1_ip": "",
+            "secondary_ip_ranges": [
+                {"range_name": "pods", "ip_cidr_range": defaults["pods_cidr"]},
+                {"range_name": "services", "ip_cidr_range": defaults["services_cidr"]},
+            ],
+        }
+
+    if modules["sts"]:
         if is_gcp:
             config["gcs"] = {
-                "source_bucket_name": source_bucket_name,
-                "agent_pool_name": agent_pool_name,
-                "transfer_job_name": transfer_job_name,
+                "source_bucket_name": shared["source_bucket_name"],
+                "agent_pool_name": shared["agent_pool_name"],
+                "transfer_job_name": shared["transfer_job_name"],
             }
         else:
             config["gcs"] = {
-                "gcp_project_id": gcp_project_id,
-                "dest_bucket_name": dest_bucket_name,
-                "dest_bucket_location": region,
-                "agent_pool_name": agent_pool_name,
-                "sts_agent_vm_name": sts_agent_vm_name,
+                "gcp_project_id": peer["project_id"],
+                "dest_bucket_name": shared["dest_bucket_name"],
+                "dest_bucket_location": me.get("region", defaults["region"]),
+                "agent_pool_name": shared["agent_pool_name"],
+                "sts_agent_vm_name": shared["sts_agent_vm_name"],
             }
-    if enable_cloudsql:
+
+    if modules["cloudsql"]:
         config["cloudsql_db"] = {
-            "db_tier": (
-                "db-custom-2-7680"
-                if is_gcp
-                else "db-perf-optimized-C-4"
-            ),
-            "psc_ip": psc_ip,
-            "admin_password": admin_password,
-            "repl_password": repl_password,
+            "db_tier": defaults["db_tier"],
+            "psc_ip": me["psc_ip"],
+            "admin_password": shared["admin_password"],
+            "repl_password": shared["repl_password"],
             "db_name": "bankofanthos",
             "db_user": "bankuser",
-            "db_role": db_role,
+            "db_role": defaults["db_role"],
         }
-    if enable_app:
+
+    if modules["app"]:
         config["gke"] = {"cluster_name": "federation-gke-cluster"}
+
     return config
 
 
-def save_defaults_yaml(env_name: str, config_data: dict):
-    env_dir = ENVS_DIR / env_name
-    env_dir.mkdir(parents=True, exist_ok=True)
-    yaml_path = env_dir / "defaults.yaml"
-    with open(yaml_path, "w") as f:
-        yaml.dump(config_data, f, sort_keys=False, default_flow_style=False)
+def to_yaml(config: dict) -> str:
+    return yaml.safe_dump(config, sort_keys=False, default_flow_style=False)
 
 
-def main():
-    print("==========================================================")
-    print(" Federation Demo Environment Interactive Configurator")
-    print("==========================================================\n")
+# --------------------------------------------------------------------------- #
+# Entry point                                                                 #
+# --------------------------------------------------------------------------- #
 
-    # STEP 1: Module Selection
-    print("--- Step 1: Module Selection ---")
-    enable_network = prompt_bool("Enable Networking (VPC, HA VPN)", default=True)
-    enable_app = prompt_bool("Enable Application?", default=True)
 
-    enable_cloudsql = False
+def main() -> None:
+    parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    add_dry_run_flag(parser)
+    args = parser.parse_args()
 
-    if enable_app:
-        flavor = prompt_str("Select database flavour (cloudsql/alloydb)", default="cloudsql").strip().lower()
-        if flavor != "alloydb":
-            enable_cloudsql = True
+    banner("Sovereign standby configurator" + (" [DRY-RUN]" if args.dry_run else ""))
+    modules = ask_modules()
+    shared = ask_shared(modules)
+    universes = {env: ask_universe(env, step, modules) for step, env in enumerate(ENV_NAMES, start=3)}
+    configs = {env: build_env_config(env, universes, shared, modules) for env in ENV_NAMES}
 
-    enable_auth = prompt_bool("Enable WIF Auth", default=False)
-    enable_sts = prompt_bool("Enable STS Storage Transfer", default=False)
-    enable_monitoring = prompt_bool(
-        "Enable Monitoring Dashboard (GCP only)", default=False
-    )
+    errors = validate(configs)
+    if errors:
+        print("\n[WARN] The generated configuration has problems:")
+        for err in errors:
+            print(f"  - {err}")
 
-    if (enable_cloudsql or enable_app) and not enable_network:
-        print(
-            "\n[NOTE] App and CloudSQL modules require Networking. Automatically enabling Networking module."
-        )
-        enable_network = True
+    paths = {env: ENVS_DIR / env / "defaults.yaml" for env in ENV_NAMES}
 
-    # STEP 2: General Module Parameters
-    print("\n--- Step 2: General Parameters ---")
-    prefix = prompt_str("Resource Prefix (e.g. 'alice-' or 'dev-')", default="")
+    if args.dry_run:
+        banner("[DRY-RUN] Manual configuration steps")
+        for env, path in paths.items():
+            print(f"# {path.relative_to(ROOT_DIR)}\n---\n{to_yaml(configs[env])}")
+        print("Validate with: just check-config")
+        return
 
-    shared_ike_key = "REPLACE_ME"
-    allowed_ssh_source_ip = "REPLACE_ME"
-    create_test_vm = "REPLACE_ME"
-    if enable_network:
-        shared_ike_key = prompt_str(
-            "Shared IKE Key for HA VPN", default="REPLACE_ME"
-        )
-        allowed_ssh_source_ip = prompt_str(
-            "Allowed SSH Source IP for Test VM", default="REPLACE_ME"
-        )
-        create_test_vm = prompt_bool(
-            "Create Ping Test VM in VPCs (requires external IP)?", default=False
-        )
+    if errors and not confirm("Save anyway?"):
+        die("Aborted; nothing was written.")
 
-    admin_password = "REPLACE_ME"  # pragma: allowlist secret
-    repl_password = "REPLACE_ME"  # pragma: allowlist secret
-    if enable_cloudsql:
-        admin_password = prompt_str("CloudSQL Admin Password", default="REPLACE_ME")
-        repl_password = prompt_str(
-            "CloudSQL Replication Password", default="REPLACE_ME"
-        )
+    existing = [str(p.relative_to(ROOT_DIR)) for p in paths.values() if p.exists()]
+    if existing and not confirm(f"Overwrite existing {', '.join(existing)} (VPN peer IPs will be reset)?"):
+        die("Aborted; nothing was written.")
 
-    federated_user_email = "myuser@federationtesting.com"
-    if enable_auth:
-        federated_user_email = prompt_str(
-            "Federated User Email", default="myuser@federationtesting.com"
-        )
-
-    idp_metadata_xml_file = "descriptor.xml"
-    if enable_auth:
-        idp_metadata_xml_file = prompt_str(
-            "IDP Metadata XML Filename", default="descriptor.xml"
-        )
-
-    source_bucket_name = "source-bucket-name"
-    dest_bucket_name = "destination-bucket-name"
-    agent_pool_name = "agent-pool-name"
-    transfer_job_name = "gcs-to-gcs-over-posix-on-demand"
-    sts_agent_vm_name = "sts-agent-vm"
-    google_apis_psc_ip = "10.100.100.1"
-
-    if enable_sts:
-        source_bucket_name = prompt_str(
-            "GCS Source Bucket Name (GCP)", default="source-bucket"
-        )
-        dest_bucket_name = prompt_str(
-            "GCS Destination Bucket Name (GCD)", default="destination-bucket"
-        )
-        agent_pool_name = prompt_str(
-            "STS Agent Pool Name", default="sts-agent-pool"
-        )
-        transfer_job_name = prompt_str(
-            "Storage Transfer Job Name", default="gcs-to-gcs-over-posix-on-demand"
-        )
-        sts_agent_vm_name = prompt_str(
-            "STS Agent VM Name (GCD)", default="sts-agent-vm"
-        )
-        google_apis_psc_ip = prompt_str(
-            "Google APIs PSC IP (outside subnets)", default="10.100.100.1"
-        )
-
-    # STEP 3: GCP Setup
-    print("\n==========================================================")
-    print(" Step 3: GCP Environment Setup")
-    print("==========================================================")
-    gcp_project = prompt_str("Project ID for gcp", default="")
-    gcp_org_id = prompt_str("GCP Organization ID for gcp", default="")
-    gcp_region = prompt_str("Region for gcp", default="europe-west1")
-    gcp_zone = prompt_str("Zone for gcp", default="europe-west1-b")
-
-    gcp_subnet_cidr = "10.0.1.0/24"
-    gcp_asn = 64514
-    gcp_bgp_cr_0 = "169.254.1.1"
-    gcp_bgp_cr_1 = "169.254.2.1"
-    if enable_network:
-        gcp_subnet_cidr = prompt_str("Subnet CIDR for gcp", default="10.0.1.0/24")
-        gcp_asn = int(prompt_str("BGP ASN for gcp", default="64514"))
-        gcp_bgp_cr_0 = prompt_str("BGP CR Interface 0 IP for gcp", default="169.254.1.1")
-        gcp_bgp_cr_1 = prompt_str("BGP CR Interface 1 IP for gcp", default="169.254.2.1")
-
-    gcp_psc_ip = "10.0.1.100"
-    if enable_cloudsql:
-        gcp_psc_ip = prompt_str("CloudSQL PSC IP for gcp", default="10.0.1.100")
-
-    # STEP 4: GCD Setup
-    print("\n==========================================================")
-    print(" Step 4: GCD Environment Setup")
-    print("==========================================================")
-    gcd_universe_domain = prompt_str(
-        "Universe Domain for gcd", default="apis-berlin-build0.goog"
-    )
-    gcd_project = prompt_str("Project ID for gcd", default="")
-    gcd_org_id = prompt_str("GCP Organization ID for gcd", default="")
-    gcd_region = prompt_str("Region for gcd", default="u-germany-northeast1")
-    gcd_zone = prompt_str("Zone for gcd", default="u-germany-northeast1-a")
-
-    gcd_subnet_cidr = "10.0.2.0/24"
-    gcd_asn = 64515
-    gcd_bgp_cr_0 = "169.254.1.2"
-    gcd_bgp_cr_1 = "169.254.2.2"
-    if enable_network:
-        gcd_subnet_cidr = prompt_str("Subnet CIDR for gcd", default="10.0.2.0/24")
-        gcd_asn = int(prompt_str("BGP ASN for gcd", default="64515"))
-        gcd_bgp_cr_0 = prompt_str("BGP CR Interface 0 IP for gcd", default="169.254.1.2")
-        gcd_bgp_cr_1 = prompt_str("BGP CR Interface 1 IP for gcd", default="169.254.2.2")
-
-    gcd_psc_ip = "10.0.2.100"
-    if enable_cloudsql:
-        gcd_psc_ip = prompt_str("CloudSQL PSC IP for gcd", default="10.0.2.100")
-
-    # Peer IPs are automatically derived from the other universe's local CR IPs
-    gcp_bgp_peer_0 = gcd_bgp_cr_0
-    gcp_bgp_peer_1 = gcd_bgp_cr_1
-    gcd_bgp_peer_0 = gcp_bgp_cr_0
-    gcd_bgp_peer_1 = gcp_bgp_cr_1
-
-    gcp_config = create_env_config(
-        universe_domain="googleapis.com",
-        org_id=gcp_org_id,
-        project_id=gcp_project,
-        prefix=prefix,
-        region=gcp_region,
-        zone=gcp_zone,
-        local_subnet_cidr=gcp_subnet_cidr,
-        remote_subnet_cidr=gcd_subnet_cidr,
-        local_asn=gcp_asn,
-        remote_asn=gcd_asn,
-        shared_ike_key=shared_ike_key,
-        bgp_cr_0=gcp_bgp_cr_0,
-        bgp_peer_0=gcp_bgp_peer_0,
-        bgp_cr_1=gcp_bgp_cr_1,
-        bgp_peer_1=gcp_bgp_peer_1,
-        allowed_ssh_source_ip=allowed_ssh_source_ip,
-        psc_ip=gcp_psc_ip,
-        admin_password=admin_password,
-        repl_password=repl_password,
-        db_role="primary",
-        create_test_vm=create_test_vm,
-        federated_user_email=federated_user_email,
-        idp_metadata_xml_file=idp_metadata_xml_file,
-        source_bucket_name=source_bucket_name,
-        dest_bucket_name=dest_bucket_name,
-        agent_pool_name=agent_pool_name,
-        transfer_job_name=transfer_job_name,
-        sts_agent_vm_name=sts_agent_vm_name,
-        google_apis_psc_ip=google_apis_psc_ip,
-        enable_auth=enable_auth,
-        enable_network=enable_network,
-        enable_sts=enable_sts,
-        enable_cloudsql=enable_cloudsql,
-        enable_app=enable_app,
-        enable_monitoring=enable_monitoring,
-    )
-
-    gcd_config = create_env_config(
-        universe_domain=gcd_universe_domain,
-        org_id=gcd_org_id,
-        project_id=gcd_project,
-        prefix=prefix,
-        region=gcd_region,
-        zone=gcd_zone,
-        local_subnet_cidr=gcd_subnet_cidr,
-        remote_subnet_cidr=gcp_subnet_cidr,
-        local_asn=gcd_asn,
-        remote_asn=gcp_asn,
-        shared_ike_key=shared_ike_key,
-        bgp_cr_0=gcd_bgp_cr_0,
-        bgp_peer_0=gcd_bgp_peer_0,
-        bgp_cr_1=gcd_bgp_cr_1,
-        bgp_peer_1=gcd_bgp_peer_1,
-        allowed_ssh_source_ip=allowed_ssh_source_ip,
-        psc_ip=gcd_psc_ip,
-        admin_password=admin_password,
-        repl_password=repl_password,
-        db_role="replica",
-        create_test_vm=create_test_vm,
-        federated_user_email=federated_user_email,
-        idp_metadata_xml_file=idp_metadata_xml_file,
-        source_bucket_name=source_bucket_name,
-        dest_bucket_name=dest_bucket_name,
-        agent_pool_name=agent_pool_name,
-        transfer_job_name=transfer_job_name,
-        sts_agent_vm_name=sts_agent_vm_name,
-        google_apis_psc_ip=google_apis_psc_ip,
-        gcp_project_id=gcp_project,
-        enable_auth=enable_auth,
-        enable_network=enable_network,
-        enable_sts=enable_sts,
-        enable_cloudsql=enable_cloudsql,
-        enable_app=enable_app,
-        enable_monitoring=False,
-    )
-
-    save_defaults_yaml("gcp", gcp_config)
-    save_defaults_yaml("gcd", gcd_config)
-
-    print("\n==========================================================")
-    print(" Configuration successfully generated!")
-    print(" - terraform/envs/gcp/defaults.yaml")
-    print(" - terraform/envs/gcd/defaults.yaml")
-    print("==========================================================")
+    for env, path in paths.items():
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(to_yaml(configs[env]), encoding="utf-8")
+        print(f"[+] Wrote {path.relative_to(ROOT_DIR)}")
+    print("\nNext step: just check-config")
 
 
 if __name__ == "__main__":

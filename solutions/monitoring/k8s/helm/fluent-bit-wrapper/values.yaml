@@ -21,6 +21,11 @@ fluent-bit:
   testFramework:
     enabled: false
 
+  serviceMonitor:
+    enabled: true
+    selector:
+      release: monitoring
+
   serviceAccount:
     create: true
     name: fluent-bit-ksa
@@ -31,10 +36,10 @@ fluent-bit:
     eventsAccess: false
 
   resources:
-    limits:
+    requests:
       cpu: 100m
       memory: 128Mi
-    requests:
+    limits:
       cpu: 100m
       memory: 128Mi
 
@@ -50,7 +55,7 @@ fluent-bit:
 
   env:
     - name: OTEL_COLLECTOR_HOST
-      value: collector-with-ta-collector
+      value: otel-collector
 
   daemonSetVolumes:
     - name: varlog

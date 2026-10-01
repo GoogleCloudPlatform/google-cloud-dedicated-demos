@@ -35,6 +35,8 @@ spec:
     - loki-gateway.{{ .Release.Namespace }}
     - loki-gateway.{{ .Release.Namespace }}.svc
     - loki-gateway.{{ .Release.Namespace }}.svc.cluster.local
+  ipAddresses:
+    - {{ .Values.loki.gateway.service.loadBalancerIP | quote }}
   usages:
     - digital signature
     - key encipherment

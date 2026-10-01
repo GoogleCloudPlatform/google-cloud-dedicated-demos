@@ -86,6 +86,13 @@ spec:
             - configMapRef:
                 name: ledger-db-config
           image: "us-central1-docker.pkg.dev/bank-of-anthos-ci/bank-of-anthos/transactionhistory:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          livenessProbe:
+            httpGet:
+              path: /healthy
+              port: 8080
+            initialDelaySeconds: 60
+            periodSeconds: 30
+            timeoutSeconds: 10
           name: transactionhistory
           readinessProbe:
             httpGet:

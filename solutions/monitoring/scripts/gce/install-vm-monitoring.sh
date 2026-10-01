@@ -18,11 +18,12 @@
 # install-vm-monitoring.sh
 # Standalone GCE VM Logging & Monitoring Installer for Fluent Bit & OpenTelemetry Collector
 # Collects system logs and stdout from CLI applications (/var/log/syslog, /var/log/auth.log)
-# and exports them to Google Cloud Logging via OTel googlecloud exporter.
+# and exports them to Loki, Google Cloud Logging or both, using OTel Collector.
 
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+CERT_BUCKET=$(curl -H "Metadata-Flavor: Google" http://metadata.google.internal/computeMetadata/v1/instance/attributes/CERT_BUCKET_NAME)
 
 # Fetch environment flags from GCE instance metadata if not set in shell
 if [ -z "${UNIVERSE_DOMAIN:-}" ]; then
@@ -31,6 +32,10 @@ fi
 
 if [ -z "${ENABLE_DEMO_LOG_GENERATOR:-}" ]; then
     ENABLE_DEMO_LOG_GENERATOR=$(curl -sf -H "Metadata-Flavor: Google" "http://metadata.google.internal/computeMetadata/v1/instance/attributes/ENABLE_DEMO_LOG_GENERATOR" 2>/dev/null || echo "false")
+fi
+
+if [ -z "${ENABLE_DEMO_METRIC_GENERATOR:-}" ]; then
+    ENABLE_DEMO_METRIC_GENERATOR=$(curl -sf -H "Metadata-Flavor: Google" "http://metadata.google.internal/computeMetadata/v1/instance/attributes/ENABLE_DEMO_METRIC_GENERATOR" 2>/dev/null || echo "false")
 fi
 
 # Helper function to fetch a file from local disk OR GCE instance metadata attribute
@@ -45,13 +50,12 @@ fetch_config_file() {
     # Search local candidate paths (same directory, sibling demo app dir, or full repo clone)
     local found=""
     local basename_file="$(basename "$filename")"
+    local app_dir="$(basename "$(dirname "$filename")")"
     for candidate in \
         "${SCRIPT_DIR}/${filename}" \
         "${SCRIPT_DIR}/${basename_file}" \
-        "${SCRIPT_DIR}/../gce-demo-app/${basename_file}" \
-        "${SCRIPT_DIR}/../../apps/gce-demo-app/${basename_file}" \
-        "./${basename_file}" \
-        "./gce-demo-app/${basename_file}"; do
+        "${SCRIPT_DIR}/../${app_dir}/${basename_file}" \
+        "./${basename_file}"; do
         if [ -f "$candidate" ]; then
             found="$candidate"
             break
@@ -74,20 +78,38 @@ fetch_config_file() {
 echo "=== [1/6] Installing dependencies ==="
 export DEBIAN_FRONTEND=noninteractive
 apt-get update -y
-apt-get install -y curl gnupg2 ca-certificates apt-transport-https python3 python3-pip google-cloud-cli
+apt-get install -y curl gnupg2 ca-certificates apt-transport-https python3 python3-pip
+
+# gcloud downloads the Fluent Bit package and the VM certificates from the bucket.
+# Debian GCE images ship it as a .deb; Ubuntu GCE images ship it as a snap in /snap/bin, and Ubuntu's apt repos don't have it.
+export PATH="${PATH}:/snap/bin"
+if ! command -v gcloud; then
+    apt-get install -y google-cloud-cli
+fi
+# Pin gcloud to the VM's universe. Otherwise only the first gcloud call takes it from the metadata server, and later calls fail.
+export CLOUDSDK_CORE_UNIVERSE_DOMAIN="${UNIVERSE_DOMAIN}"
 
 echo "=== [2/6] Installing Fluent Bit ==="
-curl -fsSL https://raw.githubusercontent.com/fluent/fluent-bit/master/install.sh | sh || {
-    echo "Fallback to apt repository for Fluent Bit..."
-    curl -fsSL https://packages.fluentbit.io/fluentbit.key | gpg --dearmor -o /usr/share/keyrings/fluentbit-keyring.gpg
-    echo "deb [signed-by=/usr/share/keyrings/fluentbit-keyring.gpg] https://packages.fluentbit.io/debian/bookworm bookworm main" > /etc/apt/sources.list.d/fluent-bit.list
-    apt-get update -y && apt-get install -y fluent-bit
+# Download artifacts from your protected internal bucket
+gcloud storage cp gs://${CERT_BUCKET}/software/vm-fluentbit/fluent-bit.deb /tmp/fluent-bit.deb
+gcloud storage cp gs://${CERT_BUCKET}/software/vm-fluentbit/fluent-bit.deb.sha256 /tmp/fluent-bit.deb.sha256
+
+# Verify hash using the companion file
+(cd /tmp && sha256sum -c fluent-bit.deb.sha256) || exit 1
+
+# Proceed with Installation...
+dpkg -i /tmp/fluent-bit.deb || {
+    echo "Dependencies missing. Attempting automatic resolution..."
+    apt-get update -y
+    apt-get install -f -y
 }
 
 echo "=== [3/6] Installing OpenTelemetry Collector Contrib ==="
 OTEL_VERSION="0.108.0"
 ARCH=$(dpkg --print-architecture)
 MIMIR_GATEWAY_IP=$(curl -sf -H "Metadata-Flavor: Google" "http://metadata.google.internal/computeMetadata/v1/instance/attributes/MIMIR_GATEWAY_IP" || echo "")
+LOKI_GATEWAY_IP=$(curl -sf -H "Metadata-Flavor: Google" "http://metadata.google.internal/computeMetadata/v1/instance/attributes/LOKI_GATEWAY_IP" || echo "")
+LOG_EXPORTER=$(curl -sf -H "Metadata-Flavor: Google" "http://metadata.google.internal/computeMetadata/v1/instance/attributes/LOG_EXPORTER" || echo "otlphttp/loki")
 
 curl -fsSL -o /tmp/otelcol-contrib.deb "https://github.com/open-telemetry/opentelemetry-collector-releases/releases/download/v${OTEL_VERSION}/otelcol-contrib_${OTEL_VERSION}_linux_${ARCH}.deb"
 dpkg -i /tmp/otelcol-contrib.deb || {
@@ -97,13 +119,13 @@ dpkg -i /tmp/otelcol-contrib.deb || {
 rm -f /tmp/otelcol-contrib.deb
 
 mkdir -p /etc/systemd/system/otelcol-contrib.service.d
-cat << EOF > /etc/systemd/system/otelcol-contrib.service.d/mimir-env.conf
+cat << EOF > /etc/systemd/system/otelcol-contrib.service.d/monitoring-env.conf
 [Service]
 Environment="MIMIR_GATEWAY_IP=${MIMIR_GATEWAY_IP}"
+Environment="LOKI_GATEWAY_IP=${LOKI_GATEWAY_IP}"
 EOF
 
 mkdir -p /etc/otel/certs/
-CERT_BUCKET=$(curl -H "Metadata-Flavor: Google" http://metadata.google.internal/computeMetadata/v1/instance/attributes/CERT_BUCKET_NAME)
 echo "Downloading certificates from gs://${CERT_BUCKET}..."
 
 gcloud storage cp gs://${CERT_BUCKET}/vm-certs/ca.crt /etc/otel/certs/ca.crt
@@ -120,6 +142,7 @@ fetch_config_file "fluent-bit.conf" "fluent_bit_conf" "/etc/fluent-bit/fluent-bi
 
 echo "=== [5/6] Configuring OpenTelemetry Collector (/etc/otelcol-contrib/config.yaml) ==="
 fetch_config_file "otelcol-config.yaml" "otelcol_config_yaml" "/etc/otelcol-contrib/config.yaml" "0644"
+sed -i "s|\${LOG_EXPORTER}|${LOG_EXPORTER}|g" /etc/otelcol-contrib/config.yaml
 
 # Support Sovereign Cloud Universe Domain
 # (scoped strictly to otelcol-contrib systemd service)
@@ -139,22 +162,26 @@ systemctl restart fluent-bit otelcol-contrib
 
 # Optional: Install simple Python CLI demo app writing to stdout
 if [ "${ENABLE_DEMO_LOG_GENERATOR:-false}" = "true" ]; then
-    echo "=== Installing Demo Verification CLI App (vm-demo-app.service) ==="
-    fetch_config_file "../../apps/gce-demo-app/vm-demo-app.py" "vm_demo_app_py" "/usr/local/bin/vm-demo-app.py" "0755"
-    fetch_config_file "../../apps/gce-demo-app/vm-demo-app.service" "vm_demo_app_service" "/etc/systemd/system/vm-demo-app.service" "0644"
+    echo "=== Installing Fountain demo log generator app (fountain.service) ==="
+    fetch_config_file "../../apps/fountain/app.py" "fountain_app_py" "/usr/local/bin/fountain-app.py" "0755" "${SCRIPT_DIR}/../fountain/app.py"
+    fetch_config_file "../../apps/gce/fountain.service" "fountain_app_service" "/etc/systemd/system/fountain.service" "0644"
     systemctl daemon-reload
-    systemctl enable --now vm-demo-app.service
+    systemctl enable --now fountain.service
 fi
 
-echo "Install pip packages"
-pip install --break-system-packages --no-cache-dir \
-    opentelemetry-api \
-    opentelemetry-sdk \
-    opentelemetry-exporter-otlp-proto-http
+# Optional: Install Beacon demo app pushing synthetic OTLP metrics to the local OTel Collector
+if [ "${ENABLE_DEMO_METRIC_GENERATOR:-false}" = "true" ]; then
+    echo "=== Installing Beacon demo metric generator app (beacon.service) ==="
+    echo "Install pip packages"
+    pip install --break-system-packages --no-cache-dir \
+        opentelemetry-api \
+        opentelemetry-sdk \
+        opentelemetry-exporter-otlp-proto-http
 
-fetch_config_file "../../apps/gce-demo-app/beacon-app.py" "beacon_app_py" "/usr/local/bin/beacon-app.py" "0755"
-fetch_config_file "../../apps/gce-demo-app/beacon-app.service" "beacon_app_service" "/etc/systemd/system/beacon-app.service" "0644"
-systemctl daemon-reload
-systemctl enable --now beacon-app.service
+    fetch_config_file "../../apps/beacon/app.py" "beacon_app_py" "/usr/local/bin/beacon-app.py" "0755"
+    fetch_config_file "../../apps/gce/beacon.service" "beacon_app_service" "/etc/systemd/system/beacon.service" "0644"
+    systemctl daemon-reload
+    systemctl enable --now beacon.service
+fi
 
 echo "=== Standalone GCE VM monitoring installation completed successfully! ==="

@@ -17,3 +17,9 @@
 collector:
   enabled: true
 
+opentelemetry-operator:
+  manager:
+    serviceMonitor:
+      enabled: true
+      extraLabels:
+        release: monitoring

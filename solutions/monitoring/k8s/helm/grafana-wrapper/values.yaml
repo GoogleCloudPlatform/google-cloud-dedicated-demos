@@ -67,12 +67,17 @@ grafana:
   service:
     type: ClusterIP
 
+  serviceMonitor:
+    enabled: true
+    labels:
+      release: monitoring
+
   resources:
     requests:
       cpu: 500m
       memory: 1Gi
     limits:
-      cpu: 2000m
+      cpu: 1000m
       memory: 2Gi
 
   readinessProbe:

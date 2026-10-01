@@ -35,13 +35,23 @@ output "k8s_namespace" {
 }
 
 output "cluster" {
-  value       = length(google_container_cluster.monitoring_cluster) > 0 ? google_container_cluster.monitoring_cluster[0].name : local.config.gke_name
+  value       = local.config.gke_name
   description = "The name of the GKE cluster hosting Grafana, Mimir, Loki and OpenTelemetry collector."
 }
 
 output "storage_bucket" {
-  value       = length(google_storage_bucket.monitoring_storage_bucket) > 0 ? google_storage_bucket.monitoring_storage_bucket[0].name : local.config.storage_bucket_name
+  value       = local.config.storage_bucket_name
+  description = "The name of the Cloud Storage bucket storing components for monitoring."
+}
+
+output "mimir_storage_bucket" {
+  value       = local.config.mimir_bucket_name
   description = "The name of the hardened Cloud Storage bucket storing Mimir long-term time-series metrics."
+}
+
+output "loki_storage_bucket" {
+  value       = local.config.loki_bucket_name
+  description = "The name of the Cloud Storage bucket storing Loki logs and index components."
 }
 
 output "artifact_registry_uri" {
@@ -50,7 +60,7 @@ output "artifact_registry_uri" {
 }
 
 output "vpc" {
-  value       = length(google_compute_network.monitoring_vpc) > 0 ? google_compute_network.monitoring_vpc[0].name : local.config.vpc_name
+  value       = local.config.vpc_name
   description = "The VPC name used by the demo."
 }
 
@@ -82,6 +92,11 @@ output "gce_logging_vm_name" {
 output "mimir_gateway_ip" {
   value       = google_compute_address.mimir_gateway_ip.address
   description = "The IP address of the Mimir gateway for internal Load Balancer"
+}
+
+output "loki_gateway_ip" {
+  value       = google_compute_address.loki_gateway_ip.address
+  description = "The IP address of the Loki gateway for internal Load Balancer"
 }
 
 output "gce_zone" {

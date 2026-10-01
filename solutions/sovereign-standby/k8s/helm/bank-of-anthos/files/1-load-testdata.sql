@@ -22,18 +22,18 @@ INSERT INTO users VALUES
 ON CONFLICT DO NOTHING;
 
 INSERT INTO contacts (username, label, account_num, routing_num, is_external) VALUES
-('testuser', 'Alice', '1033623433', '883745000', 'false'),
-('testuser', 'Bob', '1055757655', '883745000', 'false'),
-('testuser', 'Eve', '1077441377', '883745000', 'false'),
-('alice', 'Testuser', '1011226111', '883745000', 'false'),
-('alice', 'Bob', '1055757655', '883745000', 'false'),
-('alice', 'Eve', '1077441377', '883745000', 'false'),
-('bob', 'Testuser', '1011226111', '883745000', 'false'),
-('bob', 'Alice', '1033623433', '883745000', 'false'),
-('bob', 'Eve', '1077441377', '883745000', 'false'),
-('eve', 'Testuser', '1011226111', '883745000', 'false'),
-('eve', 'Alice', '1033623433', '883745000', 'false'),
-('eve', 'Bob', '1055757655', '883745000', 'false')
+('testuser', 'Alice', '1033623433', '{{ .Values.environment.localRoutingNum }}', 'false'),
+('testuser', 'Bob', '1055757655', '{{ .Values.environment.localRoutingNum }}', 'false'),
+('testuser', 'Eve', '1077441377', '{{ .Values.environment.localRoutingNum }}', 'false'),
+('alice', 'Testuser', '1011226111', '{{ .Values.environment.localRoutingNum }}', 'false'),
+('alice', 'Bob', '1055757655', '{{ .Values.environment.localRoutingNum }}', 'false'),
+('alice', 'Eve', '1077441377', '{{ .Values.environment.localRoutingNum }}', 'false'),
+('bob', 'Testuser', '1011226111', '{{ .Values.environment.localRoutingNum }}', 'false'),
+('bob', 'Alice', '1033623433', '{{ .Values.environment.localRoutingNum }}', 'false'),
+('bob', 'Eve', '1077441377', '{{ .Values.environment.localRoutingNum }}', 'false'),
+('eve', 'Testuser', '1011226111', '{{ .Values.environment.localRoutingNum }}', 'false'),
+('eve', 'Alice', '1033623433', '{{ .Values.environment.localRoutingNum }}', 'false'),
+('eve', 'Bob', '1055757655', '{{ .Values.environment.localRoutingNum }}', 'false')
 ON CONFLICT DO NOTHING;
 
 INSERT INTO contacts (username, label, account_num, routing_num, is_external) VALUES

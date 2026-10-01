@@ -35,6 +35,9 @@ spec:
           image: {{ .Values.beacon.image }}
           imagePullPolicy: IfNotPresent
           env:
+            # OTel service.name, exported to Mimir as the "job" label used by the Beacon Demo App dashboard
+            - name: OTEL_SERVICE_NAME
+              value: beacon-app
             - name: OTEL_COLLECTOR_ENDPOINT
               value: {{ .Values.beacon.otelHttpEndpoint }}
             - name: OTEL_EXPORTER_OTLP_CERTIFICATE

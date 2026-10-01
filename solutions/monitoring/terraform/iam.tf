@@ -47,7 +47,7 @@ resource "google_project_iam_member" "mimir_storage_access" {
 }
 
 resource "google_storage_bucket_iam_member" "mimir_bucket_access" {
-  bucket = local.config.storage_bucket_name
+  bucket = local.config.mimir_bucket_name
   role   = "roles/storage.objectAdmin"
   member = "serviceAccount:${google_service_account.mimir_storage_sa.email}"
 }
@@ -72,7 +72,7 @@ resource "google_project_iam_member" "loki_storage_access" {
 }
 
 resource "google_storage_bucket_iam_member" "loki_bucket_access" {
-  bucket = local.config.storage_bucket_name
+  bucket = local.config.loki_bucket_name
   role   = "roles/storage.objectAdmin"
   member = "serviceAccount:${google_service_account.loki_storage_sa.email}"
 }

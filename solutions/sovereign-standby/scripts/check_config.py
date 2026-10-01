@@ -15,120 +15,106 @@
 # limitations under the License.
 #
 #!/usr/bin/env python3
-"""Validation script for Federation Demo environment configurations."""
+"""Validate terraform/envs/{gcp,gcd}/defaults.yaml for cross-universe consistency.
 
-import sys
-from pathlib import Path
+Usage: just check-config
+
+Checks:
+  * modules that need networking (cloudsql, app, sts) have it enabled;
+  * networking is enabled in both universes or in neither;
+  * BGP link-local addresses are valid /30 peers;
+  * "local" values in one universe mirror "remote"/"peer" values in the other.
+"""
+
 import ipaddress
-import yaml
+import sys
 
-ENVS_DIR = Path(__file__).resolve().parent.parent / "terraform" / "envs"
+from env_utils import ENV_NAMES, ENVS_DIR, load_env_defaults
+
+MODULES_REQUIRING_NETWORK = ("cloudsql", "app", "sts")
+
+BGP_INTERFACES = [
+    ("Interface 0", "bgp_cr_interface_0_ip", "bgp_peer_interface_0_ip"),
+    ("Interface 1", "bgp_cr_interface_1_ip", "bgp_peer_interface_1_ip"),
+]
+
+# network.<a> in one universe must equal network.<b> in the other (checked both ways).
+MIRRORED_NETWORK_KEYS = [
+    ("local_subnet_cidr", "remote_subnet_cidr"),
+    ("local_asn", "remote_asn"),
+    ("bgp_cr_interface_0_ip", "bgp_peer_interface_0_ip"),
+    ("bgp_cr_interface_1_ip", "bgp_peer_interface_1_ip"),
+]
 
 
-def validate_bgp_ip_pair(env_name: str, interface_name: str, cr_ip_str: str, peer_ip_str: str) -> list:
-    """Validates BGP CR and Peer IPs: format, link-local range, same /30 subnet, distinct IPs, and usable hosts."""
-    errors = []
+def validate_bgp_pair(env: str, label: str, cr: str | None, peer: str | None) -> list[str]:
+    """Cloud Router and peer IPs must be distinct usable hosts of the same link-local /30."""
+    prefix = f"[{env}] BGP {label}"
+    if not cr or not peer:
+        return [f"{prefix}: missing Cloud Router or peer IP"]
     try:
-        cr_ip = ipaddress.ip_address(cr_ip_str)
-        peer_ip = ipaddress.ip_address(peer_ip_str)
+        cr_if = ipaddress.ip_interface(f"{cr}/30")
+        peer_if = ipaddress.ip_interface(f"{peer}/30")
+    except ValueError as exc:
+        return [f"{prefix}: invalid IP ({exc})"]
 
-        if cr_ip == peer_ip:
-            errors.append(f"[{env_name}] BGP CR IP and Peer IP for {interface_name} cannot be the same ({cr_ip_str})")
-            return errors
+    if cr_if.ip == peer_if.ip:
+        return [f"{prefix}: Cloud Router and peer IP are identical ({cr})"]
+    if not (cr_if.ip.is_link_local and peer_if.ip.is_link_local):
+        return [f"{prefix}: IPs must be link-local 169.254.x.x (got {cr}, {peer})"]
+    if cr_if.network != peer_if.network:
+        return [f"{prefix}: {cr} and {peer} must be in the same /30"]
 
-        if not (cr_ip.is_link_local and peer_ip.is_link_local):
-            errors.append(f"[{env_name}] BGP IPs for {interface_name} must be link-local (169.254.x.x). Got CR: {cr_ip_str}, Peer: {peer_ip_str}")
-            return errors
+    net = cr_if.network
+    reserved = (net.network_address, net.broadcast_address)
+    return [f"{prefix}: {ip} is the network/broadcast address of {net}" for ip in (cr_if.ip, peer_if.ip) if ip in reserved]
 
-        # Check if they share a /30 subnet
-        if1 = ipaddress.ip_interface(f"{cr_ip_str}/30")
-        if2 = ipaddress.ip_interface(f"{peer_ip_str}/30")
-        if if1.network != if2.network:
-            errors.append(f"[{env_name}] BGP IP {cr_ip_str} and Peer IP {peer_ip_str} for {interface_name} must be in the same /30 subnet")
 
-        # Ensure they are not network or broadcast addresses
-        if cr_ip == if1.network.network_address or cr_ip == if1.network.broadcast_address:
-            errors.append(f"[{env_name}] BGP CR IP {cr_ip_str} for {interface_name} cannot be network or broadcast address of /30")
-        if peer_ip == if2.network.network_address or peer_ip == if2.network.broadcast_address:
-            errors.append(f"[{env_name}] BGP Peer IP {peer_ip_str} for {interface_name} cannot be network or broadcast address of /30")
+def validate(envs: dict[str, dict]) -> list[str]:
+    """Return a list of human-readable errors for the given {env_name: defaults.yaml} mapping."""
+    errors = []
 
-    except ValueError as e:
-        errors.append(f"[{env_name}] Invalid IP format for {interface_name}: {e}")
+    for env, cfg in envs.items():
+        if cfg.get("enable_network"):
+            continue
+        for module in MODULES_REQUIRING_NETWORK:
+            if cfg.get(f"enable_{module}"):
+                errors.append(f"[{env}] enable_{module} requires enable_network: true")
+
+    network_enabled = {env: bool(cfg.get("enable_network")) for env, cfg in envs.items()}
+    if len(set(network_enabled.values())) > 1:
+        errors.append(f"enable_network must match in both universes (got {network_enabled})")
+        return errors
+    if len(envs) < 2 or not all(network_enabled.values()):
+        return errors
+
+    (env_a, cfg_a), (env_b, cfg_b) = envs.items()
+    net = {env_a: cfg_a.get("network") or {}, env_b: cfg_b.get("network") or {}}
+
+    for env, n in net.items():
+        for label, cr_key, peer_key in BGP_INTERFACES:
+            errors += validate_bgp_pair(env, label, n.get(cr_key), n.get(peer_key))
+
+    for this, other in ((env_a, env_b), (env_b, env_a)):
+        for local_key, remote_key in MIRRORED_NETWORK_KEYS:
+            local_val, remote_val = net[this].get(local_key), net[other].get(remote_key)
+            if local_val != remote_val:
+                errors.append(f"Mismatch: {this}.network.{local_key} ({local_val}) != "
+                              f"{other}.network.{remote_key} ({remote_val})")
     return errors
 
 
-def main():
-    envs = {}
-    for p in ENVS_DIR.glob("*/defaults.yaml"):
-        with open(p) as f:
-            envs[p.parent.name] = yaml.safe_load(f)
+def main() -> None:
+    missing = [env for env in ENV_NAMES if not (ENVS_DIR / env / "defaults.yaml").is_file()]
+    if missing:
+        sys.exit(f"[FAIL] Missing terraform/envs/{{{','.join(missing)}}}/defaults.yaml - run `just init-config` first.")
 
-    if not envs:
-        sys.exit("ERROR: No environments found in terraform/envs/")
-
-    errors = []
-
-    # 2. Module dependency check (Networking required for CloudSQL and App)
-    for env_name, env_cfg in envs.items():
-        has_cloudsql = env_cfg.get("enable_cloudsql", False)
-        has_app = env_cfg.get("enable_app", False)
-        if has_cloudsql and not env_cfg.get("enable_network"):
-            errors.append(
-                f"[{env_name}] CloudSQL module is enabled (enable_cloudsql = true), but network module is disabled (enable_network = false). Network is required for CloudSQL."
-            )
-        if has_app and not env_cfg.get("enable_network"):
-            errors.append(
-                f"[{env_name}] App module is enabled (enable_app = true), but network module is disabled (enable_network = false). Network is required for App."
-            )
-
-    # 3. Network matching check (local/remote CIDRs match across environments)
-    net_envs = [list(envs.items())[i] for i in range(len(envs)) if envs[list(envs.keys())[i]].get("enable_network")]
-    if len(net_envs) >= 2:
-        (name1, e1), (name2, e2) = net_envs[0], net_envs[1]
-        n1, n2 = e1.get("network", {}), e2.get("network", {})
-
-        if n1.get("local_subnet_cidr") != n2.get("remote_subnet_cidr"):
-            errors.append(
-                f"CIDR mismatch: {name1}.local_subnet_cidr ({n1.get('local_subnet_cidr')}) != {name2}.remote_subnet_cidr ({n2.get('remote_subnet_cidr')})"
-            )
-        if n2.get("local_subnet_cidr") != n1.get("remote_subnet_cidr"):
-            errors.append(
-                f"CIDR mismatch: {name2}.local_subnet_cidr ({n2.get('local_subnet_cidr')}) != {name1}.remote_subnet_cidr ({n1.get('remote_subnet_cidr')})"
-            )
-
-        # Internal Subnet / Format Checks for each env
-        for name, env_cfg in net_envs:
-            n = env_cfg.get("network", {})
-            errors.extend(validate_bgp_ip_pair(name, "Interface 0", n.get("bgp_cr_interface_0_ip"), n.get("bgp_peer_interface_0_ip")))
-            errors.extend(validate_bgp_ip_pair(name, "Interface 1", n.get("bgp_cr_interface_1_ip"), n.get("bgp_peer_interface_1_ip")))
-
-        # Cross-Environment BGP IP matching checks
-        # Interface 0 cross check
-        if n1.get("bgp_cr_interface_0_ip") != n2.get("bgp_peer_interface_0_ip"):
-            errors.append(
-                f"BGP IP mismatch: {name1}.bgp_cr_interface_0_ip ({n1.get('bgp_cr_interface_0_ip')}) != {name2}.bgp_peer_interface_0_ip ({n2.get('bgp_peer_interface_0_ip')})"
-            )
-        if n1.get("bgp_peer_interface_0_ip") != n2.get("bgp_cr_interface_0_ip"):
-            errors.append(
-                f"BGP IP mismatch: {name1}.bgp_peer_interface_0_ip ({n1.get('bgp_peer_interface_0_ip')}) != {name2}.bgp_cr_interface_0_ip ({n2.get('bgp_cr_interface_0_ip')})"
-            )
-
-        # Interface 1 cross check
-        if n1.get("bgp_cr_interface_1_ip") != n2.get("bgp_peer_interface_1_ip"):
-            errors.append(
-                f"BGP IP mismatch: {name1}.bgp_cr_interface_1_ip ({n1.get('bgp_cr_interface_1_ip')}) != {name2}.bgp_peer_interface_1_ip ({n2.get('bgp_peer_interface_1_ip')})"
-            )
-        if n1.get("bgp_peer_interface_1_ip") != n2.get("bgp_cr_interface_1_ip"):
-            errors.append(
-                f"BGP IP mismatch: {name1}.bgp_peer_interface_1_ip ({n1.get('bgp_peer_interface_1_ip')}) != {name2}.bgp_cr_interface_1_ip ({n2.get('bgp_cr_interface_1_ip')})"
-            )
-
+    errors = validate({env: load_env_defaults(env) for env in ENV_NAMES})
+    for err in errors:
+        print(f"[FAIL] {err}")
     if errors:
-        for err in errors:
-            print(f"[FAIL] {err}")
         sys.exit(1)
-
-    print("[OK] Configuration validation passed successfully.")
+    print("[OK] Configuration validation passed.")
 
 
 if __name__ == "__main__":

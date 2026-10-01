@@ -29,12 +29,12 @@ spec:
   secretName: otel-collector-tls-secret
   duration: 2160h # 90 days
   renewBefore: 360h # 15 days
-  commonName: collector-with-ta-collector
+  commonName: otel-collector
   dnsNames:
-    - collector-with-ta-collector
-    - collector-with-ta-collector.{{ .Release.Namespace }}
-    - collector-with-ta-collector.{{ .Release.Namespace }}.svc
-    - collector-with-ta-collector.{{ .Release.Namespace }}.svc.cluster.local
+    - otel-collector
+    - otel-collector.{{ .Release.Namespace }}
+    - otel-collector.{{ .Release.Namespace }}.svc
+    - otel-collector.{{ .Release.Namespace }}.svc.cluster.local
   usages:
     - digital signature
     - key encipherment

@@ -43,6 +43,11 @@ processors:
     detectors: [gcp]
     timeout: 5s
     override: true
+  resource/add_service:
+    attributes:
+      - action: upsert
+        key: service.name
+        value: "gce-vm"
   batch:
     send_batch_size: 10
     timeout: 1s
@@ -51,8 +56,17 @@ exporters:
   googlecloud:
     log:
       default_log_name: "gce-vm-logs"
-  otlphttp:
+  otlphttp/mimir:
     endpoint: https://${MIMIR_GATEWAY_IP}:443/otlp
+    headers:
+      X-Scope-OrgID: "demo"
+    tls:
+      ca_file: /etc/otel/certs/ca.crt
+      cert_file: /etc/otel/certs/tls.crt
+      key_file: /etc/otel/certs/tls.key
+      insecure: false
+  otlphttp/loki:
+    endpoint: https://${LOKI_GATEWAY_IP}:443/otlp
     headers:
       X-Scope-OrgID: "demo"
     tls:
@@ -65,9 +79,9 @@ service:
   pipelines:
     logs:
       receivers: [otlp]
-      processors: [memory_limiter, resourcedetection, batch]
-      exporters: [googlecloud]
+      processors: [memory_limiter, resourcedetection, resource/add_service, batch]
+      exporters: [${LOG_EXPORTER}]
     metrics:
       receivers: [otlp, hostmetrics]
-      processors: [memory_limiter, resourcedetection, batch]
-      exporters: [otlphttp]
+      processors: [memory_limiter, resourcedetection, resource/add_service, batch]
+      exporters: [otlphttp/mimir]

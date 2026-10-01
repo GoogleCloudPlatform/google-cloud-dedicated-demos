@@ -38,17 +38,20 @@ resource "google_compute_instance" "logging_demo_vm" {
   }
 
   metadata = {
-    startup-script            = file("${path.module}/../scripts/gce/install-vm-monitoring.sh")
-    UNIVERSE_DOMAIN           = local.config.universe_api_domain
-    ENABLE_DEMO_LOG_GENERATOR = local.config.gce_enable_demo_log_generator ? "true" : "false"
-    fluent_bit_conf           = file("${path.module}/../scripts/gce/fluent-bit.conf")
-    otelcol_config_yaml       = file("${path.module}/../scripts/gce/otelcol-config.yaml")
-    vm_demo_app_py            = file("${path.module}/../apps/gce-demo-app/vm-demo-app.py")
-    vm_demo_app_service       = file("${path.module}/../apps/gce-demo-app/vm-demo-app.service")
-    beacon_app_py             = file("${path.module}/../apps/gce-demo-app/beacon-app.py")
-    beacon_app_service        = file("${path.module}/../apps/gce-demo-app/beacon-app.service")
-    MIMIR_GATEWAY_IP          = google_compute_address.mimir_gateway_ip.address
-    CERT_BUCKET_NAME          = local.config.storage_bucket_name
+    startup-script               = file("${path.module}/../scripts/gce/install-vm-monitoring.sh")
+    UNIVERSE_DOMAIN              = local.config.universe_api_domain
+    ENABLE_DEMO_LOG_GENERATOR    = local.config.gce_enable_demo_log_generator ? "true" : "false"
+    ENABLE_DEMO_METRIC_GENERATOR = local.config.gce_enable_demo_metric_generator ? "true" : "false"
+    fluent_bit_conf              = file("${path.module}/../scripts/gce/fluent-bit.conf")
+    otelcol_config_yaml          = file("${path.module}/../scripts/gce/otelcol-config.yaml")
+    fountain_app_py              = file("${path.module}/../apps/fountain/app.py")
+    fountain_app_service         = file("${path.module}/../apps/gce/fountain.service")
+    beacon_app_py                = file("${path.module}/../apps/beacon/app.py")
+    beacon_app_service           = file("${path.module}/../apps/gce/beacon.service")
+    MIMIR_GATEWAY_IP             = google_compute_address.mimir_gateway_ip.address
+    LOKI_GATEWAY_IP              = google_compute_address.loki_gateway_ip.address
+    LOG_EXPORTER                 = local.gce_logs_exporter[local.config.gce_logs_storage]
+    CERT_BUCKET_NAME             = local.config.storage_bucket_name
   }
 
   depends_on = [

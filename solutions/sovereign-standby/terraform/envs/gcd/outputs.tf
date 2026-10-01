@@ -76,12 +76,12 @@ output "project_id" {
 
 output "region" {
   description = "Region"
-  value       = local.config.network.region
+  value       = try(local.config.network.region, null)
 }
 
 output "zone" {
   description = "Zone"
-  value       = local.config.network.zone
+  value       = try(local.config.network.zone, null)
 }
 
 output "dashboard_id" {

@@ -51,7 +51,7 @@ jupyter:
   storageSize: 10Gi
 
 vllm:
-  enabled: false
+  enabled: true
   replicaCount: 1
   gpuCount: 1
   image:

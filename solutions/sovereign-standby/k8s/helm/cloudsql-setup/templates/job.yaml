@@ -49,6 +49,8 @@ spec:
               value: {{ .Values.database.password | quote }}
             - name: IS_PRIMARY
               value: {{ .Values.database.isPrimary | quote }}
+            - name: LOCAL_ROUTING_NUM
+              value: {{ .Values.environment.localRoutingNum | quote }}
           volumeMounts:
             - name: scripts-volume
               mountPath: /scripts

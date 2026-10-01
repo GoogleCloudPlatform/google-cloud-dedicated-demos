@@ -1,0 +1,57 @@
+#
+# Copyright 2026 Google LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+#
+dbCluster:
+  name: alloydb-omni-primary
+  databaseVersion: "15.15.0"
+  allowExternalIncomingTraffic: true
+  resources:
+    cpu: "2"
+    memory: "8Gi"
+    disks:
+      - name: DataDisk
+        size: 10Gi
+        storageClass: dynamic-rwo
+      - name: LogDisk
+        size: 4Gi
+        storageClass: dynamic-rwo
+      - name: BackupDisk
+        size: 10Gi
+        storageClass: dynamic-rwo
+      - name: ObsDisk
+        size: 4Gi
+        storageClass: dynamic-rwo
+  parameters:
+    shared_preload_libraries: "pglogical"
+    alloydb.enable_pglogical: "on"
+    max_replication_slots: "10"
+    max_worker_processes: "10"
+    max_wal_senders: "10"
+  dbLoadBalancerOptions:
+    annotations:
+      cloud.google.com/load-balancer-type: "Internal"
+      networking.gke.io/internal-load-balancer-allow-global-access: "true"
+    gcp:
+      loadBalancerType: "Internal"
+
+password: "change-me-primary" # pragma: allowlist secret
+
+replication:
+  enabled: true
+  username: "repl_user"
+  slotName: "alloydb_repl_slot"
+  passwordSecretName: "alloydb-repl-password" # pragma: allowlist secret
+  password: "ReplPassword123!" # pragma: allowlist secret

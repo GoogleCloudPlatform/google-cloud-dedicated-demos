@@ -19,12 +19,17 @@ variable "config" {
   type        = any
 
   validation {
-    condition     = !var.config.enable_cloudsql || var.config.enable_network
+    condition     = !lookup(var.config, "enable_cloudsql", false) || lookup(var.config, "enable_network", false)
     error_message = "The network must be enabled (enable_network = true) if CloudSQL is enabled (enable_cloudsql = true)."
   }
 
   validation {
-    condition     = !var.config.enable_app || var.config.enable_network
+    condition     = !lookup(var.config, "enable_app", false) || lookup(var.config, "enable_network", false)
     error_message = "The network must be enabled (enable_network = true) if App is enabled (enable_app = true)."
+  }
+
+  validation {
+    condition     = !lookup(var.config, "enable_sts", false) || lookup(var.config, "enable_network", false)
+    error_message = "The network must be enabled (enable_network = true) if STS is enabled (enable_sts = true)."
   }
 }

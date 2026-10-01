@@ -26,10 +26,10 @@ metadata:
     app.kubernetes.io/component: gateway
     app.kubernetes.io/managed-by: {{ .Release.Service }}
   annotations:
-    networking.gke.io/load-balancer-type: "Internal"
+    {{- toYaml .Values.mimirDistributed.gateway.service.annotations | nindent 4 }}
 spec:
-  type: LoadBalancer
-  loadBalancerIP: {{ (index .Values "mimir-distributed").gateway.service.loadBalancerIP }}
+  type: {{ .Values.mimirDistributed.gateway.service.type }}
+  loadBalancerIP: {{ .Values.mimirDistributed.gateway.service.loadBalancerIP }}
   ports:
     - name: http-metric
       port: 80

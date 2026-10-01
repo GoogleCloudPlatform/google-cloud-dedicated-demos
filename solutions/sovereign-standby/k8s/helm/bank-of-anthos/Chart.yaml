@@ -18,5 +18,5 @@ apiVersion: v2
 name: bank-of-anthos
 description: A Helm chart for Google Cloud's Bank of Anthos demo application (without local databases).
 type: application
-version: 0.1.0
+version: 0.1.1
 appVersion: "v0.6.9"

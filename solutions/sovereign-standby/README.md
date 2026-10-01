@@ -15,6 +15,7 @@
   - [GCD Authentication](#gcd-authentication)
   - [kubectl Cluster Credentials Setup](#kubectl-cluster-credentials-setup)
 - [Deployment](#deployment)
+  - [Codelab / Dry-Run Mode](#codelab--dry-run-mode)
   - [1. Environment Configuration](#1-environment-configuration)
   - [2. Terraform Infrastructure Provisioning](#2-terraform-infrastructure-provisioning)
   - [3. Workforce Identity Federation (WIF)](#3-workforce-identity-federation-wif)
@@ -32,33 +33,69 @@
 
 ## Overview
 
-In today's cloud environment, large regulated organizations can face multi-layered risks to operational continuity: severe technical outages, evolving regulatory landscapes such as the EU Digital Operational Resilience Act (DORA) and General Data Protection Regulation (GDPR) mandates, and macroeconomic pressures.
+In today's cloud environment, large regulated organizations can face
+multi-layered risks to operational continuity: severe technical outages,
+evolving regulatory landscapes such as the EU Digital Operational Resilience Act
+(DORA) and General Data Protection Regulation (GDPR) mandates, and macroeconomic
+pressures.
 
-This guide provides a blueprint for a "sovereign standby" architecture that helps customers to address those challenges. In this example, the core retail banking application runs primarily on Google Cloud to leverage public cloud scale and global infrastructure. Simultaneously, a synchronized, near-real-time mirror environment is maintained on Google Cloud Dedicated.
+This guide provides a blueprint for a "sovereign standby" architecture that
+helps customers to address those challenges. In this example, the core retail
+banking application runs primarily on Google Cloud to leverage public cloud
+scale and global infrastructure. Simultaneously, a synchronized, near-real-time
+mirror environment is maintained on Google Cloud Dedicated.
 
-If primary global cloud connectivity is severed, organizations can invoke a planned failover protocol. All live production traffic can be diverted to Google Cloud Dedicated enabling core banking operations to run in isolation to avoid data loss and continued production access.
+If primary global cloud connectivity is severed, organizations can invoke a
+planned failover protocol. All live production traffic can be diverted to Google
+Cloud Dedicated enabling core banking operations to run in isolation to avoid
+data loss and continued production access.
 
-**Please note that this is a proof-of-concept prototype built for demonstration purposes, and the implementation is not audited, hardened, or secured for production use cases.**
+**Please note that this is a proof-of-concept prototype built for demonstration
+purposes, and the implementation is not audited, hardened, or secured for
+production use cases.**
 
 ### Target Audience
 
-Although this example uses a banking app, this solution is designed for cloud architects, platform engineers, and executive leaders in any regulated industries. It serves the following stakeholders:
+Although this example uses a banking app, this solution is designed for cloud
+architects, platform engineers, and executive leaders in any regulated
+industries. It serves the following stakeholders:
 
-- **Lead cloud security architects / Heads of Identity and Access Management** who enforce federated identity and security policies across administrative boundaries using Workforce Identity Federation and identity providers, ensuring user access persists seamlessly between universes without duplicated identities.
-- **Lead SRE / Platform Architects** who configure automated cross-universe database replication, set up Storage Transfer Service for background asset sync, and maintain GitOps templates to ensure complete infrastructure parity.
-- **Director of Core Operations** who monitor global operational health, track Recovery Time Objectives and Recovery Point Objectives, and hold ultimate authority to trigger the failover during disruptions.
+- **Lead cloud security architects / Heads of Identity and Access Management**
+  who enforce federated identity and security policies across administrative
+  boundaries using Workforce Identity Federation and identity providers,
+  ensuring user access persists seamlessly between universes without duplicated
+  identities.
+- **Lead SRE / Platform Architects** who configure automated cross-universe
+  database replication, set up Storage Transfer Service for background asset
+  sync, and maintain GitOps templates to ensure complete infrastructure parity.
+- **Director of Core Operations** who monitor global operational health, track
+  Recovery Time Objectives and Recovery Point Objectives, and hold ultimate
+  authority to trigger the failover during disruptions.
 
 ### Core Capabilities
 
-- **Multi-Universe Database Synchronization**: Real-time cross-universe database replication supporting both Cloud SQL and AlloyDB Omni between Google Cloud and Google Cloud Dedicated.
-- **Infrastructure & Storage Parity**: Automated GitOps deployment templates and Storage Transfer Service agents maintain identical containerized banking microservices and Cloud Storage bucket assets across environments.
-- **Federated Workforce Identity**: Single sign-on and role-based access control across independent administrative domains using Workforce Identity Federation and an external identity provider.
-- **Deterministic Sovereign Database Failover**: One-step database promotion transitions the read-only replica on Google Cloud Dedicated into an independent standalone primary during an outage.
-- **Bi-Directional Secure Network Bridge**: Encrypted HA VPN connectivity and Private Service Connect endpoints linking cross-universe Google Kubernetes Engine (GKE) clusters and databases.
+- **Multi-Universe Database Synchronization**: Real-time cross-universe database
+  replication supporting both Cloud SQL and AlloyDB Omni between Google Cloud
+  and Google Cloud Dedicated.
+- **Infrastructure & Storage Parity**: Automated GitOps deployment templates and
+  Storage Transfer Service agents maintain identical containerized banking
+  microservices and Cloud Storage bucket assets across environments.
+- **Federated Workforce Identity**: Single sign-on and role-based access control
+  across independent administrative domains using Workforce Identity Federation
+  and an external identity provider.
+- **Deterministic Sovereign Database Failover**: One-step database promotion
+  transitions the read-only replica on Google Cloud Dedicated into an
+  independent standalone primary during an outage.
+- **Bi-Directional Secure Network Bridge**: Encrypted HA VPN connectivity and
+  Private Service Connect endpoints linking cross-universe Google Kubernetes
+  Engine (GKE) clusters and databases.
 
 ### Architecture
 
-This architecture connects a primary Google Cloud production universe with a Google Cloud Dedicated standby universe by using an encrypted HA VPN bridge. The solution synchronizes data and microservices continuously to ensure zero data loss and immediate failover readiness.
+This architecture connects a primary Google Cloud production universe with a
+Google Cloud Dedicated standby universe by using an encrypted HA VPN bridge. The
+solution synchronizes data and microservices continuously to ensure zero data
+loss and immediate failover readiness.
 
 ![Sovereign Standby Architecture](docs/sovereign_standby_architecture.png)
 
@@ -75,7 +112,8 @@ Component | Tech | Purpose
 
 ### Project Structure Overview
 
-This table outlines the main directories within the project repository and their primary responsibilities.
+This table outlines the main directories within the project repository and their
+primary responsibilities.
 
 Folder | Description
 :--- | :---
@@ -90,15 +128,37 @@ Folder | Description
 > [!IMPORTANT]
 > **Proof-of-Concept & Reference Implementation Only**
 >
-> This demonstration is designed solely as a reference architecture to showcase technical capabilities and cross-universe federation principles. It is **not audited, hardened, or secured for production deployment**. The Bank of Anthos sample application utilizes default JWT secrets, fixed demonstration passwords, and public ingress endpoints intended strictly for testing convenience.
+> This demonstration is designed solely as a reference architecture to showcase
+> technical capabilities and cross-universe federation principles. It is **not
+> audited, hardened, or secured for production deployment**. The Bank of Anthos
+> sample application utilizes default JWT secrets, fixed demonstration
+> passwords, and public ingress endpoints intended strictly for testing
+> convenience.
 
 ### Technical & Operational Limitations
 
-- **Replica Write Constraints**: Before executing a failover (`just promote`), the database instance deployed in the target sovereign universe (GCD) functions strictly as a downstream read-only replica. Attempting write operations (e.g., initiating fund transfers or modifying account state) on the replica Web UI prior to promotion will cause primary key sequence divergence, data drift, and replication failure.
-- **One-Way Failover & DNS Management**: Failover execution is a one-way operation. This reference implementation does not provide automated failback mechanisms to resynchronize modified GCD data back to GCP. Furthermore, global DNS switching and traffic rerouting are not included and must be managed externally by the user.
-- **Storage Transfer & Agent Dependencies**: Object replication via Storage Transfer Service (STS) relies on background VM agents and Cloud Storage FUSE mounts. Failures in agent startup scripts, docker container crashes, or permission shifts can disrupt file synchronization.
-- **Monitoring Data Latency**: Metrics displayed on the cross-universe monitoring dashboard for VPN telemetry and ingress traffic experience an inherent processing delay of approximately 5 minutes.
-- **Universe Credential Switching**: Operations across dual universes require managing distinct `gcloud` workforce identity contexts. Session credentials must be explicitly refreshed and verified before running Terraform or Helm commands to avoid cross-universe state corruption.
+- **Replica Write Constraints**: Before executing a failover (`just promote`),
+  the database instance deployed in the target sovereign universe (GCD)
+  functions strictly as a downstream read-only replica. Attempting write
+  operations (e.g., initiating fund transfers or modifying account state) on the
+  replica Web UI prior to promotion will cause primary key sequence divergence,
+  data drift, and replication failure.
+- **One-Way Failover & DNS Management**: Failover execution is a one-way
+  operation. This reference implementation does not provide automated failback
+  mechanisms to resynchronize modified GCD data back to GCP. Furthermore, global
+  DNS switching and traffic rerouting are not included and must be managed
+  externally by the user.
+- **Storage Transfer & Agent Dependencies**: Object replication via Storage
+  Transfer Service (STS) relies on background VM agents and Cloud Storage FUSE
+  mounts. Failures in agent startup scripts, docker container crashes, or
+  permission shifts can disrupt file synchronization.
+- **Monitoring Data Latency**: Metrics displayed on the cross-universe
+  monitoring dashboard for VPN telemetry and ingress traffic experience an
+  inherent processing delay of approximately 5 minutes.
+- **Universe Credential Switching**: Operations across dual universes require
+  managing distinct `gcloud` workforce identity contexts. Session credentials
+  must be explicitly refreshed and verified before running Terraform or Helm
+  commands to avoid cross-universe state corruption.
 
 ---
 
@@ -150,6 +210,27 @@ gcloud container clusters get-credentials "$GCD_CLUSTER_NAME" \
 
 ## Deployment
 
+### Codelab / Dry-Run Mode
+
+This demo can be used as a hands-on **Codelab** to understand each underlying
+operation step-by-step. All `just` helper recipes support a `--dry` flag
+(or `--dry-run` / `-d`) that outputs the exact manual CLI commands (`kubectl`,
+`helm`, `terraform`) without executing destructive changes or writing files:
+
+- **Configuration Preview**: `just init-config --dry`
+  Interactively builds the configuration and prints manual setup instructions
+  and YAML blocks instead of saving them to disk.
+- **Failover / Promotion Command**: `just promote --dry`
+  Autodetects the active database flavor (`Cloud SQL` or `AlloyDB Omni`) and
+  displays the manual `kubectl` promotion command.
+- **Cleanup / Teardown Commands**:
+  `just destroy <gcd|gcp> --dry` or `just destroy-k8s <gcd|gcp> --dry`
+  Prints the ordered sequence of commands to strip finalizers from Custom
+  Resources, uninstall Helm releases, remove webhooks, delete namespaces, and
+  run `terraform destroy`.
+
+---
+
 ### 1. Environment Configuration
 
 Generate `defaults.yaml` interactively or manually from the template:
@@ -157,7 +238,7 @@ Generate `defaults.yaml` interactively or manually from the template:
 - **Interactive Setup**:
 
   ```bash
-  just configure
+  just init-config
   ```
 
 - **Manual Setup**: Copy `terraform/envs/defaults.yaml.example` to
@@ -283,7 +364,7 @@ infrastructure demo and can be enabled or deployed separately.
      --set database.user="$DB_USER" \
      --set database.password="$DB_PASSWORD" \
      --set database.isPrimary=true \
-     --wait
+     --wait --wait-for-jobs
 
    helm upgrade --install bank-of-anthos k8s/helm/bank-of-anthos \
      --namespace bank-of-anthos --create-namespace \
@@ -299,6 +380,10 @@ infrastructure demo and can be enabled or deployed separately.
 2. **Deploy on GCD (Replica)**:
 
    ```bash
+   PRIMARY_DB_IP=$(cd terraform/envs/gcp && terraform output -raw db_host)
+   DB_NAME=$(cd terraform/envs/gcp && terraform output -raw db_name)
+   DB_USER=$(cd terraform/envs/gcp && terraform output -raw db_user)
+   DB_PASSWORD=$(cd terraform/envs/gcp && terraform output -raw db_password)
    REPLICA_DB_IP=$(cd terraform/envs/gcd && terraform output -raw db_host)
    REPLICA_ADMIN_PASSWORD=$(cd terraform/envs/gcd && terraform output -raw db_admin_password)
 
@@ -311,7 +396,7 @@ infrastructure demo and can be enabled or deployed separately.
      --set database.user="$DB_USER" \
      --set database.password="$DB_PASSWORD" \
      --set database.isPrimary=false \
-     --wait
+     --wait --wait-for-jobs
 
    helm upgrade --install bank-of-anthos k8s/helm/bank-of-anthos \
      --namespace bank-of-anthos --create-namespace \
@@ -362,7 +447,7 @@ infrastructure demo and can be enabled or deployed separately.
      --namespace alloydb-omni-system --create-namespace --wait
 
    # Deploy Primary Database
-   helm upgrade --install alloydb-primary k8s/helm/alloydb_primary \
+   helm upgrade --install alloydb-primary k8s/helm/alloydb-primary \
      --namespace alloydb --create-namespace --wait
 
    # Retrieve Primary LoadBalancer IP for replication
@@ -387,7 +472,7 @@ infrastructure demo and can be enabled or deployed separately.
      --namespace alloydb-omni-system --create-namespace --wait
 
    # Deploy Replica Database connected to Primary
-   helm upgrade --install alloydb-replica k8s/helm/alloydb_replica \
+   helm upgrade --install alloydb-replica k8s/helm/alloydb-replica \
      --namespace alloydb --create-namespace \
      --set replication.primaryHost="$ALLOYDB_PRIMARY_IP" --wait
    ```
@@ -415,10 +500,16 @@ infrastructure demo and can be enabled or deployed separately.
 
 5. **Deploy Application on GCD (Context: GCD — Replica)**:
 
-   > [!NOTE]
-   > Switch `kubectl` context to **GCD**.
+   > [!IMPORTANT]
+   > Switch `kubectl` context to **GCD**. Wait for the AlloyDB Omni replica
+   > database pod to become `Ready` before installing Bank of Anthos.
 
    ```bash
+   # Wait for the AlloyDB Omni replica database to become ready
+   kubectl wait --for=condition=Ready pod \
+     -l alloydbomni.internal.dbadmin.goog/task-type=database \
+     -n alloydb --timeout=600s
+
    DB_HOST="al-alloydb-omni-replica-rw-elb.alloydb.svc.cluster.local"
    PRIMARY_PWD="change-me-primary" # pragma: allowlist secret
 

@@ -44,12 +44,20 @@ loki:
             period: 24h
     storage:
       type: gcs
+      storage_prefix: loki
       bucketNames:
         chunks: replaceme
         ruler: replaceme
         admin: replaceme
       gcs:
         bucket_name: replaceme
+
+    structuredConfig:
+      server:
+        log_level: debug
+      ruler:
+        enable_api: true
+        rule_path: /tmp/loki/rules
 
     limits_config:
       reject_old_samples: true
@@ -69,6 +77,21 @@ loki:
                 - app
                 - job
 
+    server:
+      grpc_server_max_recv_msg_size: 104857600
+      grpc_server_max_send_msg_size: 104857600
+
+    querier:
+      max_concurrent: 4
+
+    frontend:
+      grpc_client_config:
+        max_send_msg_size: 104857600
+
+    frontend_worker:
+      grpc_client_config:
+        max_send_msg_size: 104857600
+
   # Scalable microservice pods
   write:
     replicas: 1
@@ -81,7 +104,7 @@ loki:
         memory: 512Mi
       limits:
         cpu: 500m
-        memory: 750Mi
+        memory: 512Mi
 
   read:
     replicas: 1
@@ -94,12 +117,12 @@ loki:
         memory: 512Mi
       limits:
         cpu: 500m
-        memory: 750Mi
+        memory: 512Mi
 
   backend:
     replicas: 1
     persistence:
-      size: 10Gi
+      size: 20Gi
     affinity: {}
     resources:
       requests:
@@ -107,16 +130,19 @@ loki:
         memory: 512Mi
       limits:
         cpu: 500m
-        memory: 750Mi
+        memory: 512Mi
 
   gateway:
     enabled: true
     replicas: 1
-    verboseLogging: false
+    verboseLogging: true
     containerPort: 8080
     affinity: {}
     service:
-      type: ClusterIP
+      type: LoadBalancer
+      loadBalancerIP: replaceme
+      annotations:
+        networking.gke.io/load-balancer-type: "Internal"
       port: 443
     resources:
       requests:
@@ -129,7 +155,8 @@ loki:
   # Disable Minio, enterprise license, canary, sidecars and external operators for demo simplicity
   sidecar:
     rules:
-      enabled: false
+      enabled: true
+
   minio:
     enabled: false
   lokiCanary:
@@ -137,6 +164,12 @@ loki:
   test:
     enabled: false
   monitoring:
+    serviceMonitor:
+      enabled: true
+      labels:
+        release: monitoring
+      metricsInstance:
+        enabled: false
     selfMonitoring:
       enabled: false
       grafanaAgent:

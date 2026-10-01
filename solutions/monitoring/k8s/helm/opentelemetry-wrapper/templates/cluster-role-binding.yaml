@@ -20,7 +20,7 @@ metadata:
   name: opentelemetry-targetallocator-binding
 subjects:
   - kind: ServiceAccount
-    name: collector-with-ta-targetallocator
+    name: otel-targetallocator
     namespace: {{ .Release.Namespace }}
 roleRef:
   kind: ClusterRole

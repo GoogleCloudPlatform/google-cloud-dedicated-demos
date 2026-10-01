@@ -20,6 +20,7 @@ set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 DEMO_DIR="$(cd "$SCRIPT_DIR/../.." && pwd)"
 TF_DIR="$DEMO_DIR/terraform"
+VM_DIR="$DEMO_DIR/scripts/gce"
 K8s_DIR="$DEMO_DIR/k8s/helm"
 PKI_DIR="$K8s_DIR/pki"
 DEFAULTS_FILE="$TF_DIR/defaults.yaml"
@@ -95,6 +96,8 @@ REGION="${REGION:-$(terraform -chdir="$TF_DIR" output -raw region)}"
 UNIVERSE_API_DOMAIN="${UNIVERSE_API_DOMAIN:-$(terraform -chdir="$TF_DIR" output -raw universe_api_domain)}"
 CLUSTER_NAME="${CLUSTER_NAME:-$(terraform -chdir="$TF_DIR" output -raw cluster)}"
 STORAGE_BUCKET="${STORAGE_BUCKET:-$(terraform -chdir="$TF_DIR" output -raw storage_bucket)}"
+MIMIR_STORAGE_BUCKET="${MIMIR_STORAGE_BUCKET:-$(terraform -chdir="$TF_DIR" output -raw mimir_storage_bucket)}"
+LOKI_STORAGE_BUCKET="${LOKI_STORAGE_BUCKET:-$(terraform -chdir="$TF_DIR" output -raw loki_storage_bucket)}"
 GRAFANA_SA="${GRAFANA_SA:-$(terraform -chdir="$TF_DIR" output -raw grafana_sa_email)}"
 MIMIR_SA="${MIMIR_SA:-$(terraform -chdir="$TF_DIR" output -raw mimir_sa_email)}"
 LOKI_SA="${LOKI_SA:-$(terraform -chdir="$TF_DIR" output -raw loki_sa_email)}"
@@ -116,7 +119,7 @@ KUBE_STATE_DIR="$K8s_DIR/kube-state-metrics-wrapper"
 APPS_DIR="$K8s_DIR/apps"
 GRAFANA_MIMIR_URL="https://mimir-gateway.$K8sNAMESPACE.svc.cluster.local:443/prometheus"
 GRAFANA_LOKI_URL="https://loki-gateway.$K8sNAMESPACE.svc.cluster.local:443"
-APPS_BEACON_OTELENDPOINT="https://collector-with-ta-collector.$K8sNAMESPACE.svc.cluster.local:4318/v1/metrics"
+APPS_BEACON_OTELENDPOINT="https://otel-collector.$K8sNAMESPACE.svc.cluster.local:4318/v1/metrics"
 
 echo ""
 echo "--- Starting Cluster Components Installation ---"
@@ -154,7 +157,9 @@ echo "Installing cert-manager..."
 helm upgrade --install cert-manager "$CERT_MANAGER_DIR" \
     --namespace cert-manager \
     --create-namespace \
+    --set cert-manager.prometheus.servicemonitor.enabled=false \
     --wait \
+    --timeout 7m \
     --cleanup-on-fail
 
 echo "Waiting for cert-manager deployments to be fully ready..."
@@ -182,13 +187,34 @@ fi
 echo "Waiting for Root CA certificate..."
 wait_for_certificate_ready sovereign-root-ca cert-manager 120
 
+echo "OpenTelemetry operator and Prometheus Operator CRDs installation..."
+helm upgrade --install opentelemetry-stack "$OTEL_DIR" \
+  --namespace "$K8sNAMESPACE" \
+  --set collector.enabled=false \
+  --set admissionWebhooks.certManager.enabled=true \
+  --set admissionWebhooks.autoGenerateCert.enabled=false \
+  --set opentelemetry-operator.manager.serviceMonitor.enabled=false \
+  --wait \
+  --cleanup-on-fail
+
+echo "opentelemetry verification..."
+kubectl get pods,svc -n "$K8sNAMESPACE"
+
+echo "Enabling cert-manager ServiceMonitor..."
+helm upgrade cert-manager "$CERT_MANAGER_DIR" \
+    --namespace cert-manager \
+    --set cert-manager.prometheus.servicemonitor.enabled=true \
+    --wait \
+    --timeout 7m \
+    --cleanup-on-fail
+
 # fluent-bit needs to be at the top or else it will time out if deployed later.
 echo "Installing fluent-bit log collector..."
 helm upgrade --install fluent-bit "$FLUENT_BIT_DIR" \
   --namespace "$K8sNAMESPACE" \
   --values "$FLUENT_BIT_DIR/values.yaml" \
   --set "fluent-bit.env[0].name=OTEL_COLLECTOR_HOST" \
-  --set "fluent-bit.env[0].value=collector-with-ta-collector.$K8sNAMESPACE.svc.cluster.local" \
+  --set "fluent-bit.env[0].value=otel-collector.$K8sNAMESPACE.svc.cluster.local" \
   --wait \
   --timeout 7m \
   --cleanup-on-fail
@@ -198,6 +224,47 @@ kubectl get pods,svc -n "$K8sNAMESPACE"
 
 echo "Waiting for Fluent Bit Certificate..."
 wait_for_certificate_ready fluent-bit-tls "$K8sNAMESPACE" 120
+
+echo "OpenTelemetry collector installation..."
+helm upgrade --install opentelemetry-stack "$OTEL_DIR" \
+  --namespace "$K8sNAMESPACE" \
+  --set collector.enabled=true \
+  --set opentelemetry-operator.manager.serviceMonitor.enabled=true \
+  --set "serviceAccount.annotations.iam\.gke\.io/gcp-service-account=$OTEL_SA" \
+  --wait \
+  --cleanup-on-fail
+
+echo "Waiting for OpenTelemetry Certificate..."
+wait_for_certificate_ready otel-collector-vm-tls "$K8sNAMESPACE" 120
+
+if [ -n "$GCE_VM_NAME" ]; then
+  echo "Managing certificates for the VM"
+  # Extract, Decode, and Upload CA Certificate
+  echo "Download certificates for OTel Collector - CA Certificate"
+  kubectl get secret otel-collector-vm-tls-secret -n "$K8sNAMESPACE" \
+    -o jsonpath="{.data.ca\.crt}" | base64 -d | gcloud storage cp - gs://${STORAGE_BUCKET}/vm-certs/ca.crt
+
+  # Extract, Decode, and Upload TLS Certificate
+  echo "Download certificates for OTel Collector - TLS Certificate"
+  kubectl get secret otel-collector-vm-tls-secret -n "$K8sNAMESPACE" \
+    -o jsonpath="{.data.tls\.crt}" | base64 -d | gcloud storage cp - gs://${STORAGE_BUCKET}/vm-certs/tls.crt
+
+  # Extract, Decode, and Upload TLS Private Key
+  echo "Download certificates for OTel Collector - TLS Private Key"
+  kubectl get secret otel-collector-vm-tls-secret -n "$K8sNAMESPACE" \
+    -o jsonpath="{.data.tls\.key}" | base64 -d | gcloud storage cp - gs://${STORAGE_BUCKET}/vm-certs/tls.key
+
+  echo "Managing fluentbit key"
+  # Upload them to your secure bucket
+  gcloud storage cp $VM_DIR/fluent-bit.deb gs://${STORAGE_BUCKET}/software/vm-fluentbit/fluent-bit.deb
+  gcloud storage cp $VM_DIR/fluent-bit.deb.sha256 gs://${STORAGE_BUCKET}/software/vm-fluentbit/fluent-bit.deb.sha256
+
+  echo "Reseting $GCE_VM_NAME"
+  gcloud compute instances reset "$GCE_VM_NAME" --zone="$GCE_VM_ZONE"
+fi
+
+echo "opentelemetry verification..."
+kubectl get pods,svc -n "$K8sNAMESPACE"
 
 echo "Retrieving Grafana details from defaults.yaml..."
 load_grafana_config
@@ -241,6 +308,9 @@ helm upgrade --install grafana "$GRAFANA_DIR" \
     --values "$GRAFANA_DIR/values.yaml" \
     --values "$GRAFANA_DIR/dashboards.yaml" \
     --values "$GRAFANA_DIR/alerts.yaml" \
+    --set-file "grafana.dashboards.default.beacon-demo-app.json=$GRAFANA_DIR/dashboards/beacon-demo-app.json" \
+    --set-file "grafana.dashboards.default.vm.json=$GRAFANA_DIR/dashboards/vm.json" \
+    --set-file grafana.dashboards.default.logs-gke.json=<(sed "s/user-monitoring-ns/$K8sNAMESPACE/g" "$GRAFANA_DIR/dashboards/logs-gke.json") \
     --set "grafana.adminUser=$GRAFANA_USER" \
     --set "grafana.adminPassword=$GRAFANA_PASSWORD" \
     --set "grafana.serviceAccount.annotations.iam\.gke\.io/gcp-service-account=$GRAFANA_SA" \
@@ -299,11 +369,11 @@ helm upgrade --install mimir "$MIMIR_DIR" \
   --namespace "$K8sNAMESPACE" \
   --values "$MIMIR_DIR/values.yaml" \
   --values "$MIMIR_DIR/tls-values.yaml" \
-  --set "mimir-distributed.serviceAccount.annotations.iam\.gke\.io/gcp-service-account=$MIMIR_SA" \
-  --set "mimir-distributed.global.extraEnv[0].name=GOOGLE_CLOUD_UNIVERSE_DOMAIN" \
-  --set "mimir-distributed.global.extraEnv[0].value=$UNIVERSE_API_DOMAIN" \
-  --set "mimir-distributed.mimir.structuredConfig.common.storage.gcs.bucket_name=$STORAGE_BUCKET" \
-  --set "mimir-distributed.gateway.service.loadBalancerIP=$MIMIR_GATEWAY_IP" \
+  --set "mimirDistributed.serviceAccount.annotations.iam\.gke\.io/gcp-service-account=$MIMIR_SA" \
+  --set "mimirDistributed.global.extraEnv[0].name=GOOGLE_CLOUD_UNIVERSE_DOMAIN" \
+  --set "mimirDistributed.global.extraEnv[0].value=$UNIVERSE_API_DOMAIN" \
+  --set "mimirDistributed.mimir.structuredConfig.common.storage.gcs.bucket_name=$MIMIR_STORAGE_BUCKET" \
+  --set "mimirDistributed.gateway.service.loadBalancerIP=$MIMIR_GATEWAY_IP" \
   --wait \
   --timeout 10m \
   --cleanup-on-fail
@@ -314,18 +384,7 @@ wait_for_certificate_ready mimir-gateway-tls "$K8sNAMESPACE" 120
 echo "mimir verification..."
 kubectl get pods,svc -n "$K8sNAMESPACE"
 
-echo "OpenTelemetry operator and Prometheus Operator CRDs installation..."
-helm upgrade --install opentelemetry-stack "$OTEL_DIR" \
-  --namespace "$K8sNAMESPACE" \
-  --set collector.enabled=false \
-  --set admissionWebhooks.certManager.enabled=true \
-  --set admissionWebhooks.autoGenerateCert.enabled=false \
-  --wait \
-  --cleanup-on-fail
-
-echo "opentelemetry verification..."
-kubectl get pods,svc -n "$K8sNAMESPACE"
-
+LOKI_GATEWAY_IP=$(terraform -chdir="$TF_DIR" output -raw loki_gateway_ip)
 echo "Installing loki..."
 helm upgrade --install loki "$LOKI_DIR" \
   --namespace "$K8sNAMESPACE" \
@@ -334,10 +393,11 @@ helm upgrade --install loki "$LOKI_DIR" \
   --set "loki.serviceAccount.annotations.iam\.gke\.io/gcp-service-account=$LOKI_SA" \
   --set "loki.global.extraEnv[0].name=GOOGLE_CLOUD_UNIVERSE_DOMAIN" \
   --set "loki.global.extraEnv[0].value=$UNIVERSE_API_DOMAIN" \
-  --set "loki.loki.storage.bucketNames.chunks=$STORAGE_BUCKET" \
-  --set "loki.loki.storage.bucketNames.ruler=$STORAGE_BUCKET" \
-  --set "loki.loki.storage.bucketNames.admin=$STORAGE_BUCKET" \
-  --set "loki.loki.storage.gcs.bucket_name=$STORAGE_BUCKET" \
+  --set "loki.loki.storage.bucketNames.chunks=$LOKI_STORAGE_BUCKET" \
+  --set "loki.loki.storage.bucketNames.ruler=$LOKI_STORAGE_BUCKET" \
+  --set "loki.loki.storage.bucketNames.admin=$LOKI_STORAGE_BUCKET" \
+  --set "loki.loki.storage.gcs.bucket_name=$LOKI_STORAGE_BUCKET" \
+  --set "loki.gateway.service.loadBalancerIP=$LOKI_GATEWAY_IP" \
   --wait \
   --timeout 7m \
   --cleanup-on-fail
@@ -358,41 +418,6 @@ helm upgrade --install kube-state-metrics "$KUBE_STATE_DIR" \
 echo "kube-state-metrics verification..."
 kubectl get pods,svc -n "$K8sNAMESPACE"
 
-echo "OpenTelemetry collector installation..."
-helm upgrade --install opentelemetry-stack "$OTEL_DIR" \
-  --namespace "$K8sNAMESPACE" \
-  --set collector.enabled=true \
-  --set "serviceAccount.annotations.iam\.gke\.io/gcp-service-account=$OTEL_SA" \
-  --wait \
-  --cleanup-on-fail
-
-echo "Waiting for OpenTelemetry Certificate..."
-wait_for_certificate_ready otel-collector-vm-tls "$K8sNAMESPACE" 120
-
-if [ -n "$GCE_VM_NAME" ]; then
-  # Extract, Decode, and Upload CA Certificate
-  echo "Download certificates for OTel Collector - CA Certificate"
-  kubectl get secret otel-collector-vm-tls-secret -n "$K8sNAMESPACE" \
-    -o jsonpath="{.data.ca\.crt}" | base64 -d | gcloud storage cp - gs://${STORAGE_BUCKET}/vm-certs/ca.crt
-
-  # Extract, Decode, and Upload TLS Certificate
-  echo "Download certificates for OTel Collector - TLS Certificate"
-  kubectl get secret otel-collector-vm-tls-secret -n "$K8sNAMESPACE" \
-    -o jsonpath="{.data.tls\.crt}" | base64 -d | gcloud storage cp - gs://${STORAGE_BUCKET}/vm-certs/tls.crt
-
-  # Extract, Decode, and Upload TLS Private Key
-  echo "Download certificates for OTel Collector - TLS Private Key"
-  kubectl get secret otel-collector-vm-tls-secret -n "$K8sNAMESPACE" \
-    -o jsonpath="{.data.tls\.key}" | base64 -d | gcloud storage cp - gs://${STORAGE_BUCKET}/vm-certs/tls.key
-
-  echo "Reseting $GCE_VM_NAME"
-  gcloud compute instances reset "$GCE_VM_NAME" --zone="$GCE_VM_ZONE"
-fi
-
-echo "opentelemetry verification..."
-kubectl get pods,svc -n "$K8sNAMESPACE"
-
-echo ""
 echo "--- Starting Demo Applications Installation ---"
 
 echo "Installing beacon app... from:$BEACON_IMAGE"

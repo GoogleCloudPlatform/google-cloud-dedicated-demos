@@ -36,7 +36,7 @@ spec:
     - mimir-gateway.{{ .Release.Namespace }}.svc
     - mimir-gateway.{{ .Release.Namespace }}.svc.cluster.local
   ipAddresses:
-    - {{ (index .Values "mimir-distributed").gateway.service.loadBalancerIP | quote }}
+    - {{ .Values.mimirDistributed.gateway.service.loadBalancerIP | quote }}
   usages:
     - digital signature
     - key encipherment

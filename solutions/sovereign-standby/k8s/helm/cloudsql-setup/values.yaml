@@ -24,3 +24,7 @@ database:
   user: "bankuser"
   password: "change_me" # pragma: allowlist secret
   isPrimary: true
+
+environment:
+  # Must match bank-of-anthos environment.localRoutingNum
+  localRoutingNum: "111111111"

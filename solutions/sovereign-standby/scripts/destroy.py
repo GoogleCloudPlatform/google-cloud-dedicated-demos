@@ -15,316 +15,308 @@
 # limitations under the License.
 #
 #!/usr/bin/env python3
-"""Script for destroying resources in a single targeted environment (gcd or gcp).
+"""Tear down one universe: Kubernetes workloads first, then `terraform destroy`.
 
-Supports full infrastructure destruction as well as Kubernetes-only workload cleanup (--k8s-only).
+Usage:
+  just destroy <gcp|gcd> [--k8s-only] [--dry]
+  just destroy-k8s <gcp|gcd> [--dry]
+
+Kubernetes cleanup order (each step unblocks the next one):
+  1. Mark AlloyDB DBClusters as deleted and remove admission webhooks,
+     so neither the operator nor webhooks block deletion.
+  2. Strip finalizers from AlloyDB / cert-manager custom resources.
+  3. Uninstall Helm releases.
+  4. Delete ClusterIssuers and the demo namespaces (force-finalize if stuck).
+
+--k8s-only is supported only for AlloyDB Omni: with Cloud SQL the database lives
+outside Kubernetes and would be left in an inconsistent state.
 """
 
+import argparse
 import json
-from pathlib import Path
-import subprocess
-import sys
+import shlex
 import time
-
-sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 from env_utils import (
     ENVS_DIR,
+    EnvConfig,
+    add_dry_run_flag,
+    add_env_argument,
+    banner,
+    confirm,
+    describe_kube_context,
+    die,
     get_env_config,
+    has_terraform_state,
+    info,
+    kubectl_json,
+    run,
+    success,
+    warn,
 )
 
+CUSTOM_RESOURCE_KINDS = [
+    "instances.alloydbomni.internal.dbadmin.goog",
+    "dbclusters.alloydbomni.dbadmin.goog",
+    "replications.alloydbomni.dbadmin.goog",
+    "certificaterequests.cert-manager.io",
+    "certificates.cert-manager.io",
+    "issuers.cert-manager.io",
+    "clusterissuers.cert-manager.io",
+]
+DBCLUSTER_KIND = "dbclusters.alloydbomni.dbadmin.goog"
 
-def parse_args():
-    """Parse CLI arguments for target environment and --k8s-only flag."""
-    k8s_only = False
-    target_env = None
+HELM_RELEASES = [  # (release, namespace), uninstalled in this order
+    ("bank-of-anthos", "bank-of-anthos"),
+    ("cloudsql-setup", "bank-of-anthos"),
+    ("alloydb-replica", "alloydb"),
+    ("alloydb-primary", "alloydb"),
+    ("alloydb-operator", "alloydb-omni-system"),
+    ("cert-manager", "cert-manager"),
+]
 
-    for arg in sys.argv[1:]:
-        arg_clean = arg.strip().lower()
-        if arg_clean in ("--k8s-only", "--k8s", "-k"):
-            k8s_only = True
-        elif arg_clean in ("gcd", "gcp") and not target_env:
-            target_env = arg_clean
+NAMESPACES = ["bank-of-anthos", "alloydb", "alloydb-omni-system", "cert-manager"]
 
-    if not target_env:
-        target_env = prompt_select_environment()
+WEBHOOK_KINDS = ["validatingwebhookconfiguration", "mutatingwebhookconfiguration"]
+WEBHOOK_NAME_TOKENS = ("alloydb", "cert-manager")
 
-    return target_env, k8s_only
+HELM_UNINSTALL_TIMEOUT = "120s"
+NAMESPACE_DELETE_TIMEOUT = "180s"
+LB_RELEASE_WAIT_SECONDS = 15
+TF_DESTROY_ATTEMPTS = 3
+TF_DESTROY_RETRY_DELAY_SECONDS = 15
 
-
-def prompt_select_environment() -> str:
-    """Prompt user interactively to select target environment."""
-    print("\nSelect environment:")
-    print(" 1) gcd (Google Cloud Dedicated)")
-    print(" 2) gcp (Google Cloud Platform)")
-    choice = input("Enter choice (gcd/gcp) [gcd]: ").strip().lower()
-    if choice in ("2", "gcp"):
-        return "gcp"
-    return "gcd"
+PATCH_FINALIZERS = '{"metadata":{"finalizers":[]}}'
+PATCH_IS_DELETED = '{"spec":{"isDeleted":true}}'
 
 
-def confirm_action(target_env: str, env_cfg: dict, k8s_only: bool) -> bool:
-    """Prompt user for confirmation before performing cleanup or full destroy."""
-    project_id = env_cfg.get("project_id", "Unknown project")
-    cluster_name = env_cfg.get("cluster_name", "Unknown cluster")
+# --------------------------------------------------------------------------- #
+# Kubernetes primitives                                                       #
+# --------------------------------------------------------------------------- #
 
-    print("\n=========================================================================")
-    if k8s_only:
-        print("=== KUBERNETES WORKLOAD CLEANUP (K8S ONLY) ===")
-    else:
-        print("=== SINGLE ENVIRONMENT DESTROY CONFIRMATION ===")
-    print("=========================================================================")
-    print(f"Target Environment : {target_env.upper()}")
-    print(f"Target Project ID   : {project_id}")
-    print(f"Target Cluster      : {cluster_name}")
-    if k8s_only:
-        print("Scope               : Delete Helm releases, custom resources, and namespaces")
-        print("                      (bank-of-anthos, alloydb, alloydb-omni-system, cert-manager).")
-        print("                      Terraform infrastructure will remain INTACT.")
-    else:
-        print("Scope               : Delete all Kubernetes workloads, followed by full Terraform destroy.")
-    print("=========================================================================\n")
 
-    if k8s_only:
-        prompt = (
-            f"Please confirm that your kubectl CLI is connected to '{target_env.upper()}' ({cluster_name}).\n"
-            f"Reset all Kubernetes workloads for environment '{target_env}'? [y/N]: "
+def patch_all(kind: str, patch: str, dry_run: bool, only_with_finalizers: bool = False) -> None:
+    """Apply a merge patch to every object of `kind` in all namespaces."""
+    if dry_run:
+        # Runnable equivalent: "<namespace>/<name>" lines -> kubectl patch.
+        jsonpath = '{range .items[*]}{.metadata.namespace}{"/"}{.metadata.name}{"\\n"}{end}'
+        print(
+            f"kubectl get {kind} -A -o jsonpath={shlex.quote(jsonpath)} | "
+            f'while IFS=/ read -r ns name; do kubectl patch {kind} "$name" ${{ns:+-n "$ns"}} '
+            f"--type=merge -p {shlex.quote(patch)}; done"
         )
-    else:
-        prompt = (
-            f"Please confirm that your gcloud CLI is authenticated for '{target_env.upper()}' ({project_id}).\n"
-            f"Destroy all resources in environment '{target_env}'? [y/N]: "
+        return
+
+    data = kubectl_json(["get", kind, "-A"])
+    for item in (data or {}).get("items", []):
+        meta = item.get("metadata", {})
+        if only_with_finalizers and not meta.get("finalizers"):
+            continue
+        cmd = ["kubectl", "patch", kind, meta["name"], "--type=merge", "-p", patch]
+        if meta.get("namespace"):
+            cmd += ["-n", meta["namespace"]]
+        res = run(cmd, capture=True)
+        if res.returncode != 0:
+            warn(f"Failed to patch {kind}/{meta['name']}: {res.stderr.strip()}")
+
+
+def strip_custom_resource_finalizers(dry_run: bool) -> None:
+    for kind in CUSTOM_RESOURCE_KINDS:
+        patch_all(kind, PATCH_FINALIZERS, dry_run, only_with_finalizers=True)
+
+
+def delete_webhooks(dry_run: bool) -> None:
+    """Delete AlloyDB / cert-manager admission webhooks (matched by name)."""
+    if dry_run:
+        pattern = "|".join(WEBHOOK_NAME_TOKENS)
+        print(f"kubectl get {','.join(WEBHOOK_KINDS)} -o name | grep -E {shlex.quote(pattern)} | xargs -r kubectl delete")
+        return
+
+    for kind in WEBHOOK_KINDS:
+        for item in (kubectl_json(["get", kind]) or {}).get("items", []):
+            name = item.get("metadata", {}).get("name", "")
+            if any(token in name.lower() for token in WEBHOOK_NAME_TOKENS):
+                run(["kubectl", "delete", kind, name, "--ignore-not-found=true"], capture=True)
+
+
+def uninstall_helm_releases(dry_run: bool) -> None:
+    for release, namespace in HELM_RELEASES:
+        res = run(
+            ["helm", "uninstall", release, "-n", namespace, "--ignore-not-found", "--timeout", HELM_UNINSTALL_TIMEOUT],
+            capture=True,
+            dry_run=dry_run,
         )
-    answer = input(prompt).strip().lower()
-    return answer in ("y", "yes")
+        if res.returncode != 0:
+            warn(f"Failed to uninstall Helm release '{release}' in '{namespace}': {res.stderr.strip()}")
 
 
-def remove_cr_finalizers(kind: str):
-    """Strip finalizers from custom resources to prevent hanging deletions."""
-    res = subprocess.run(
-        ["kubectl", "get", kind, "-A", "-o", "json"],
-        capture_output=True,
-        text=True,
+def force_finalize_namespace(namespace: str) -> None:
+    """Clear finalizers of a namespace stuck in Terminating."""
+    ns = kubectl_json(["get", "ns", namespace])
+    if not ns or ns.get("status", {}).get("phase") != "Terminating":
+        return
+    warn(f"Namespace '{namespace}' is stuck in Terminating; forcing finalizer removal.")
+    # Operators may have re-added finalizers while the namespace was draining.
+    patch_all(DBCLUSTER_KIND, PATCH_IS_DELETED, dry_run=False)
+    strip_custom_resource_finalizers(dry_run=False)
+    ns.setdefault("spec", {})["finalizers"] = []
+    ns.setdefault("metadata", {})["finalizers"] = []
+    res = run(
+        ["kubectl", "replace", "--raw", f"/api/v1/namespaces/{namespace}/finalize", "-f", "-"],
+        stdin=json.dumps(ns),
+        capture=True,
     )
     if res.returncode != 0:
-        return
-    try:
-        items = json.loads(res.stdout).get("items", [])
-        for item in items:
-            name = item["metadata"]["name"]
-            ns = item["metadata"].get("namespace")
-            cmd = ["kubectl", "patch", kind, name, "--type=merge", "-p", '{"metadata":{"finalizers":[]}}']
-            if ns:
-                cmd.extend(["-n", ns])
-            subprocess.run(cmd, capture_output=True, text=True)
-    except Exception:
-        pass
+        warn(f"Failed to finalize namespace '{namespace}': {res.stderr.strip()}")
 
 
-def remove_namespace_finalizers(namespace: str):
-    """Force remove finalizers from a stuck namespace if it remains in Terminating state."""
-    res = subprocess.run(
-        ["kubectl", "get", "ns", namespace, "-o", "json"],
-        capture_output=True,
-        text=True,
-    )
+def delete_namespaces(dry_run: bool) -> None:
+    for namespace in NAMESPACES:
+        res = run(
+            ["kubectl", "delete", "ns", namespace, "--ignore-not-found=true", f"--timeout={NAMESPACE_DELETE_TIMEOUT}"],
+            capture=True,
+            dry_run=dry_run,
+        )
+        if dry_run:
+            continue
+        if res.returncode != 0:
+            warn(f"Deleting namespace '{namespace}' did not finish cleanly: {res.stderr.strip()}")
+        force_finalize_namespace(namespace)
+    if dry_run:
+        print("# If a namespace hangs in Terminating, clear its finalizers:")
+        print("#   kubectl get ns <ns> -o json | jq '.spec.finalizers=[]' | "
+              "kubectl replace --raw /api/v1/namespaces/<ns>/finalize -f -")
+
+
+def is_cluster_reachable() -> bool:
+    res = run(["kubectl", "cluster-info", "--request-timeout=15s"], capture=True, quiet=True)
     if res.returncode != 0:
-        return
-    try:
-        ns_json = json.loads(res.stdout)
-        if ns_json.get("status", {}).get("phase") == "Terminating":
-            ns_json["spec"]["finalizers"] = []
-            subprocess.run(
-                ["kubectl", "replace", "--raw", f"/api/v1/namespaces/{namespace}/finalize", "-f", "-"],
-                input=json.dumps(ns_json),
-                capture_output=True,
-                text=True,
-            )
-    except Exception:
-        pass
+        warn(f"Kubernetes API is not reachable: {res.stderr.strip() or 'kubectl cluster-info failed'}")
+        return False
+    return True
 
 
-def cleanup_k8s_workloads(env_cfg: dict):
-    """Uninstall Helm charts and delete K8s namespaces/resources to return cluster to clean post-TF state."""
-    cluster_name = env_cfg.get("cluster_name")
-    env_name = env_cfg.get("env_name", "target")
-
-    print(f"[*] Cleaning up Kubernetes resources in {env_name} cluster '{cluster_name}'...")
-
-    # 1. Strip finalizers from AlloyDB and cert-manager custom resources
-    custom_resource_types = [
-        "instances.alloydbomni.internal.dbadmin.goog",
-        "dbclusters.alloydbomni.dbadmin.goog",
-        "replications.alloydbomni.dbadmin.goog",
-        "certificaterequests.cert-manager.io",
-        "certificates.cert-manager.io",
-        "issuers.cert-manager.io",
-        "clusterissuers.cert-manager.io",
-    ]
-    for cr in custom_resource_types:
-        remove_cr_finalizers(cr)
-
-    # 2. Uninstall Helm releases in all relevant namespaces
-    helm_releases = [
-        ("bank-of-anthos", "bank-of-anthos"),
-        ("bank-of-anthos", "default"),
-        ("alloydb-replica", "alloydb"),
-        ("alloydb-replica", "default"),
-        ("alloydb-primary", "alloydb"),
-        ("alloydb-primary", "default"),
-        ("cloudsql-setup", "bank-of-anthos"),
-        ("cloudsql-setup", "default"),
-        ("alloydb-operator", "alloydb-omni-system"),
-        ("cert-manager", "cert-manager"),
-    ]
-
-    for release, namespace in helm_releases:
-        subprocess.run(
-            ["helm", "uninstall", release, "-n", namespace],
-            capture_output=True,
-            text=True,
-        )
-
-    # 3. Delete cluster-scoped issuers and webhooks
-    subprocess.run(
-        ["kubectl", "delete", "clusterissuer", "--all", "--ignore-not-found=true"],
-        capture_output=True,
-        text=True,
-    )
-    webhooks = [
-        ("validatingwebhookconfiguration", "cert-manager-webhook"),
-        ("validatingwebhookconfiguration", "alloydb-omni-operator-validating-webhook-configuration"),
-        ("mutatingwebhookconfiguration", "cert-manager-webhook"),
-        ("mutatingwebhookconfiguration", "alloydb-omni-operator-mutating-webhook-configuration"),
-    ]
-    for kind, name in webhooks:
-        subprocess.run(
-            ["kubectl", "delete", kind, name, "--ignore-not-found=true"],
-            capture_output=True,
-            text=True,
-        )
-
-    # 4. Delete dedicated namespaces (cascades to secrets, PVCs, services, certs, pods)
-    namespaces_to_delete = [
-        "bank-of-anthos",
-        "alloydb",
-        "alloydb-omni-system",
-        "cert-manager",
-    ]
-    for ns in namespaces_to_delete:
-        print(f"[*] Deleting namespace '{ns}' (if exists)...")
-        subprocess.run(
-            ["kubectl", "delete", "ns", ns, "--ignore-not-found=true", "--timeout=30s"],
-            capture_output=True,
-            text=True,
-        )
-        remove_namespace_finalizers(ns)
-
-    # 5. Delete remaining LoadBalancer services and PVCs in default namespace
-    subprocess.run(
-        ["kubectl", "delete", "svc", "--all", "-n", "default", "--ignore-not-found=true"],
-        capture_output=True,
-        text=True,
-    )
-    subprocess.run(
-        ["kubectl", "delete", "pvc", "--all", "-n", "default", "--ignore-not-found=true"],
-        capture_output=True,
-        text=True,
-    )
-
-    print(f"[+] Kubernetes cleanup finished for {env_name}.")
+# --------------------------------------------------------------------------- #
+# Teardown steps                                                              #
+# --------------------------------------------------------------------------- #
 
 
-def run_terraform_destroy(env_name: str) -> bool:
-    """Run `terraform destroy -auto-approve` in terraform/envs/<env_name> with retries."""
-    env_dir = ENVS_DIR / env_name
-    if not env_dir.is_dir():
-        print(f"[-] Environment directory {env_dir} does not exist.")
+def cleanup_kubernetes(cfg: EnvConfig, dry_run: bool) -> bool:
+    """Return the cluster to its post-`terraform apply` state. False if unreachable."""
+    if not dry_run and not is_cluster_reachable():
         return False
 
-    tfstate = env_dir / "terraform.tfstate"
-    if not tfstate.is_file():
-        print(f"[*] No state file found for '{env_name}', skipping terraform destroy.")
+    step = (lambda msg: print(f"# {msg}")) if dry_run else info
+
+    step("1/4 Unblocking deletion (AlloyDB isDeleted flag, admission webhooks)")
+    patch_all(DBCLUSTER_KIND, PATCH_IS_DELETED, dry_run)
+    delete_webhooks(dry_run)
+
+    step("2/4 Stripping custom resource finalizers")
+    strip_custom_resource_finalizers(dry_run)
+
+    step("3/4 Uninstalling Helm releases")
+    uninstall_helm_releases(dry_run)
+
+    step("4/4 Deleting ClusterIssuers and namespaces")
+    run(["kubectl", "delete", "clusterissuer", "--all", "--ignore-not-found=true"], capture=True, dry_run=dry_run)
+    delete_namespaces(dry_run)
+    return True
+
+
+def terraform_destroy(env: str, dry_run: bool) -> bool:
+    env_dir = ENVS_DIR / env
+    cmd = ["terraform", "destroy", "-auto-approve"]
+    if dry_run:
+        run(cmd, cwd=env_dir, dry_run=True)
+        return True
+    if not has_terraform_state(env):
+        info(f"No Terraform state for '{env}'; nothing to destroy.")
         return True
 
-    max_attempts = 3
-    for attempt in range(1, max_attempts + 1):
-        print(f"\n[*] Running terraform destroy in {env_dir} (attempt {attempt}/{max_attempts})...")
-        res = subprocess.run(
-            ["terraform", "destroy", "-auto-approve"],
-            cwd=env_dir,
-        )
-        if res.returncode == 0:
-            print(f"[+] Successfully destroyed resources in {env_name}.")
+    for attempt in range(1, TF_DESTROY_ATTEMPTS + 1):
+        info(f"terraform destroy (attempt {attempt}/{TF_DESTROY_ATTEMPTS})")
+        if run(cmd, cwd=env_dir).returncode == 0:
             return True
-
-        if attempt < max_attempts:
-            print(f"[-] Terraform destroy hit an error for {env_name}. Waiting 15s for GCP backend (e.g. PSC NetworkAttachment release) before retry...")
-            time.sleep(15)
-
+        if attempt < TF_DESTROY_ATTEMPTS:
+            warn(f"terraform destroy failed; retrying in {TF_DESTROY_RETRY_DELAY_SECONDS}s...")
+            time.sleep(TF_DESTROY_RETRY_DELAY_SECONDS)
     return False
 
 
-def main():
-    target_env, k8s_only = parse_args()
-    env_cfg = get_env_config(target_env)
+# --------------------------------------------------------------------------- #
+# Entry point                                                                 #
+# --------------------------------------------------------------------------- #
 
-    # Validate --k8s-only compatibility with database flavor
-    if k8s_only and env_cfg.get("enable_cloudsql", False):
-        print("\n=========================================================================")
-        print(" [!] CANNOT RUN '--k8s-only' WITH CLOUDSQL")
-        print("=========================================================================")
-        print(" The '--k8s-only' option is only supported for AlloyDB Omni (where the database")
-        print(" runs entirely inside Kubernetes).")
-        print(f"\n Environment '{target_env.upper()}' is configured with Cloud SQL. Cloud SQL database instances,")
-        print(" schemas, users, and pglogical replication state reside outside of Kubernetes.")
-        print(" Resetting only Kubernetes workloads leaves the external database in an inconsistent state.")
-        print("=========================================================================\n")
 
-        prompt = (
-            f"Would you like to run a FULL destroy for '{target_env.upper()}' instead? [y/N]: "
-        )
-        answer = input(prompt).strip().lower()
-        if answer in ("y", "yes"):
-            k8s_only = False
-        else:
-            print(f"\n[!] Operation aborted. To completely reset this Cloud SQL environment, run:\n")
-            print(f"        just destroy {target_env}\n")
-            sys.exit(0)
+def parse_args() -> argparse.Namespace:
+    parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    add_env_argument(parser)
+    parser.add_argument(
+        "--k8s-only", "-k", action="store_true", help="Only remove Kubernetes workloads; keep Terraform infrastructure"
+    )
+    add_dry_run_flag(parser)
+    return parser.parse_args()
 
-    if not confirm_action(target_env, env_cfg, k8s_only):
-        print("[!] Operation cancelled by user.")
-        sys.exit(0)
 
-    # Step 1: Kubernetes Services, Workloads, & Namespaces Cleanup
-    if env_cfg.get("enable_app"):
-        print("\n=========================================================================")
-        print(f"=== Step 1: Kubernetes Workload & Namespace Cleanup ({target_env.upper()}) ===")
-        print("=========================================================================")
-        cleanup_k8s_workloads(env_cfg)
-        print("[*] Waiting 10 seconds for cloud load balancers to release...")
-        time.sleep(10)
-
+def print_plan(cfg: EnvConfig, k8s_only: bool) -> None:
+    print(f"Environment : {cfg.name.upper()}")
+    print(f"Project     : {cfg.project_id or 'unknown'}")
+    print(f"Cluster     : {cfg.cluster_name}")
     if k8s_only:
-        print("\n=========================================================================")
-        print(f"[SUCCESS] Kubernetes workloads and namespaces for '{target_env.upper()}' cleaned up cleanly.")
-        print("          Cluster is now in a pristine state (as right after terraform apply).")
-        print("=========================================================================")
-        sys.exit(0)
-
-    # Step 2: Terraform Destroy
-    print("\n=========================================================================")
-    print(f"=== Step 2: Terraform Destroy ({target_env.upper()}) ===")
-    print("=========================================================================")
-    success = run_terraform_destroy(target_env)
-
-    if success:
-        print("\n=========================================================================")
-        print(f"[SUCCESS] Environment '{target_env.upper()}' destroyed cleanly.")
-        print("=========================================================================")
+        print(f"Scope       : Helm releases, custom resources and namespaces ({', '.join(NAMESPACES)}).")
+        print("              Terraform infrastructure is kept.")
     else:
-        print(f"\n[-] Errors occurred during terraform destroy for '{target_env}'.")
-        sys.exit(1)
+        print("Scope       : all Kubernetes workloads, then `terraform destroy` of the whole environment.")
+    describe_kube_context(cfg)
+    print()
+
+
+def main() -> None:
+    args = parse_args()
+    cfg = get_env_config(args.env)
+    env = cfg.name.upper()
+
+    if args.k8s_only and cfg.enable_cloudsql:
+        die(f"--k8s-only is not supported for Cloud SQL ({env} has enable_cloudsql: true): the external "
+            f"database would be left inconsistent. Use a full teardown instead: just destroy {args.env}")
+
+    clean_k8s = args.k8s_only or cfg.enable_app
+
+    if args.dry_run:
+        banner(f"[DRY-RUN] Manual teardown of {env}")
+        if clean_k8s:
+            print(f"# With kubectl pointed at the {env} cluster, run:")
+            cleanup_kubernetes(cfg, dry_run=True)
+        if not args.k8s_only:
+            print()
+            terraform_destroy(args.env, dry_run=True)
+        return
+
+    banner(f"Kubernetes cleanup of {env}" if args.k8s_only else f"Full destroy of {env}")
+    print_plan(cfg, args.k8s_only)
+    if not confirm(f"Proceed with {'Kubernetes cleanup' if args.k8s_only else 'DESTROY'} of {env}?"):
+        info("Cancelled.")
+        return
+
+    if clean_k8s:
+        banner(f"Step 1: Kubernetes cleanup ({env})")
+        cleaned = cleanup_kubernetes(cfg, dry_run=False)
+        if args.k8s_only:
+            if not cleaned:
+                die(f"Kubernetes cleanup of {env} failed: cluster unreachable.")
+            success(f"Kubernetes workloads of {env} removed; cluster is back to its post-apply state.")
+            return
+        if cleaned:
+            info(f"Waiting {LB_RELEASE_WAIT_SECONDS}s for cloud load balancers to be released...")
+            time.sleep(LB_RELEASE_WAIT_SECONDS)
+        else:
+            warn("Skipping Kubernetes cleanup; continuing with terraform destroy.")
+
+    banner(f"Step 2: terraform destroy ({env})")
+    if not terraform_destroy(args.env, dry_run=False):
+        die(f"terraform destroy failed for {env} after {TF_DESTROY_ATTEMPTS} attempts.")
+    success(f"Environment {env} destroyed.")
 
 
 if __name__ == "__main__":

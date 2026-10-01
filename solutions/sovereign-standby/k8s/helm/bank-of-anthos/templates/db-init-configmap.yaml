@@ -34,7 +34,7 @@ data:
 {{ .Files.Get "files/0_init_tables.sql" | indent 4 }}
 
   1-load-testdata.sql: |
-{{ .Files.Get "files/1-load-testdata.sql" | indent 4 }}
+{{ tpl (.Files.Get "files/1-load-testdata.sql") . | indent 4 }}
 
   1_create_transactions.sh: |
 {{ .Files.Get "files/1_create_transactions.sh" | indent 4 }}
@@ -104,7 +104,7 @@ data:
       export POSTGRES_DB="$DB_NAME"
       export POSTGRES_USER="$DB_USER"
       export POSTGRES_PASSWORD="$DB_PASSWORD"
-      export LOCAL_ROUTING_NUM="${LOCAL_ROUTING_NUM:-883745000}"
+      export LOCAL_ROUTING_NUM={{ .Values.environment.localRoutingNum | quote }}
       export USE_DEMO_DATA="True"
       export DB_HOST
       bash /scripts/1_create_transactions.sh

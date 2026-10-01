@@ -91,3 +91,11 @@ resource "google_compute_address" "mimir_gateway_ip" {
   address_type = "INTERNAL"
   subnetwork   = length(google_compute_subnetwork.monitoring_subnet) > 0 ? google_compute_subnetwork.monitoring_subnet[0].id : local.config.subnet_name
 }
+
+resource "google_compute_address" "loki_gateway_ip" {
+  name         = "loki-gateway-ip"
+  region       = local.config.region
+  project      = data.google_client_config.default.project
+  address_type = "INTERNAL"
+  subnetwork   = length(google_compute_subnetwork.monitoring_subnet) > 0 ? google_compute_subnetwork.monitoring_subnet[0].id : local.config.subnet_name
+}

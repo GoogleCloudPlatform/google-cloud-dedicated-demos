@@ -35,3 +35,45 @@ resource "google_storage_bucket" "monitoring_storage_bucket" {
   }
 
 }
+
+resource "google_storage_bucket" "mimir_storage_bucket" {
+  count                       = local.config.enable_storage_bucket == true ? 1 : 0
+  name                        = local.config.mimir_bucket_name
+  location                    = data.google_client_config.default.region
+  project                     = data.google_client_config.default.project
+  uniform_bucket_level_access = true
+  labels                      = local.common_labels
+  force_destroy               = true
+
+  # Automatically abort incomplete multipart uploads after 7 days to optimize storage costs
+  lifecycle_rule {
+    condition {
+      age = 7
+    }
+    action {
+      type = "AbortIncompleteMultipartUpload"
+    }
+  }
+
+}
+
+resource "google_storage_bucket" "loki_storage_bucket" {
+  count                       = local.config.enable_storage_bucket == true ? 1 : 0
+  name                        = local.config.loki_bucket_name
+  location                    = data.google_client_config.default.region
+  project                     = data.google_client_config.default.project
+  uniform_bucket_level_access = true
+  labels                      = local.common_labels
+  force_destroy               = true
+
+  # Automatically abort incomplete multipart uploads after 7 days to optimize storage costs
+  lifecycle_rule {
+    condition {
+      age = 7
+    }
+    action {
+      type = "AbortIncompleteMultipartUpload"
+    }
+  }
+
+}

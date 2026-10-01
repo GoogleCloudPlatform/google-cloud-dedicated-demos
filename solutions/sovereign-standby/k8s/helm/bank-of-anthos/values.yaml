@@ -39,10 +39,7 @@ loadgenerator:
 
 # Environment variables that apply to all pods
 environment:
-  # The value taken from:
-  # https://github.com/GoogleCloudPlatform/bank-of-anthos/blob/main/kubernetes-manifests/config.yaml
-  #
-  localRoutingNum: "883745000"
+  localRoutingNum: "111111111"
   enableTracing: "false"
   enableMetrics: "false"
 

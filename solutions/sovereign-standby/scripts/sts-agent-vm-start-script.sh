@@ -21,7 +21,7 @@ set -euo pipefail
 # --- LOGGING SETUP ---
 # Redirect all stdout and stderr to both /var/log/sts-agent-startup.log AND the system serial console
 LOG_FILE="/var/log/sts-agent-startup.log"
-mkdir -p $(dirname "${LOG_FILE}")
+mkdir -p "$(dirname "${LOG_FILE}")"
 touch "${LOG_FILE}" && chmod 644 "${LOG_FILE}"
 ln -sf "${LOG_FILE}" /root/script_log.txt
 ln -sf "${LOG_FILE}" /var/log/script_log.txt
@@ -34,17 +34,26 @@ echo "=== [Bootstrap Started at $(date -u)] ==="
 echo "Full execution log captured at: ${LOG_FILE} (and symlinked at /var/log/script_log.txt)"
 
 # --- CONFIGURATION VARIABLES (Querying VM Metadata directly) ---
-DEST_BUCKET_NAME="$(curl -s -f http://metadata.google.internal/computeMetadata/v1/instance/attributes/DEST_BUCKET_NAME -H 'Metadata-Flavor: Google' || echo "${DEST_BUCKET_NAME:-}")"
+METADATA_URL="http://metadata.google.internal/computeMetadata/v1/instance/attributes"
+
+# Print instance metadata attribute $1, or $2 (default) if it is not set.
+metadata() {
+    curl -s -f -H 'Metadata-Flavor: Google' "${METADATA_URL}/$1" 2>/dev/null || echo "${2:-}"
+}
+
+DEST_BUCKET_NAME="$(metadata DEST_BUCKET_NAME "${DEST_BUCKET_NAME:-}")"
+AGENT_POOL_NAME="$(metadata AGENT_POOL_NAME "${AGENT_POOL_NAME:-}")"
+PROJECT_ID="$(metadata PROJECT_ID "${PROJECT_ID:-}")"
+# Sovereign (GCD) Cloud Storage host; override via the STORAGE_HOST metadata attribute.
+STORAGE_HOST="$(metadata STORAGE_HOST "${STORAGE_HOST:-storage.apis-berlin-build0.goog}")"
 MOUNT_POINT="/mnt/gcs-destination"
-AGENT_POOL_NAME="$(curl -s -f http://metadata.google.internal/computeMetadata/v1/instance/attributes/AGENT_POOL_NAME -H 'Metadata-Flavor: Google' || echo "${AGENT_POOL_NAME:-}")"
-PROJECT_ID="$(curl -s -f http://metadata.google.internal/computeMetadata/v1/instance/attributes/PROJECT_ID -H 'Metadata-Flavor: Google' || echo "${PROJECT_ID:-}")"
 
 if [ -z "${DEST_BUCKET_NAME}" ] || [ -z "${AGENT_POOL_NAME}" ] || [ -z "${PROJECT_ID}" ]; then
     echo "FATAL ERROR: DEST_BUCKET_NAME, AGENT_POOL_NAME, or PROJECT_ID metadata attributes are missing!"
     echo "You must pass --metadata=DEST_BUCKET_NAME=...,AGENT_POOL_NAME=...,PROJECT_ID=... when creating this VM."
     exit 1
 fi
-echo "Loaded configuration from VM metadata: DEST_BUCKET_NAME=${DEST_BUCKET_NAME}, AGENT_POOL_NAME=${AGENT_POOL_NAME}, PROJECT_ID=${PROJECT_ID}"
+echo "Loaded configuration from VM metadata: DEST_BUCKET_NAME=${DEST_BUCKET_NAME}, AGENT_POOL_NAME=${AGENT_POOL_NAME}, PROJECT_ID=${PROJECT_ID}, STORAGE_HOST=${STORAGE_HOST}"
 
 echo "=== [1/5] Updating and Installing System Packages ==="
 # NOTE: All outbound HTTPS queries for *.googleapis.com and *.gcr.io are routed natively via Cloud NAT.
@@ -56,7 +65,7 @@ apt-get install -y curl apt-transport-https ca-certificates gnupg lsb-release fd
 
 # Symlink fd if needed (Ubuntu/Debian installs as fdfind)
 if ! command -v fd &>/dev/null && command -v fdfind &>/dev/null; then
-    ln -s $(command -v fdfind) /usr/local/bin/fd
+    ln -s "$(command -v fdfind)" /usr/local/bin/fd
 fi
 
 # Install official Google Cloud gcsfuse repository using modern keyring (apt-key deprecated in Debian 13/Trixie)
@@ -79,10 +88,10 @@ fi
 systemctl enable docker --now
 
 # Verify Cloud NAT DNS resolution before proceeding
-echo "Verifying external DNS resolution for www.googleapis.com, gcr.io, and storage.apis-berlin-build0.goog over Cloud NAT:"
+echo "Verifying external DNS resolution for www.googleapis.com, gcr.io, and ${STORAGE_HOST} over Cloud NAT:"
 dig A www.googleapis.com +short || true
 dig A gcr.io +short || true
-dig A storage.apis-berlin-build0.goog +short || true
+dig A "${STORAGE_HOST}" +short || true
 
 echo "=== [2/5] Preparing Credentials File (/opt/creds/key.json) ==="
 mkdir -p /opt/creds
@@ -117,8 +126,8 @@ fi
 
 # Idempotently mount GCS destination bucket with secure permissions using native VM metadata auth (no --key-file)
 if ! mountpoint -q "${MOUNT_POINT}"; then
-    echo "Mounting bucket '${DEST_BUCKET_NAME}' to '${MOUNT_POINT}' via Sovereign endpoint (storage.apis-berlin-build0.goog:443)..."
-    gcsfuse --custom-endpoint=storage.apis-berlin-build0.goog:443 \
+    echo "Mounting bucket '${DEST_BUCKET_NAME}' to '${MOUNT_POINT}' via Sovereign endpoint (${STORAGE_HOST}:443)..."
+    gcsfuse --custom-endpoint="${STORAGE_HOST}:443" \
         --implicit-dirs \
         -o allow_other \
         --dir-mode=0755 \
@@ -153,7 +162,7 @@ docker run -d --ulimit memlock=64000000 \
     --project-id="${PROJECT_ID}" \
     --creds-file=/opt/creds/key.json \
     --agent-pool="${AGENT_POOL_NAME}" \
-    --hostname=$(hostname) \
+    --hostname="$(hostname)" \
     --log-dir=/agent_logs \
     --alsologtostderr \
     --v=2

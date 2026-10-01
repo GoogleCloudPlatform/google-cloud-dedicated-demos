@@ -14,7 +14,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
-mimir-distributed:
+mimirDistributed:
   enabled: true
   image:
     repository: docker.io/grafana/mimir
@@ -71,10 +71,10 @@ mimir-distributed:
       size: 10Gi
     resources:
       requests:
-        cpu: 500m
-        memory: 1Gi
+        cpu: 100m
+        memory: 512Mi
       limits:
-        cpu: 1000m
+        cpu: 500m
         memory: 1Gi
 
   compactor:
@@ -95,4 +95,7 @@ mimir-distributed:
 
   metaMonitoring:
     serviceMonitor:
+      enabled: true
       clusterLabel: null
+      labels:
+        release: monitoring

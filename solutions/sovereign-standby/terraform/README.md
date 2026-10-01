@@ -44,7 +44,7 @@ execution flags.
 
 Attribute                 | Type      | Example / Expected Value                                      | Description & Federation Rationale
 :------------------------ | :-------- | :------------------------------------------------------------ | :---------------------------------
-`general.universe_domain` | `string`  | `"googleapis.com"` (GCP)<br>`"apis-berlin-build0.goog"` (GCD) | Target cloud domain endpoint. Directs Terraform API calls to standard GCP or regional sovereign GCD API domains.
+`general.universe_domain` | `string`  | `"googleapis.com"` (GCP), `"apis-berlin-build0.goog"` (GCD)   | Target cloud domain endpoint. Directs Terraform API calls to standard GCP or regional sovereign GCD API domains.
 `general.org_id`          | `string`  | `"123456789012"`                                              | Numeric Google Cloud Organization ID. Required for Workforce Identity Pool parent binding and org-level IAM policies.
 `general.project_id`      | `string`  | `"my-project"`                                                | Target project ID where Terraform resources are created for the respective cloud universe.
 `general.prefix`          | `string`  | `"fed-demo"`                                                  | Short resource naming prefix prepended to provisioned resource names to avoid collisions across environments.
@@ -77,7 +77,7 @@ Attribute                           | Type      | Example / Expected Value      
 `network.bgp_peer_interface_1_ip`   | `string`  | `"169.254.2.2"`                                    | Link-local IPv4 address of remote BGP peer interface for VPN Tunnel 1.
 `network.remote_vpn_interface_0_ip` | `string`  | `"34.x.x.x"` (Step 2)                              | External IPv4 address of interface 0 on the remote HA VPN gateway. Left blank during initial baseline apply (**Step 1**).
 `network.remote_vpn_interface_1_ip` | `string`  | `"34.y.y.y"` (Step 2)                              | External IPv4 address of interface 1 on the remote HA VPN gateway. Left blank during initial baseline apply (**Step 1**).
-`network.secondary_ip_ranges`       | `list`    | `pods: 10.101.0.0/16`<br>`services: 10.102.0.0/20` | Secondary CIDR blocks allocated for GKE Autopilot pod and service IP networking.
+`network.secondary_ip_ranges`       | `list`    | `pods: 10.101.0.0/16`, `services: 10.102.0.0/20`   | Secondary CIDR blocks allocated for GKE Autopilot pod and service IP networking.
 
 --------------------------------------------------------------------------------
 
