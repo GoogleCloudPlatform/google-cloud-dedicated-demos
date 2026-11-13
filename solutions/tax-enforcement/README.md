@@ -69,7 +69,7 @@ solution:
 | **LLM**      | Gemma     | Open-weight model for policy-grounded insights.         |
 | **RAG**      | BigQuery  | Vector Search for semantic matching and RAG grounding.  |
 | **Analysis** | Jupyter   | Notebook for ML model training and analysis/validation. |
-| **App**      | Flask     | Web app for prediction visualization.                   |
+| **App**      | Flask     | Gunicorn-served web app for prediction visualization.   |
 
 ### Project Structure Overview
 

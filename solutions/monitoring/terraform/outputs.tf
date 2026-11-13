@@ -99,6 +99,16 @@ output "loki_gateway_ip" {
   description = "The IP address of the Loki gateway for internal Load Balancer"
 }
 
+output "grafana_gateway_ip" {
+  value       = google_compute_address.grafana_gateway_ip.address
+  description = "The reserved external IP address of the Grafana Gateway"
+}
+
+output "grafana_gateway_ip_name" {
+  value       = google_compute_address.grafana_gateway_ip.name
+  description = "The name of the reserved external IP address, referenced by the Grafana Gateway"
+}
+
 output "gce_zone" {
   value       = "${data.google_client_config.default.region}-a"
   description = "Zone for the GCE VM"

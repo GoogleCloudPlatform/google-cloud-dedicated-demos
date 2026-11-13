@@ -53,9 +53,9 @@ fluent-bit:
       mountPath: /etc/fluent-bit/certs
       readOnly: true
 
-  env:
+  envWithTpl:
     - name: OTEL_COLLECTOR_HOST
-      value: otel-collector
+      value: "otel-collector.{{ .Release.Namespace }}.svc.cluster.local"
 
   daemonSetVolumes:
     - name: varlog

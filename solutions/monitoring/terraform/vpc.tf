@@ -99,3 +99,13 @@ resource "google_compute_address" "loki_gateway_ip" {
   address_type = "INTERNAL"
   subnetwork   = length(google_compute_subnetwork.monitoring_subnet) > 0 ? google_compute_subnetwork.monitoring_subnet[0].id : local.config.subnet_name
 }
+
+# Reserved external IP for the Grafana Gateway (gke-l7-regional-external-managed).
+# A stable IP keeps the Grafana URL (and any OAuth redirect URI) the same across reinstalls
+# and lets deploy_app_gke.sh set GF_SERVER_ROOT_URL in a single Grafana deploy.
+resource "google_compute_address" "grafana_gateway_ip" {
+  name         = "grafana-gateway-ip"
+  region       = local.config.region
+  project      = data.google_client_config.default.project
+  address_type = "EXTERNAL"
+}

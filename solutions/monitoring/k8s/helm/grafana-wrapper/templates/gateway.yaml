@@ -28,6 +28,11 @@ metadata:
     app.kubernetes.io/managed-by: {{ .Release.Service }}
 spec:
   gatewayClassName: {{ .Values.gateway.className | default "gke-l7-regional-external-managed" }}
+  {{- with .Values.gateway.addressName }}
+  addresses:
+  - type: NamedAddress
+    value: {{ . | quote }}
+  {{- end }}
   listeners:
   - name: https
     protocol: HTTPS

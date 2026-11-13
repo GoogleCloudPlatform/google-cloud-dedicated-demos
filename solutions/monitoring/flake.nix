@@ -23,6 +23,7 @@
         };
 
         dev = with pkgs; [
+          jq
           just
           kubectl
           pre-commit

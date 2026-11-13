@@ -39,7 +39,7 @@ spec:
             - name: OTEL_SERVICE_NAME
               value: beacon-app
             - name: OTEL_COLLECTOR_ENDPOINT
-              value: {{ .Values.beacon.otelHttpEndpoint }}
+              value: {{ .Values.beacon.otelHttpEndpoint | default (printf "https://otel-collector.%s.svc.cluster.local:4318/v1/metrics" .Release.Namespace) }}
             - name: OTEL_EXPORTER_OTLP_CERTIFICATE
               value: /etc/ssl/certs/sovereign/ca.crt
             - name: OTEL_EXPORTER_OTLP_CLIENT_CERTIFICATE

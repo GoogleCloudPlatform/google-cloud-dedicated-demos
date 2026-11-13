@@ -171,12 +171,13 @@ fi
 
 # Optional: Install Beacon demo app pushing synthetic OTLP metrics to the local OTel Collector
 if [ "${ENABLE_DEMO_METRIC_GENERATOR:-false}" = "true" ]; then
+    echo "=== Getting Beacon demo required files ==="
+    gcloud storage cp gs://${CERT_BUCKET}/software/vm-libraries/requirements.txt /usr/local/bin/requirements.txt
+
     echo "=== Installing Beacon demo metric generator app (beacon.service) ==="
     echo "Install pip packages"
-    pip install --break-system-packages --no-cache-dir \
-        opentelemetry-api \
-        opentelemetry-sdk \
-        opentelemetry-exporter-otlp-proto-http
+    pip3 install --break-system-packages --ignore-installed --no-cache-dir \
+        --require-hashes -r /usr/local/bin/requirements.txt
 
     fetch_config_file "../../apps/beacon/app.py" "beacon_app_py" "/usr/local/bin/beacon-app.py" "0755"
     fetch_config_file "../../apps/gce/beacon.service" "beacon_app_service" "/etc/systemd/system/beacon.service" "0644"

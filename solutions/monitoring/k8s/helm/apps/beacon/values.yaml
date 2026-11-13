@@ -16,4 +16,5 @@
 #
 beacon:
   image: replaceme
-  otelHttpEndpoint: replaceme
+  # Empty: the chart uses the OTel collector in the release namespace.
+  otelHttpEndpoint: ""

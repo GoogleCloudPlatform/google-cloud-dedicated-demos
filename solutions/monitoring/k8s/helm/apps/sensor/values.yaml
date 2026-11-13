@@ -16,6 +16,6 @@
 #
 sensor:
   image: replaceme
-  port: replaceme
+  port: 8000
   tls:
     serverName: monitoring-sensor

@@ -17,6 +17,8 @@
 gateway:
   enabled: true
   className: "gke-l7-regional-external-managed"
+  # Name of a reserved regional external IP address (NamedAddress). Empty = ephemeral IP.
+  addressName: ""
   httpPort: 80
   httpsPort: 443
   backendPort: 80
@@ -157,10 +159,11 @@ grafana:
   env:
     GOOGLE_CLOUD_UNIVERSE_DOMAIN: replaceme
     GCP_PROJECT_ID: replaceme
-    GRAFANA_MIMIR_URL: replaceme
-    GRAFANA_MIMIR_SERVER_NAME: replaceme
-    GRAFANA_LOKI_URL: replaceme
-    GRAFANA_LOKI_SERVER_NAME: replaceme
+    # Rendered through tpl by the Grafana chart, so they follow the release namespace.
+    GRAFANA_MIMIR_URL: "https://mimir-gateway.{{ .Release.Namespace }}.svc.cluster.local:443/prometheus"
+    GRAFANA_MIMIR_SERVER_NAME: "mimir-gateway.{{ .Release.Namespace }}.svc.cluster.local"
+    GRAFANA_LOKI_URL: "https://loki-gateway.{{ .Release.Namespace }}.svc.cluster.local:443"
+    GRAFANA_LOKI_SERVER_NAME: "loki-gateway.{{ .Release.Namespace }}.svc.cluster.local"
     GF_SERVER_ROOT_URL: replaceme
     GF_AUTH_DISABLE_LOGIN_FORM: false
     GF_AUTH_GENERIC_OAUTH_ENABLED: true
