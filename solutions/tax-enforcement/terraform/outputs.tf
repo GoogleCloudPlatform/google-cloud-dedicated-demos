@@ -65,6 +65,10 @@ output "policy_embeddings_table_id" {
   value = var.policy_embeddings_table_id
 }
 
+output "llm_backend" {
+  description = "Configured LLM backend deployment mode ('both', 'vertex'/'gemini', or 'gke')."
+  value       = var.llm_backend
+}
 
 resource "local_file" "helm_secrets" {
   filename        = "${path.module}/../k8s/helm/deployment-secrets.yaml"

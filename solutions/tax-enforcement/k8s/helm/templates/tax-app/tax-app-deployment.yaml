@@ -61,8 +61,20 @@ spec:
                   key: demo-username
             - name: PROJECT_ID
               value: {{ .Values.global.projectId }}
+            - name: REGION
+              value: {{ .Values.global.region | default .Values.vertexAI.region | quote }}
             - name: UNIVERSE_DOMAIN
               value: {{ .Values.global.universeDomain }}
+            - name: LLM_BACKEND
+              value: {{ (.Values.llm).defaultBackend | default "vertex" | quote }}
+            - name: LLM_MODEL_NAME
+              value: {{ (.Values.vllm.modelId | default "google/gemma-3-27b-it") | trimPrefix "publishers/" | replace "/models/" "/" | quote }}
+            - name: VERTEX_PROJECT_ID
+              value: {{ .Values.vertexAI.projectId | default .Values.global.projectId | quote }}
+            - name: VERTEX_REGION
+              value: {{ .Values.vertexAI.region | default .Values.global.region | quote }}
+            - name: VERTEX_ENDPOINT_ID
+              value: {{ .Values.vertexAI.endpointId | quote }}
           readinessProbe:
             httpGet:
               path: /health

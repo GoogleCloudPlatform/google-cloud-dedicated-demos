@@ -65,4 +65,4 @@ pip install --no-cache-dir --require-hashes -r "$BASE_DIR/app/requirements.txt"
 # 4. Generate data
 echo "Generating data to: $DATA_FILE_PATH"
 mkdir -p "$(dirname "$DATA_FILE_PATH")"
-python3 "$BASE_DIR/app/data_generator/generate_tax_data.py" --output "$DATA_FILE_PATH"
+python3 "$BASE_DIR/app/data_generator/generate_tax_data.py" --training-rows "${TRAINING_ROWS:-100000}" --output "$DATA_FILE_PATH"

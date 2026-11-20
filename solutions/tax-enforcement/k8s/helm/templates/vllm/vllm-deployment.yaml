@@ -14,6 +14,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 #
+{{- if .Values.vllm.enabled }}
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -56,7 +57,7 @@ spec:
             - name: LD_LIBRARY_PATH
               value: ${LD_LIBRARY_PATH}:/usr/local/nvidia/lib64
             - name: MODEL_ID
-              value: google/gemma-3-27b-it
+              value: {{ (.Values.vllm.modelId | default "google/gemma-3-27b-it") | trimPrefix "publishers/" | replace "/models/" "/" | quote }}
             - name: HUGGING_FACE_HUB_TOKEN
               valueFrom:
                 secretKeyRef:
@@ -95,9 +96,14 @@ spec:
             - mountPath: /root/.cache/huggingface
               name: cache-volume
       dnsPolicy: ClusterFirst
-      {{- with .Values.vllm.nodeSelector }}
+      {{- if or .Values.vllm.nodeSelector (and .Values.vllm.computeClass .Values.vllm.computeClass.enabled) }}
       nodeSelector:
+        {{- if and .Values.vllm.computeClass .Values.vllm.computeClass.enabled (not (hasKey (.Values.vllm.nodeSelector | default dict) "cloud.google.com/compute-class")) }}
+        cloud.google.com/compute-class: {{ .Values.vllm.computeClass.name | default "cc-custom" | quote }}
+        {{- end }}
+        {{- with .Values.vllm.nodeSelector }}
         {{- toYaml . | nindent 8 }}
+        {{- end }}
       {{- end }}
       {{- with .Values.vllm.tolerations }}
       tolerations:
@@ -116,3 +122,4 @@ spec:
         - name: cache-volume
           persistentVolumeClaim:
             claimName: model-cache
+{{- end }}

@@ -22,15 +22,87 @@
   const chatMessages = document.getElementById("chat-messages");
   const chatInput = document.getElementById("chat-input");
   const chatSend = document.getElementById("chat-send");
+  const llmBackendSelect = document.getElementById("llm-backend-select");
+  const llmStatusDot = document.getElementById("llm-status-dot");
 
   let isOpen = false;
   let conversationHistory = [];
+  let currentBackend = "vertex";
+  let backendMetadata = {};
+
+  function updateStatusIndicator() {
+    if (!llmStatusDot) return;
+    const info = backendMetadata[currentBackend];
+    const isAvailable = info ? Boolean(info.available) : true;
+    llmStatusDot.className = `llm-status-dot ${isAvailable ? "online" : "offline"}`;
+    if (info) {
+      llmStatusDot.title = `${info.label} (${info.model}) - ${isAvailable ? "Ready" : "Unavailable / Not deployed"}`;
+    }
+  }
+
+  async function loadLlmConfig() {
+    try {
+      const resp = await fetch("/api/llm/config");
+      if (!resp.ok) return;
+      const cfg = await resp.json();
+      if (cfg.backends) {
+        backendMetadata = cfg.backends;
+      }
+      if (cfg.active_backend) {
+        currentBackend = cfg.active_backend;
+        if (llmBackendSelect) {
+          llmBackendSelect.value = currentBackend;
+        }
+      }
+      updateStatusIndicator();
+    } catch (err) {
+      console.warn("Could not load LLM backend config:", err);
+    }
+  }
+
+  if (llmBackendSelect) {
+    llmBackendSelect.addEventListener("change", async (e) => {
+      const selected = e.target.value;
+      try {
+        const resp = await fetch("/api/llm/config", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ backend: selected }),
+        });
+        if (resp.ok) {
+          const cfg = await resp.json();
+          currentBackend = cfg.active_backend || selected;
+          if (cfg.backends) {
+            backendMetadata = cfg.backends;
+          }
+          updateStatusIndicator();
+          const info = backendMetadata[currentBackend] || {};
+          const switchPrefix =
+            window.i18n && window.i18n.t("chat.switched_to")
+              ? window.i18n.t("chat.switched_to")
+              : "Switched AI engine to:";
+          const platformName =
+            currentBackend === "gke"
+              ? "GKE vLLM"
+              : "Gemini Platform";
+          addSystemNotice(
+            `${switchPrefix} ${platformName}${info.model ? ` (${info.model})` : ""}`,
+          );
+        }
+      } catch (err) {
+        console.error("Failed to switch LLM backend:", err);
+      }
+    });
+  }
+
+  loadLlmConfig();
 
   // Toggle chat window
   chatToggle.addEventListener("click", () => {
     isOpen = !isOpen;
     chatContainer.style.display = isOpen ? "flex" : "none";
     if (isOpen) {
+      loadLlmConfig();
       chatInput.focus();
     }
   });
@@ -116,6 +188,7 @@
           policy_context: context,
           history: conversationHistory,
           language: currentLang,
+          backend: currentBackend,
         }),
       });
 
@@ -152,6 +225,14 @@
       chatSend.disabled = false;
       chatInput.focus();
     }
+  }
+
+  function addSystemNotice(text) {
+    const noticeDiv = document.createElement("div");
+    noticeDiv.className = "chat-system-notice";
+    noticeDiv.textContent = text;
+    chatMessages.appendChild(noticeDiv);
+    chatMessages.scrollTop = chatMessages.scrollHeight;
   }
 
   // Add message to chat

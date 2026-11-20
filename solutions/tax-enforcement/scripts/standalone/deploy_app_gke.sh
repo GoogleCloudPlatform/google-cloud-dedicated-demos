@@ -24,15 +24,18 @@ echo "Fetching infrastructure details from Terraform..."
 AR_REPO_NAME=$(terraform -chdir="$TF_DIR" output -raw app_repository_id)
 GCP_PROJECT_ID=$(terraform -chdir="$TF_DIR" output -raw project_id)
 GCP_PROJECT_NUM=$(terraform -chdir="$TF_DIR" output -raw project_number)
-GCP_UNIVERSE_DOMAIN=$(terraform -chdir="$TF_DIR" output -raw universe_api_domain)
+GCP_UNIVERSE_DOMAIN="${UNIVERSE_DOMAIN:-$(terraform -chdir="$TF_DIR" output -raw universe_api_domain)}"
 GKE_CLUSTER_NAME=$(terraform -chdir="$TF_DIR" output -raw tax_office_cluster_name)
-GKE_REGION=$(terraform -chdir="$TF_DIR" output -raw region)
+GKE_REGION="${REGION:-$(terraform -chdir="$TF_DIR" output -raw region)}"
+VERTEX_PROJECT_ID="${VERTEX_PROJECT_ID:-$GCP_PROJECT_ID}"
+VERTEX_REGION="${VERTEX_REGION:-$GKE_REGION}"
 
 echo "Connecting to GKE cluster: $GKE_CLUSTER_NAME..."
 gcloud container clusters get-credentials "$GKE_CLUSTER_NAME" --dns-endpoint --region "$GKE_REGION" --project "$GCP_PROJECT_ID"
 
-# Derive registry host: replace 'apis-' with 'pkg-' in the universe domain if it exists
-REGISTRY_DOMAIN="${GCP_UNIVERSE_DOMAIN/apis-/pkg-}"
+# Derive registry host: replace 'apis-' with 'pkg-' or 'apis.' with 'registry.' in the universe domain
+REGISTRY_DOMAIN="${REGISTRY_DOMAIN:-${GCP_UNIVERSE_DOMAIN/apis-/pkg-}}"
+REGISTRY_DOMAIN="${REGISTRY_DOMAIN/apis./registry.}"
 REGISTRY_HOST="${REGISTRY_HOST:-docker.$REGISTRY_DOMAIN}"
 IMAGE_NAME="tax-office-app"
 TAG="latest"
@@ -40,6 +43,23 @@ TAG="latest"
 PROJECT_PATH="${GCP_PROJECT_ID/://}"
 
 TAX_APP_IMAGE_REPO="${REGISTRY_HOST}/${PROJECT_PATH}/${AR_REPO_NAME}/${IMAGE_NAME}"
+
+LLM_BACKEND="${LLM_BACKEND:-$(terraform -chdir="$TF_DIR" output -raw llm_backend 2>/dev/null || echo "both")}"
+if [[ "$LLM_BACKEND" == "gke" ]]; then
+    DEFAULT_LLM_BACKEND="gke"
+    VLLM_ENABLED="${VLLM_ENABLED:-true}"
+elif [[ "$LLM_BACKEND" == "both" ]]; then
+    DEFAULT_LLM_BACKEND="${DEFAULT_LLM_BACKEND:-vertex}"
+    VLLM_ENABLED="${VLLM_ENABLED:-true}"
+else
+    DEFAULT_LLM_BACKEND="vertex"
+    VLLM_ENABLED="${VLLM_ENABLED:-false}"
+fi
+
+if [[ -z "${VERTEX_ENDPOINT_ID:-}" && -f "$BASE_DIR/.vertex_endpoint_id" ]]; then
+    VERTEX_ENDPOINT_ID=$(tr -d '[:space:]' < "$BASE_DIR/.vertex_endpoint_id")
+fi
+VERTEX_ENDPOINT_ID="${VERTEX_ENDPOINT_ID:-mistral-medium-endpoint}"
 
 echo "Fetching kube-dns IP address..."
 KUBE_DNS_IP=$(kubectl get svc kube-dns -n kube-system -o jsonpath='{.spec.clusterIP}')
@@ -51,9 +71,17 @@ helm upgrade --install tax-office "$BASE_DIR/k8s/helm" \
     -f "$BASE_DIR/k8s/helm/deployment-secrets.yaml" \
     --set global.projectId="$GCP_PROJECT_ID" \
     --set global.universeDomain="$GCP_UNIVERSE_DOMAIN" \
+    --set global.region="$GKE_REGION" \
     --set taxApp.image.repository="$TAX_APP_IMAGE_REPO" \
     --set taxApp.image.tag="$TAG" \
-    --set dnsConfig.nameservers[0]="${KUBE_DNS_IP}"
+    --set dnsConfig.nameservers[0]="${KUBE_DNS_IP}" \
+    --set llm.defaultBackend="$DEFAULT_LLM_BACKEND" \
+    --set vllm.enabled="$VLLM_ENABLED" \
+    --set vllm.computeClass.zones[0]="${GKE_REGION}-b" \
+    --set vllm.computeClass.zones[1]="${GKE_REGION}-c" \
+    --set vertexAI.projectId="$VERTEX_PROJECT_ID" \
+    --set vertexAI.region="$VERTEX_REGION" \
+    --set vertexAI.endpointId="$VERTEX_ENDPOINT_ID"
 
 echo "Waiting for Ingress IP addresses..."
 while :; do

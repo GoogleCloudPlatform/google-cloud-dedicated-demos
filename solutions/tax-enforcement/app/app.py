@@ -27,6 +27,8 @@ import os
 from backend.bigquery_client import BigQueryClient
 from backend.embedding_service import get_embedding_service
 from flask import Flask, jsonify, redirect, render_template, request, session, url_for
+import google.auth
+import google.auth.transport.requests
 import requests
 from werkzeug import utils
 
@@ -53,6 +55,35 @@ if not DEMO_USERNAME or not DEMO_PASSWORD:
 
 LLM_SERVICE_URL = os.getenv('LLM_SERVICE_URL', 'http://llm-service:8000')
 LLM_MODEL_NAME = os.getenv('LLM_MODEL_NAME', 'google/gemma-3-27b-it')
+VERTEX_PROJECT_ID = os.getenv('VERTEX_PROJECT_ID', os.getenv('PROJECT_ID', ''))
+VERTEX_REGION = os.getenv('VERTEX_REGION', os.getenv('REGION', ''))
+VERTEX_ENDPOINT_ID = os.getenv('VERTEX_ENDPOINT_ID', 'mistral-medium-endpoint')
+UNIVERSE_DOMAIN = os.getenv(
+  'UNIVERSE_DOMAIN', os.getenv('GOOGLE_CLOUD_UNIVERSE_DOMAIN', '')
+)
+DEFAULT_LLM_BACKEND = os.getenv('LLM_BACKEND', 'gke').lower()
+ACTIVE_LLM_BACKEND = 'gke' if DEFAULT_LLM_BACKEND == 'gke' else 'vertex'
+
+
+def get_vertex_endpoint_url():
+  """Construct regional Gemini Platform Endpoint URL."""
+  host = f'{VERTEX_REGION}-aiplatform.{UNIVERSE_DOMAIN or "googleapis.com"}'
+  if VERTEX_ENDPOINT_ID.startswith('projects/'):
+    return f'https://{host}/v1/{VERTEX_ENDPOINT_ID}:predict'
+  return f'https://{host}/v1/projects/{VERTEX_PROJECT_ID}/locations/{VERTEX_REGION}/endpoints/{VERTEX_ENDPOINT_ID}:predict'
+
+
+def get_auth_token():
+  """Retrieve Google Cloud Bearer token using Application Default Credentials."""
+  try:
+    credentials, _ = google.auth.default(
+      scopes=['https://www.googleapis.com/auth/cloud-platform']
+    )
+    credentials.refresh(google.auth.transport.requests.Request())
+    return credentials.token
+  except Exception as e:
+    logger.warning('Could not get ADC token: %s', e)
+    return None
 
 
 # Initialize BigQuery client and embedding service
@@ -378,6 +409,49 @@ def api_check_similarity(taxpayer_id, declaration_id):
     return jsonify({'error': str(e)}), 500
 
 
+@app.route('/api/llm/config', methods=['GET', 'POST'])
+def api_llm_config():
+  """Get or switch the active LLM backend ('vertex' or 'gke')."""
+  global ACTIVE_LLM_BACKEND
+  if 'authenticated' not in session or not session['authenticated']:
+    return jsonify({'error': 'Not authenticated'}), 401
+
+  if request.method == 'POST':
+    data = request.get_json(silent=True) or {}
+    new_backend = str(data.get('backend', '')).strip().lower()
+    if new_backend in ('gemini', 'gemini-platform'):
+      new_backend = 'vertex'
+    if new_backend not in ('vertex', 'gke'):
+      return jsonify({'error': "Invalid backend. Must be 'vertex' or 'gke'."}), 400
+    ACTIVE_LLM_BACKEND = new_backend
+    session['llm_backend'] = new_backend
+
+  active_backend = session.get('llm_backend') or ACTIVE_LLM_BACKEND
+  try:
+    gke_available = requests.get(f'{LLM_SERVICE_URL}/health', timeout=1.5).ok
+  except Exception:
+    gke_available = False
+
+  return jsonify({
+    'active_backend': active_backend,
+    'default_backend': DEFAULT_LLM_BACKEND,
+    'backends': {
+      'vertex': {
+        'id': 'vertex',
+        'label': 'Gemini Platform',
+        'model': VERTEX_ENDPOINT_ID,
+        'available': bool(VERTEX_ENDPOINT_ID),
+      },
+      'gke': {
+        'id': 'gke',
+        'label': 'GKE (vLLM)',
+        'model': LLM_MODEL_NAME,
+        'available': gke_available,
+      },
+    },
+  })
+
+
 @app.route('/api/llm/chat', methods=['POST'])
 def api_llm_chat():
   """Chat endpoint that forwards requests to the LLM service."""
@@ -390,6 +464,11 @@ def api_llm_chat():
     policy_context = data.get('policy_context')
     history = data.get('history', [])
     language = data.get('language', 'en')
+    target_backend = (
+      str(data.get('backend') or session.get('llm_backend') or ACTIVE_LLM_BACKEND)
+      .strip()
+      .lower()
+    )
 
     if not message:
       return jsonify({'error': 'No message provided'}), 400
@@ -439,22 +518,40 @@ Your responses should be:
       f'{system_prompt}{context_section}{history_text}\n\nUser: {message}\n\nAssistant:'
     )
 
-    # Prepare request to LLM service
-    llm_request = {
-      'model': LLM_MODEL_NAME,
-      'prompt': full_prompt,
-      'max_tokens': 10000,
-      'temperature': 0.7,
-      'top_p': 0.9,
-      'stop': ['User:', '\n\nUser:'],
-    }
+    if target_backend == 'vertex':
+      target_url = get_vertex_endpoint_url()
+      token = get_auth_token()
+      headers = {'Content-Type': 'application/json'}
+      if token:
+        headers['Authorization'] = f'Bearer {token}'
+      payload = {
+        'instances': [{
+          'prompt': full_prompt,
+          'max_tokens': 1024,
+          'temperature': 0.7,
+          'top_p': 0.9,
+          'stop': ['User:', '\n\nUser:'],
+        }],
+      }
+      logger.info('Sending request to Gemini Platform Endpoint at %s', target_url)
+      response = requests.post(target_url, headers=headers, json=payload, timeout=60)
+    else:
+      # Prepare request to LLM service
+      llm_request = {
+        'model': LLM_MODEL_NAME,
+        'prompt': full_prompt,
+        'max_tokens': 10000,
+        'temperature': 0.7,
+        'top_p': 0.9,
+        'stop': ['User:', '\n\nUser:'],
+      }
 
-    logger.info('Sending request to LLM service at %s', LLM_SERVICE_URL)
+      logger.info('Sending request to LLM service at %s', LLM_SERVICE_URL)
 
-    # Send request to vLLM service
-    response = requests.post(
-      f'{LLM_SERVICE_URL}/v1/completions', json=llm_request, timeout=30
-    )
+      # Send request to vLLM service
+      response = requests.post(
+        f'{LLM_SERVICE_URL}/v1/completions', json=llm_request, timeout=30
+      )
 
     if not response.ok:
       logger.error(
@@ -470,10 +567,28 @@ Your responses should be:
     llm_response = response.json()
 
     # Extract the generated text
-    if 'choices' in llm_response and len(llm_response['choices']) > 0:
+    if 'predictions' in llm_response and len(llm_response['predictions']) > 0:
+      pred = llm_response['predictions'][0]
+      assistant_response = (
+        pred.get('text') or pred.get('output') or str(pred)
+        if isinstance(pred, dict)
+        else str(pred)
+      )
+      if 'Output:' in assistant_response:
+        assistant_response = assistant_response.split('Output:', 1)[-1]
+      return jsonify({
+        'response': assistant_response.strip(),
+        'model': VERTEX_ENDPOINT_ID,
+        'backend': 'vertex',
+      })
+    elif 'choices' in llm_response and len(llm_response['choices']) > 0:
       assistant_response = llm_response['choices'][0]['text'].strip()
 
-      return jsonify({'response': assistant_response, 'model': LLM_MODEL_NAME})
+      return jsonify({
+        'response': assistant_response,
+        'model': LLM_MODEL_NAME,
+        'backend': 'gke',
+      })
     else:
       logger.error('Unexpected LLM response format: %s', llm_response)
       return jsonify({'error': 'Invalid response from LLM service'}), 500
@@ -504,3 +619,7 @@ def health():
       'timestamp': Datetime.now().strftime('%Y-%m-%d %H:%M:%S'),
     }
   )
+
+
+if __name__ == '__main__':
+  app.run(debug=True, host='0.0.0.0', port=5001)

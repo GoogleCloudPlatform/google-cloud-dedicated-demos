@@ -1,4 +1,4 @@
-# Tax Anomaly Detection with BigQuery ML & Gemma
+# Tax Anomaly Detection with BigQuery ML & Gemma / Mistral
 
 ## Overview
 
@@ -66,10 +66,10 @@ solution:
 | **Data**     | Python    | Generate tax data (TRAINING/NEW_FILING).                |
 | **Infra**    | Terraform | Provision VPC, GKE, BQ, GCS, Registry.                  |
 | **Model**    | BQ ML     | Logistic Regression for anomaly detection.              |
-| **LLM**      | Gemma     | Open-weight model for policy-grounded insights.         |
+| **LLM**      | Gemma / Mistral | Open-weight models on GKE (vLLM) or Gemini Platform (Model Garden) for policy-grounded insights. |
 | **RAG**      | BigQuery  | Vector Search for semantic matching and RAG grounding.  |
 | **Analysis** | Jupyter   | Notebook for ML model training and analysis/validation. |
-| **App**      | Flask     | Gunicorn-served web app for prediction visualization.   |
+| **App**      | Flask     | Web app for prediction visualization.                   |
 
 ### Project Structure Overview
 
@@ -145,7 +145,8 @@ linking within your Google Cloud Project.
     | `region`              | The region for resources (e.g., u-germany-northeast1). |
     | `universe_api_domain` | Sovereign Universe API domain.                         |
     | `data_bucket_name`    | Unique bucket name for demo data.                      |
-    | `hugging_face_token`  | Your hugging face token from step 3.                   |
+    | `llm_backend`         | LLM backend mode: `"both"` (default), `"vertex"` (Gemini Platform), or `"gke"`. |
+    | `hugging_face_token`  | Your hugging face token from step 3 (required for `"gke"` or `"both"`). |
     | `demo_username`       | Username for login to the dashboard.                   |
     | `demo_password`       | Password for login to dashboard and Jupyter Notebook.  |
 
@@ -171,6 +172,23 @@ configuration located at `k8s/helm/templates/vllm/`. For example, you can:
 - ​Pre-download the model to local storage from an approved provider.
 - Implement checksum verification to ensure model integrity.
 - Update the Helm templates to mount and point vLLM to your localized storage.
+
+#### Vertex AI / Gemini Platform (Model Garden) Deployment
+
+In addition to GKE vLLM, this solution supports deploying open-weight models via
+**Vertex AI / Gemini Platform (Model Garden)** using
+`scripts/standalone/deploy_vertex_model.sh`:
+
+- **Default Configuration**: Deploys `mistralai/mistral-medium-3.5-128b@v1` on
+  `a3-highgpu-2g-nolssd` (2x `NVIDIA_H100_80GB`, endpoint
+  `mistral-medium-endpoint`). You can override defaults via environment
+  variables (`VERTEX_MODEL_ID`, `VERTEX_MACHINE_TYPE`,
+  `VERTEX_ACCELERATOR_TYPE`, `VERTEX_ACCELERATOR_COUNT`,
+  `VERTEX_ENDPOINT_DISPLAY_NAME`).
+- **Data Privacy & Localization**: Model weights and serving containers are
+  provisioned directly from the regional Model Garden repository within your
+  sovereign boundary (no Hugging Face token is required when using
+  `llm_backend = "vertex"`).
 
 ### Deployment Scripts
 
@@ -206,6 +224,18 @@ source scripts/standalone/deploy_infra.sh
 ```
 
 as it sets necessary environment variables for all other standalone scripts.
+
+For the **Vertex AI / Gemini Platform (Model Garden)** backend and live backend
+switching, the following additional standalone scripts are available:
+
+```bash
+# Deploy or destroy the Vertex AI / Gemini Platform (Model Garden) endpoint
+./scripts/standalone/deploy_vertex_model.sh
+./scripts/standalone/destroy_vertex_model.sh
+
+# Switch active LLM backend between 'both', 'gemini' ('vertex'), and 'gke'
+./scripts/standalone/switch_llm_backend.sh <both|gemini|gke> [--teardown-other]
+```
 
 ## Access and Usage
 
@@ -263,9 +293,10 @@ step-by-step flow to navigate the application and simulate an auditor workflow:
    Search to match the filing against internal tax codes and presents the exact
    policy clause violated along with a semantic similarity score.
 4. **Interact with the AI Assistant**: Open the chat console to interact with
-   the grounded, open-weights Gemma LLM. Enter a prompt such as `"summarize this
-   policy violation for me"` to receive a localized, legally sound case summary
-   generated securely within the regional perimeter.
+   the grounded, open-weights Gemma / Mistral LLM (you can switch live between
+   **Gemini Platform** and **GKE (vLLM)** in the chat header). Enter a prompt
+   such as `"summarize this policy violation for me"` to receive a localized,
+   legally sound case summary generated securely within the regional perimeter.
 5. **Manage Compliance Documents**: Click on Policies in the top-right corner to
    access the Policy Management Interface. Authorized compliance team members
    can upload, edit, or delete policy documents here, which are instantly
