@@ -22,6 +22,8 @@ TF_DIR="$BASE_DIR/terraform"
 
 echo "Uninstalling Helm release..."
 helm uninstall tax-office -n tax-office-ns || true
+kubectl delete computeclass --all --ignore-not-found=true || true
+"$BASE_DIR/scripts/standalone/destroy_vertex_model.sh" || true
 
 # Terraform unable to remove subnetwork, because it used by NEG created by GKE
 # Ingress. Wait until in will be relesed.
@@ -63,5 +65,6 @@ fi
 
 echo "Cleaning up local deployment secrets..."
 rm -f "$BASE_DIR/k8s/helm/deployment-secrets.yaml"
+rm -f "$BASE_DIR/.vertex_endpoint_id"
 
 rm -rf "$BASE_DIR/scripts/.venv"

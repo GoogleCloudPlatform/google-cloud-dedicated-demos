@@ -18,8 +18,15 @@
 set -eu
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+TF_DIR="$SCRIPT_DIR/../terraform"
 
 "$SCRIPT_DIR/standalone/generate_data.sh"
 "$SCRIPT_DIR/standalone/deploy_infra.sh"
 "$SCRIPT_DIR/standalone/deploy_app_image.sh"
+
+LLM_BACKEND="${LLM_BACKEND:-$(terraform -chdir="$TF_DIR" output -raw llm_backend 2>/dev/null || echo "both")}"
+if [[ "$LLM_BACKEND" == "vertex" || "$LLM_BACKEND" == "gemini" || "$LLM_BACKEND" == "both" ]]; then
+    "$SCRIPT_DIR/standalone/deploy_vertex_model.sh"
+fi
+
 "$SCRIPT_DIR/standalone/deploy_app_gke.sh"

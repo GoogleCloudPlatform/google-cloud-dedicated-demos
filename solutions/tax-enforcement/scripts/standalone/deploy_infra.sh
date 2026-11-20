@@ -22,6 +22,8 @@ TF_DIR="$BASE_DIR/terraform"
 
 cd "$TF_DIR"
 
+export GOOGLE_OAUTH_ACCESS_TOKEN="${GOOGLE_OAUTH_ACCESS_TOKEN:-$(gcloud auth print-access-token 2>/dev/null || true)}"
+
 terraform init -input=false
 terraform apply -auto-approve -input=false
 

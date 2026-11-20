@@ -17,6 +17,7 @@
 global:
   projectId: "changeme"
   universeDomain: "changeme"
+  region: "changeme"
 
 jupyter:
   rawPassword: "changeme" # pragma: allowlist secret
@@ -37,17 +38,34 @@ taxApp:
   demoPassword: changeme # pragma: allowlist secret
   demoUsername: changeme
 
+llm:
+  defaultBackend: "vertex"
+
+vertexAI:
+  projectId: "changeme"
+  region: "changeme"
+  endpointId: "changeme"
+
 vllm:
+  enabled: true
+  modelId: "google/gemma-3-27b-it"
   replicaCount: 1
   image:
     repository: docker.io/vllm/vllm-openai
     tag: v0.10.0
     pullPolicy: IfNotPresent
   storageSize: 256Gi
-  gpuCount: 2
-  huggingFaceToken: changeme
-  nodeSelector:
-    cloud.google.com/gke-accelerator: nvidia-h100-80gb
+  gpuCount: 1
+  huggingFaceToken: changeme # pragma: allowlist secret
+  computeClass:
+    enabled: true
+    name: cc-a3-highgpu-1g
+    machineType: a3-highgpu-1g-nolssd
+    gpuCount: 1
+    gpuType: nvidia-h100-80gb
+    zones:
+      - changeme
+  nodeSelector: {}
   tolerations: []
 
 dnsPolicy: None

@@ -52,5 +52,7 @@ locals {
   jupyter_roles = local.bigquery_app_roles
 
   # App roles
-  app_roles = local.bigquery_app_roles
+  app_roles = setunion(local.bigquery_app_roles, toset([
+    "roles/aiplatform.user"
+  ]))
 }

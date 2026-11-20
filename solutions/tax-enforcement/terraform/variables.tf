@@ -54,7 +54,8 @@ variable "project_services" {
     "dns.googleapis.com",
     "iam.googleapis.com",
     "storage.googleapis.com",
-    "sts.googleapis.com"
+    "sts.googleapis.com",
+    "aiplatform.googleapis.com"
   ]
 }
 
@@ -159,4 +160,15 @@ variable "hugging_face_token" {
   type        = string
   sensitive   = true
   default     = "change-me-in-tfvars"
+}
+
+variable "llm_backend" {
+  description = "Default LLM backend deployment mode ('both', 'vertex'/'gemini', or 'gke')."
+  type        = string
+  default     = "both"
+
+  validation {
+    condition     = contains(["vertex", "gemini", "gke", "both"], var.llm_backend)
+    error_message = "'llm_backend' must be one of: 'both', 'vertex', 'gemini', or 'gke'."
+  }
 }

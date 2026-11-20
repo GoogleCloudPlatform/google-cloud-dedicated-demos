@@ -1,0 +1,32 @@
+{{- if and .Values.vllm.enabled .Values.vllm.computeClass .Values.vllm.computeClass.enabled }}
+apiVersion: cloud.google.com/v1
+kind: ComputeClass
+metadata:
+  name: {{ .Values.vllm.computeClass.name | default "cc-custom" }}
+  labels:
+    {{- include "tax-office.vllm.labels" . | nindent 4 }}
+  annotations:
+    helm.sh/hook: pre-install,pre-upgrade
+    helm.sh/hook-weight: "-5"
+    helm.sh/hook-delete-policy: before-hook-creation
+spec:
+  {{- if .Values.vllm.computeClass.priorities }}
+  priorities:
+    {{- toYaml .Values.vllm.computeClass.priorities | nindent 2 }}
+  {{- else }}
+  priorities:
+  - machineType: {{ .Values.vllm.computeClass.machineType | default "a3-highgpu-1g-nolssd" }}
+    gpu:
+      count: {{ .Values.vllm.computeClass.gpuCount | default .Values.vllm.gpuCount | default 1 }}
+      type: {{ .Values.vllm.computeClass.gpuType | default "nvidia-h100-80gb" }}
+    {{- if .Values.vllm.computeClass.zones }}
+    location:
+      zones:
+        {{- toYaml .Values.vllm.computeClass.zones | nindent 8 }}
+    {{- end }}
+  {{- end }}
+  nodePoolAutoCreation:
+    enabled: {{ .Values.vllm.computeClass.nodePoolAutoCreation | default true }}
+  autoscalingPolicy:
+    consolidationDelayMinutes: {{ .Values.vllm.computeClass.consolidationDelayMinutes | default 1 }}
+{{- end }}

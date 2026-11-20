@@ -529,7 +529,28 @@
         <div class="chat-header">
           <div class="chat-header-content">
             <span class="material-icons">smart_toy</span>
-            <span data-i18n="chat.title">AI Assistant</span>
+            <div class="chat-title-group">
+              <span data-i18n="chat.title">AI Assistant</span>
+              <div class="chat-backend-selector">
+                <span
+                  id="llm-status-dot"
+                  class="llm-status-dot online"
+                  title="AI Engine Status"
+                ></span>
+                <select
+                  id="llm-backend-select"
+                  class="llm-backend-select"
+                  aria-label="Select AI Platform"
+                >
+                  <option value="vertex" data-i18n="chat.backend_vertex">
+                    Gemini Platform
+                  </option>
+                  <option value="gke" data-i18n="chat.backend_gke">
+                    GKE (vLLM Local)
+                  </option>
+                </select>
+              </div>
+            </div>
           </div>
           <button id="chat-close" class="chat-close-btn">
             <span class="material-icons">close</span>
